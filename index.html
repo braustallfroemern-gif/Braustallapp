@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hofbrauerei Braustall</title>
+    
+    <!-- Supabase Bibliothek laden -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* Grundlegendes Design (Blaues Theme) */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #E3F2FD; /* Leichtes, helles Eisblau für den Hintergrund */
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        #app {
+            background-color: white;
+            padding: 30px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        /* Verhindert das Scrollen am Body (für Pull-to-Refresh Schutz) */
+        html, body {
+            overscroll-behavior-y: none; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hier baut das Script unsere Seiten (Login oder Dashboard) auf -->
+    <div id="app">Lade...</div>
+
+    <!-- HIER BEGINNT DEIN JAVASCRIPT-CODE -->
+    <script>
+        // Blockiert das Herunterziehen zum Aktualisieren (Pull-to-Refresh) auf dem Handy
+        let touchStart_Y = 0;
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 1) {
+                touchStart_Y = e.touches[0].clientY;
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', function(e) {
+            const touchMove_Y = e.touches[0].clientY;
+            const touchDiff_Y = touchMove_Y - touchStart_Y;
+
+            if (window.scrollY === 0 && touchDiff_Y > 0) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // iOS-Aufweck-Schutz
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                const aktuellerInhalt = document.body.innerHTML;
+                if (aktuellerInhalt.includes('Wiedersehen') || aktuellerInhalt.includes('ordnungsgemäß')) {
+                    window.location.reload();
+                }
+            }
+        });
+
+        // Supabase initialisieren (Mit deinen korrekten Schlüsseln!)
+        const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Dashboard mit neuem blauen Theme und 3 Menüpunkten
+        async function showDashboard() {
+            const vorname = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "";
+            const begruessung = vorname ? `Willkommen ${vorname}` : "Willkommen";
+
+            // CSS für die blauen Buttons direkt im Script definiert (kannst du später in eine CSS-Datei auslagern)
+            const btnStylePrimary = "background-color: #1976D2; color: white; border: none; padding: 14px; margin: 6px 0; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);";
+            const btnStyleSecondary = "background-color: #455A64; color: white; border: none; padding: 12px; margin: 30px 0 10px 0; width: 100%; border-radius: 8px; font-size: 15px; cursor: pointer;";
+
+            document.getElementById('app').innerHTML = `
+                <h2 style="color: #1565C0; margin-bottom: 20px;">${begruessung}</h2>
+                
+                <button style="${btnStylePrimary}" onclick="location.href='lager.html'">📦 Lager</button>
+                <button style="${btnStylePrimary}" onclick="location.href='kalender.html'">📅 Kalender</button>
+                <button style="${btnStylePrimary}" onclick="location.href='rezepte.html'">📖 Rezepte</button>
+                
+                <button style="${btnStyleSecondary}" onclick="beendeProgramm()">❌ Programm beenden</button>
+            `;
+        }
+
+        // Login-Formular in Blau
+        function showLogin() {
+            const inputStyle = "width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #90CAF9; border-radius: 8px; box-sizing: border-box; font-size: 16px;";
+            const btnStyle = "background-color: #1976D2; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 15px; cursor: pointer;";
+
+            document.getElementById('app').innerHTML = `
+                <h2 style="color: #1565C0; margin-bottom: 20px;">Braustall Login</h2>
+                <input type="email" id="email" placeholder="Deine E-Mail Adresse" style="${inputStyle}">
+                
+                <div id="register-fields" style="display: none; margin-top: 15px; margin-bottom: 15px; text-align: left;">
+                    <p style="color: #1565C0; font-size: 14px; margin-bottom: 10px; font-weight: bold; text-align: center;">
+                        E-Mail nicht gefunden. Bitte Namen eingeben:
+                    </p>
+                    <input type="text" id="vorname" placeholder="Vorname" style="${inputStyle}">
+                    <input type="text" id="nachname" placeholder="Nachname" style="${inputStyle}">
+                </div>
+                
+                <button id="login-btn" onclick="performLogin()" style="${btnStyle}">Anmelden</button>
+            `;
+        }
+
+        // Login Logik (ohne Offline-Fallback)
+        async function performLogin() {
+            const emailInput = document.getElementById('email').value.trim().toLowerCase();
+            if (emailInput === "") {
+                alert("Bitte E-Mail eingeben");
+                return;
+            }
+
+            const registerFields = document.getElementById('register-fields');
+            const istRegistrierungSichtbar = registerFields && registerFields.style.display === 'block';
+
+            if (!istRegistrierungSichtbar) {
+                // Hinweis: Tabelle 'mitglieder' ggf. umbenennen, falls ihr für den Braustall eine eigene Tabelle nutzt
+                const { data, error } = await _supabase
+                    .from('mitglieder') 
+                    .select('email, kennung, vorname')
+                    .eq('email', emailInput)
+                    .maybeSingle();
+
+                if (error || !data) {
+                    if (registerFields) {
+                        registerFields.style.display = 'block';
+                        document.getElementById('login-btn').innerText = "Registrieren & Anmelden";
+                    }
+                } else {
+                    if (data.kennung === "0000") {
+                        alert("Dieses Konto wurde zurückgesetzt. Bitte wende dich an den Admin.");
+                        return;
+                    }
+
+                    localStorage.setItem('userKennung', String(data.kennung));
+                    localStorage.setItem('userEmailCache', String(emailInput));
+                    localStorage.setItem('userVornameCache', String(data.vorname || ''));
+                    
+                    sessionStorage.setItem('userEmail', emailInput);
+                    sessionStorage.setItem('userVorname', String(data.vorname || ''));
+                    sessionStorage.setItem('angemeldet', 'ja');
+                    showDashboard();
+                }
+            } else {
+                const vornameInput = document.getElementById('vorname').value.trim();
+                const nachnameInput = document.getElementById('nachname').value.trim();
+
+                if (vornameInput === "" || nachnameInput === "") {
+                    alert("Bitte trage deinen Vornamen und Nachnamen ein.");
+                    return;
+                }
+
+                const neueKennung = String(Date.now()).slice(-8); 
+
+                const { error: insertError } = await _supabase
+                    .from('mitglieder')
+                    .insert([{ 
+                        email: emailInput, 
+                        vorname: vornameInput, 
+                        nachname: nachnameInput, 
+                        kennung: neueKennung
+                    }]);
+
+                if (insertError) {
+                    alert("Fehler bei der Registrierung: " + insertError.message);
+                    return;
+                }
+
+                localStorage.setItem('userKennung', neueKennung);
+                localStorage.setItem('userEmailCache', emailInput);
+                localStorage.setItem('userVornameCache', vornameInput);
+                
+                sessionStorage.setItem('userEmail', emailInput);
+                sessionStorage.setItem('userVorname', vornameInput);
+                sessionStorage.setItem('angemeldet', 'ja');
+                
+                showDashboard();
+            }
+        }
+
+        // Beenden-Funktion
+        function beendeProgramm() {
+            try {
+                const appBox = document.getElementById('app');
+                if (appBox) {
+                    appBox.innerHTML = `
+                        <h2 style="color: #1565C0;">Auf Wiedersehen!</h2>
+                        <p style="color: #1976D2; font-weight: bold; margin-top: 20px;">Das Programm wurde ordnungsgemäß beendet.</p>
+                        <p style="color: #666; font-size: 14px; margin-top: 10px;">Deine Sitzung wurde sicher geschlossen.</p>
+                        <p style="color: #999; font-size: 14px; margin-top: 20px;">Du kannst diesen Browser-Tab jetzt schließen.</p>
+                    `;
+                }
+            } catch (e) {
+                console.error("Fehler beim Zeichnen des Beenden-Fensters:", e);
+            }
+
+            try { sessionStorage.clear(); } catch (e) {}
+        }
+
+        // Beim Starten der Seite prüfen
+        window.onload = async function() {
+            const gespeicherteKennung = localStorage.getItem('userKennung');
+
+            if (gespeicherteKennung) {
+                try {
+                    const { data, error } = await _supabase
+                        .from('mitglieder')
+                        .select('email, kennung, vorname')
+                        .eq('kennung', gespeicherteKennung)
+                        .maybeSingle();
+
+                    if (error || !data || data.kennung === "0000") {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        showLogin();
+                    } else {
+                        localStorage.setItem('userEmailCache', data.email);
+                        localStorage.setItem('userKennung', data.kennung);
+                        localStorage.setItem('userVornameCache', data.vorname || '');
+                        
+                        sessionStorage.setItem('userEmail', data.email);
+                        sessionStorage.setItem('userVorname', data.vorname || '');
+                        sessionStorage.setItem('angemeldet', 'ja');
+                        showDashboard();
+                    }
+                } catch (e) {
+                    // Bei Fehler (z.B. keine Verbindung zu Supabase im Moment)
+                    showLogin();
+                }
+            } else {
+                showLogin();
+            }
+        };
+    </script>
+</body>
+</html>
