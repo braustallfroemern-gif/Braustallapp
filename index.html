@@ -79,7 +79,7 @@
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Dashboard
+        // Dashboard (mit Verweis auf die neue persoenlicheDaten.html)
         async function showDashboard() {
             const vorname = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "";
             const begruessung = vorname ? `Willkommen ${vorname}` : "Willkommen";
@@ -93,6 +93,7 @@
                 <button style="${btnStylePrimary}" onclick="location.href='lager.html'">📦 Lager</button>
                 <button style="${btnStylePrimary}" onclick="location.href='kalender.html'">📅 Kalender</button>
                 <button style="${btnStylePrimary}" onclick="location.href='rezepte.html'">📖 Rezepte</button>
+                <button style="${btnStylePrimary}" onclick="location.href='persoenlicheDaten.html'">👤 Persönliche Daten</button>
                 
                 <button style="${btnStyleSecondary}" onclick="beendeProgramm()">❌ Programm beenden</button>
             `;
@@ -167,7 +168,6 @@
             }
 
             if (modus === 'login') {
-                // Normaler Login
                 if (pinInput === "") {
                     alert("Bitte gib deine 4-stellige PIN ein.");
                     return;
@@ -189,7 +189,6 @@
                     return;
                 }
 
-                // Erfolgreich eingeloggt
                 localStorage.setItem('userKennung', String(data.kennung));
                 localStorage.setItem('userEmailCache', String(emailInput));
                 localStorage.setItem('userVornameCache', String(data.vorname || ''));
@@ -201,7 +200,6 @@
                 showDashboard();
 
             } else {
-                // Erstregistrierung speichern
                 const vornameInput = document.getElementById('vorname').value.trim();
                 const nachnameInput = document.getElementById('nachname').value.trim();
                 const strasseInput = document.getElementById('strasse').value.trim();
@@ -215,7 +213,6 @@
                     return;
                 }
 
-                // Prüfen, ob E-Mail schon existiert
                 const { data: existingData } = await _supabase
                     .from('mitglieder')
                     .select('email')
@@ -227,7 +224,6 @@
                     return;
                 }
 
-                // In Supabase eintragen
                 const { error: insertError } = await _supabase
                     .from('mitglieder')
                     .insert([{ 
@@ -247,7 +243,6 @@
                     return;
                 }
 
-                // Erfolgreich registriert & eingeloggt
                 localStorage.setItem('userKennung', pinInput);
                 localStorage.setItem('userEmailCache', emailInput);
                 localStorage.setItem('userVornameCache', vornameInput);
