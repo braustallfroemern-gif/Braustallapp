@@ -139,7 +139,6 @@
             font-weight: bold;
         }
         
-        /* Text im Kalendertag, wenn gefärbt */
         .kalender-tag.hat-termin {
             color: white;
             font-weight: bold;
@@ -162,10 +161,10 @@
             text-align: center;
         }
 
-        /* Kategorien-Farben (Ganzes Feld) */
-        .bg-brautag { background-color: #E65100 !important; border-color: #BF360C !important; } /* Kräftiges Orange */
-        .bg-treffen { background-color: #1976D2 !important; border-color: #0D47A1 !important; } /* Braustall Blau */
-        .bg-veranstaltung { background-color: #2E7D32 !important; border-color: #1B5E20 !important; } /* Sattes Grün */
+        /* Kategorien-Farben */
+        .bg-brautag { background-color: #E65100 !important; border-color: #BF360C !important; }
+        .bg-treffen { background-color: #1976D2 !important; border-color: #0D47A1 !important; }
+        .bg-veranstaltung { background-color: #2E7D32 !important; border-color: #1B5E20 !important; }
 
         /* Schwebendes Fenster (Modal) */
         #modal-overlay {
@@ -206,7 +205,6 @@
 
     <div id="app">Lade Kalender...</div>
 
-    <!-- Schwebendes Fenster (Modal) -->
     <div id="modal-overlay">
         <div id="modal-inhalt"></div>
     </div>
@@ -323,7 +321,6 @@
 
                 const tAmTag = alleTermine.filter(t => t.datum === datumStr);
                 if (tAmTag.length > 0) {
-                    // Nimm den ersten Termin für die farbliche Kennzeichnung des Feldes
                     const hauptTermin = tAmTag[0];
                     tagDiv.classList.add('hat-termin');
                     
@@ -346,11 +343,9 @@
             const overlay = document.getElementById('modal-overlay');
             const inhalt = document.getElementById('modal-inhalt');
 
+            // Kategorie ganz nach oben gesetzt, darunter die Bezeichnung
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">Neuen Termin eintragen</h3>
-
-                <label class="label-style">Bezeichnung:</label>
-                <input type="text" id="m-titel" placeholder="z.B. Brautag Pils" class="input-style">
 
                 <label class="label-style">Kategorie:</label>
                 <select id="m-kategorie" class="input-style">
@@ -358,6 +353,9 @@
                     <option value="Treffen">🍻 Treffen / Stammtisch</option>
                     <option value="Veranstaltung">🎉 Veranstaltung</option>
                 </select>
+
+                <label class="label-style">Bezeichnung:</label>
+                <input type="text" id="m-titel" placeholder="z.B. Brautag Pils" class="input-style">
 
                 <label class="label-style">Start-Datum:</label>
                 <input type="date" id="m-datum" class="input-style">
@@ -423,15 +421,15 @@
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">Termin bearbeiten</h3>
 
-                <label class="label-style">Bezeichnung:</label>
-                <input type="text" id="edit-titel" value="${t.titel}" class="input-style">
-
                 <label class="label-style">Kategorie:</label>
                 <select id="edit-kategorie" class="input-style">
                     <option value="Brautag" ${t.kategorie === 'Brautag' ? 'selected' : ''}>🍺 Brautag</option>
                     <option value="Treffen" ${t.kategorie === 'Treffen' ? 'selected' : ''}>🍻 Treffen / Stammtisch</option>
                     <option value="Veranstaltung" ${t.kategorie === 'Veranstaltung' ? 'selected' : ''}>🎉 Veranstaltung</option>
                 </select>
+
+                <label class="label-style">Bezeichnung:</label>
+                <input type="text" id="edit-titel" value="${t.titel}" class="input-style">
 
                 <label class="label-style">Datum:</label>
                 <input type="date" id="edit-datum" value="${t.datum}" class="input-style">
@@ -457,8 +455,6 @@
             const datumStart = document.getElementById('m-datum').value;
             const uhrzeit = document.getElementById('m-uhrzeit').value.trim();
             const wiederholungWochen = parseInt(document.getElementById('m-wiederholung').value);
-            
-            // Holt den Vornamen des aktuell angemeldeten Nutzers aus dem SessionStorage
             const ersteller = sessionStorage.getItem('userVorname') || "Mitglied";
 
             if (titel === "" || datumStart === "") {
@@ -520,7 +516,7 @@
         }
 
         async function loescheTermin(id) {
-            if (!confirm("Mist du diesen Termin wirklich löschen?")) return;
+            if (!confirm("Möchtest du diesen Termin wirklich löschen?")) return;
 
             const { error } = await _supabase
                 .from('termine')
