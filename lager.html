@@ -273,10 +273,9 @@
                 <div id="rohstoff-liste"></div>
 
                 <!-- Versions-Prüfung ganz unten -->
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.2</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.3</div>
             `;
             
-            // HIER IST DIE WIEDEREINGEFÜGTE ZEILE:
             baueRohstoffListe(); 
         }
 
@@ -304,12 +303,14 @@
                 ? alleRohstoffe 
                 : alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktiverFilter.toLowerCase());
 
-            if (gefilter.length === 0) {
+            // HIER WAR DER FEHLER: gefilter statt gefiltert
+            if (gefiltert.length === 0) {
                 container.innerHTML = `<p style="color: #666; font-size: 14px; margin: 20px 0; text-align: center;">Keine Rohstoffe im Lager gefunden.</p>`;
                 return;
             }
 
-            gefilter.forEach(r => {
+            // HIER WAR DER FEHLER: gefilter statt gefiltert
+            gefiltert.forEach(r => {
                 const karte = document.createElement('div');
                 let katKlasse = r.kategorie ? r.kategorie.toLowerCase() : 'sonstiges';
                 karte.className = `lager-karte ${katKlasse}`;
