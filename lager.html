@@ -115,7 +115,7 @@
         }
         .lager-karte.malz { border-left-color: #E65100; }
         .lager-karte.hopfen { border-left-color: #2E7D32; }
-        .lager-karte.heute, .lager-karte.hefe { border-left-color: #7B1FA2; }
+        .lager-karte.hefe { border-left-color: #7B1FA2; }
         .lager-karte.sonstiges { border-left-color: #455A64; }
 
         .karte-header {
@@ -202,6 +202,8 @@
                 .order('bezeichnung', { ascending: true });
             if (!error && data) {
                 alleRohstoffe = data;
+            } else if (error) {
+                console.error("Fehler beim Laden:", error.message);
             }
         }
 
@@ -240,12 +242,13 @@
             const container = document.getElementById('rohstoff-liste');
             container.innerHTML = "";
 
+            // Toleranter Filter (ignoriert Groß-/Kleinschreibung)
             const gefiltert = aktiverFilter === 'Alle' 
                 ? alleRohstoffe 
-                : alleRohstoffe.filter(r => r.kategorie === aktiverFilter);
+                : alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktiverFilter.toLowerCase());
 
             if (gefilter.length === 0) {
-                container.innerHTML = `<p style="color: #666; font-size: 14px; margin: 20px 0;">Keine Rohstoffe in dieser Kategorie gefunden.</p>`;
+                container.innerHTML = `<p style="color: #666; font-size: 14px; margin: 20px 0;">Keine Rohstoffe in der Kategorie "${aktiverFilter}" gefunden.</p>`;
                 return;
             }
 
@@ -256,12 +259,12 @@
                 karte.onclick = () => oeffneBearbeitenModal(r.id);
 
                 let zusatzInfos = "";
-                if (r.kategorie === 'Malz') {
+                if (r.kategorie && r.kategorie.toLowerCase() === 'malz') {
                     if (r.farbe_ebc) zusatzInfos += `<span>🎨 ${r.farbe_ebc} EBC</span>`;
                     if (r.max_gabe_prozent) zusatzInfos += `<span>📊 Max. ${r.max_gabe_prozent}%</span>`;
-                } else if (r.kategorie === 'Hopfen') {
+                } else if (r.kategorie && r.kategorie.toLowerCase() === 'hopfen') {
                     if (r.alpha_saeure) zusatzInfos += `<span>🌿 Alpha: ${r.alpha_saeure}%</span>`;
-                } else if (r.kategorie === 'Hefe') {
+                } else if (r.kategorie && r.kategorie.toLowerCase() === 'hefe') {
                     if (r.gaertemperatur) zusatzInfos += `<span>🌡️ ${r.gaertemperatur}</span>`;
                     if (r.vergaerungsgrad) zusatzInfos += `<span>📈 EVG: ${r.vergaerungsgrad}</span>`;
                 } else if (r.notiz) {
@@ -317,7 +320,6 @@
                     </div>
                 </div>
 
-                <!-- Dynamische Zusatzfelder -->
                 <div id="dynamische-felder"></div>
 
                 <button class="btn-primary" onclick="speichereNeuenRohstoff()">Rohstoff speichern</button>
@@ -369,19 +371,21 @@
             const inhalt = document.getElementById('modal-inhalt');
 
             let zusatzHtml = "";
-            if (r.kategorie === 'Malz') {
+            let katLower = r.kategorie ? r.kategorie.toLowerCase() : '';
+
+            if (katLower === 'malz') {
                 zusatzHtml = `
                     <label class="label-style">Farbe (EBC):</label>
                     <input type="number" id="edit-ebc" value="${r.farbe_ebc || ''}" class="input-style">
                     <label class="label-style">Max. Gabe (%):</label>
                     <input type="number" id="edit-maxgabe" value="${r.max_gabe_prozent || ''}" class="input-style">
                 `;
-            } else if (r.kategorie === 'Hopfen') {
+            } else if (katLower === 'hopfen') {
                 zusatzHtml = `
                     <label class="label-style">Alpha-Säure (%):</label>
                     <input type="number" step="0.1" id="edit-alpha" value="${r.alpha_saeure || ''}" class="input-style">
                 `;
-            } else if (r.kategorie === 'Hefe') {
+            } else if (katLower === 'hefe') {
                 zusatzHtml = `
                     <label class="label-style">Gärtemperatur:</label>
                     <input type="text" id="edit-temp" value="${r.gaertemperatur || ''}" class="input-style">
@@ -477,13 +481,14 @@
             }
 
             let datenObjekt = { bezeichnung, bestand, einheit };
+            let katLower = kategorie ? kategorie.toLowerCase() : '';
 
-            if (kategorie === 'Malz') {
+            if (katLower === 'malz') {
                 datenObjekt.farbe_ebc = parseFloat(document.getElementById('edit-ebc').value) || null;
                 datenObjekt.max_gabe_prozent = parseFloat(document.getElementById('edit-maxgabe').value) || null;
-            } else if (kategorie === 'Hopfen') {
+            } else if (katLower === 'hopfen') {
                 datenObjekt.alpha_saeure = parseFloat(document.getElementById('edit-alpha').value) || null;
-            } else if (kategorie === 'Hefe') {
+            } else if (katLower === 'hefe') {
                 datenObjekt.gaertemperatur = document.getElementById('edit-temp').value.trim() || null;
                 datenObjekt.vergaerungsgrad = document.getElementById('edit-evg').value.trim() || null;
             } else {
