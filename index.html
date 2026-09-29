@@ -79,7 +79,7 @@
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Dashboard (mit Verweis auf die neue persoenlicheDaten.html)
+        // Dashboard (mit dem Icon vor "Persönliche Daten")
         async function showDashboard() {
             const vorname = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "";
             const begruessung = vorname ? `Willkommen ${vorname}` : "Willkommen";
@@ -192,6 +192,7 @@
                 localStorage.setItem('userKennung', String(data.kennung));
                 localStorage.setItem('userEmailCache', String(emailInput));
                 localStorage.setItem('userVornameCache', String(data.vorname || ''));
+                localStorage.setItem('angemeldetCache', 'ja');
                 
                 sessionStorage.setItem('userEmail', emailInput);
                 sessionStorage.setItem('userVorname', String(data.vorname || ''));
@@ -205,7 +206,7 @@
                 const strasseInput = document.getElementById('strasse').value.trim();
                 const hausnummerInput = document.getElementById('hausnummer').value.trim();
                 const plzInput = document.getElementById('plz').value.trim();
-                const ortInput = document.getElementById('ort').value.trim();
+                const ortInput = document.getElementById('ort'.value.trim());
                 const geburtsdatumInput = document.getElementById('geburtsdatum').value.trim();
 
                 if (vornameInput === "" || nachnameInput === "" || pinInput.length < 4) {
@@ -246,6 +247,7 @@
                 localStorage.setItem('userKennung', pinInput);
                 localStorage.setItem('userEmailCache', emailInput);
                 localStorage.setItem('userVornameCache', vornameInput);
+                localStorage.setItem('angemeldetCache', 'ja');
                 
                 sessionStorage.setItem('userEmail', emailInput);
                 sessionStorage.setItem('userVorname', vornameInput);
@@ -255,7 +257,7 @@
             }
         }
 
-        // Beenden-Funktion (im einheitlichen Braustall-Blau)
+        // Beenden-Funktion
         function beendeProgramm() {
             try {
                 const appBox = document.getElementById('app');
@@ -274,7 +276,7 @@
             try { sessionStorage.clear(); } catch (e) {}
         }
 
-        // Beim Starten prüfen, ob der Nutzer auf diesem Gerät schon eingeloggt war
+        // Beim Starten prüfen
         window.onload = async function() {
             const gespeicherteKennung = localStorage.getItem('userKennung');
             const gespeicherteEmail = localStorage.getItem('userEmailCache');
@@ -296,6 +298,7 @@
                         sessionStorage.setItem('userEmail', data.email);
                         sessionStorage.setItem('userVorname', data.vorname || '');
                         sessionStorage.setItem('angemeldet', 'ja');
+                        localStorage.setItem('angemeldetCache', 'ja');
                         showDashboard();
                     }
                 } catch (e) {
