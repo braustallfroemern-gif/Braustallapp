@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hofbrauerei Braustall</title>
     
+    <!-- Mobil-Icons für den Homescreen -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+
     <!-- Supabase Bibliothek laden -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -125,7 +129,6 @@
             const istRegistrierungSichtbar = registerFields && registerFields.style.display === 'block';
 
             if (!istRegistrierungSichtbar) {
-                // Hinweis: Tabelle 'mitglieder' ggf. umbenennen, falls ihr für den Braustall eine eigene Tabelle nutzt
                 const { data, error } = await _supabase
                     .from('mitglieder') 
                     .select('email, kennung, vorname')
@@ -195,7 +198,7 @@
                 const appBox = document.getElementById('app');
                 if (appBox) {
                     appBox.innerHTML = `
-                        <h2 style="color: #1565C0;">Auf Wiedersehen!</h2>
+                        <h2 style="color: #156500;">Auf Wiedersehen!</h2>
                         <p style="color: #1976D2; font-weight: bold; margin-top: 20px;">Das Programm wurde ordnungsgemäß beendet.</p>
                         <p style="color: #666; font-size: 14px; margin-top: 10px;">Deine Sitzung wurde sicher geschlossen.</p>
                         <p style="color: #999; font-size: 14px; margin-top: 20px;">Du kannst diesen Browser-Tab jetzt schließen.</p>
@@ -235,7 +238,6 @@
                         showDashboard();
                     }
                 } catch (e) {
-                    // Bei Fehler (z.B. keine Verbindung zu Supabase im Moment)
                     showLogin();
                 }
             } else {
