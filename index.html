@@ -95,24 +95,32 @@
             `;
         }
 
-        // Login-Formular mit automatischer Erkennung (Erst- vs. Zweitlogin)
-        function showLogin() {
+        // Login-Formular mit Umschalter (Anmelden vs. Erstregistrierung)
+        function showLogin(modus = 'login') {
             const inputStyle = "width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #90CAF9; border-radius: 8px; box-sizing: border-box; font-size: 16px;";
             const btnStyle = "background-color: #1976D2; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 15px; cursor: pointer;";
+            
+            const isReg = (modus === 'register');
+
+            const tabActive = "background-color: #1976D2; color: white; border: none; padding: 10px; width: 48%; border-radius: 6px; font-weight: bold; cursor: pointer;";
+            const tabInative = "background-color: #E3F2FD; color: #1976D2; border: 1px solid #1976D2; padding: 10px; width: 48%; border-radius: 6px; font-weight: bold; cursor: pointer;";
 
             document.getElementById('app').innerHTML = `
-                <h2 style="color: #1565C0; margin-bottom: 20px;">Braustall Login</h2>
-                <input type="email" id="email" placeholder="Deine E-Mail-Adresse" style="${inputStyle}">
+                <h2 style="color: #1565C0; margin-bottom: 15px;">Braustall Login</h2>
                 
-                <!-- PIN-Feld (wird beim normalen Login und bei der Registrierung gebraucht) -->
-                <div id="pin-container" style="margin-top: 8px;">
-                    <input type="password" id="kennung" placeholder="4-stellige PIN (z.B. 1234)" maxlength="4" style="${inputStyle}">
+                <!-- Umschalter-Tabs -->
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                    <button style="${!isReg ? tabActive : tabInative}" onclick="showLogin('login')">Anmelden</button>
+                    <button style="${isReg ? tabActive : tabInative}" onclick="showLogin('register')">Neu hier?</button>
                 </div>
 
-                <!-- Zusätzliche Felder für die ERSTE Registrierung -->
-                <div id="register-fields" style="display: none; margin-top: 15px; margin-bottom: 15px; text-align: left;">
-                    <p style="color: #1565C0; font-size: 13px; margin-bottom: 10px; font-weight: bold; text-align: center;">
-                        E-Mail noch unbekannt. Bitte einmalig Daten ausfüllen:
+                <input type="email" id="email" placeholder="E-Mail-Adresse" style="${inputStyle}">
+                <input type="password" id="kennung" placeholder="${isReg ? 'Neue 4-stellige PIN wählen' : 'Deine 4-stellige PIN'}" maxlength="4" style="${inputStyle}">
+
+                <!-- Zusätzliche Felder nur bei Erstregistrierung -->
+                <div id="register-fields" style="display: ${isReg ? 'block' : 'none'}; margin-top: 10px; text-align: left;">
+                    <p style="color: #1565C0; font-size: 13px; margin-bottom: 8px; font-weight: bold; text-align: center;">
+                        Bitte einmalig deine Daten ausfüllen:
                     </p>
                     <input type="text" id="vorname" placeholder="Vorname" style="${inputStyle}">
                     <input type="text" id="nachname" placeholder="Nachname" style="${inputStyle}">
@@ -123,12 +131,12 @@
                     <input type="date" id="geburtsdatum" placeholder="Geburtsdatum" style="${inputStyle}">
                 </div>
                 
-                <button id="login-btn" onclick="performLogin()" style="${btnStyle}">Anmelden</button>
+                <button id="login-btn" onclick="performLogin('${modus}')" style="${btnStyle}">${isReg ? 'Jetzt registrieren & anmelden' : 'Anmelden'}</button>
             `;
         }
 
-        // Intelligente Login- / Registrierungs-Logik
-        async function performLogin() {
+        // Login- / Registrierungs-Logik trennt sauber nach Modus
+        async function performLogin(modus) {
             const emailInput = document.getElementById('email').value.trim().toLowerCase();
             const pinInput = document.getElementById('kennung').value.trim();
 
@@ -137,11 +145,13 @@
                 return;
             }
 
-            const registerFields = document.getElementById('register-fields');
-            const istRegistrierungSichtbar = registerFields && registerFields.style.display === 'block';
+            if (modus === 'login') {
+                // Normaler Login
+                if (pinInput === "") {
+                    alert("Bitte gib deine 4-stellige PIN ein.");
+                    return;
+                }
 
-            if (!istRegistrierungSichtbar) {
-                // Schritt A: Prüfen, ob die E-Mail schon in der Datenbank existiert
                 const { data, error } = await _supabase
                     .from('mitglieder') 
                     .select('*')
@@ -149,37 +159,28 @@
                     .maybeSingle();
 
                 if (error || !data) {
-                    // E-Mail existiert noch nicht -> Erst-Registrierung öffnen!
-                    if (registerFields) {
-                        registerFields.style.display = 'block';
-                        document.getElementById('login-btn').innerText = "Registrieren & Anmelden";
-                        alert("E-Mail-Adresse nicht gefunden. Bitte fülle einmalig deine Daten und deine 4-stellige PIN aus.");
-                    }
-                } else {
-                    // E-Mail existiert bereits -> PIN überprüfen!
-                    if (pinInput === "") {
-                        alert("Bitte gib deine 4-stellige PIN ein.");
-                        return;
-                    }
-
-                    if (data.kennung !== pinInput) {
-                        alert("Falsche PIN! Bitte versuche es erneut.");
-                        return;
-                    }
-
-                    // Erfolgreich eingeloggt! Daten lokal cachen
-                    localStorage.setItem('userKennung', String(data.kennung));
-                    localStorage.setItem('userEmailCache', String(emailInput));
-                    localStorage.setItem('userVornameCache', String(data.vorname || ''));
-                    
-                    sessionStorage.setItem('userEmail', emailInput);
-                    sessionStorage.setItem('userVorname', String(data.vorname || ''));
-                    sessionStorage.setItem('angemeldet', 'ja');
-                    
-                    showDashboard();
+                    alert("Diese E-Mail-Adresse wurde nicht gefunden. Bist du neu hier? Bitte wähle oben den Reiter 'Neu hier?'.");
+                    return;
                 }
+
+                if (String(data.kennung) !== String(pinInput)) {
+                    alert("Falsche PIN! Bitte versuche es erneut.");
+                    return;
+                }
+
+                // Erfolgreich eingeloggt
+                localStorage.setItem('userKennung', String(data.kennung));
+                localStorage.setItem('userEmailCache', String(emailInput));
+                localStorage.setItem('userVornameCache', String(data.vorname || ''));
+                
+                sessionStorage.setItem('userEmail', emailInput);
+                sessionStorage.setItem('userVorname', String(data.vorname || ''));
+                sessionStorage.setItem('angemeldet', 'ja');
+                
+                showDashboard();
+
             } else {
-                // Schritt B: Die Erst-Registrierung abschicken und in Supabase speichern
+                // Erstregistrierung speichern
                 const vornameInput = document.getElementById('vorname').value.trim();
                 const nachnameInput = document.getElementById('nachname').value.trim();
                 const strasseInput = document.getElementById('strasse').value.trim();
@@ -189,11 +190,23 @@
                 const geburtsdatumInput = document.getElementById('geburtsdatum').value.trim();
 
                 if (vornameInput === "" || nachnameInput === "" || pinInput.length < 4) {
-                    alert("Bitte fülle mindestens Vorname, Nachname und eine 4-stellige PIN aus.");
+                    alert("Bitte fülle Vorname, Nachname und eine 4-stellige PIN aus.");
                     return;
                 }
 
-                // In die Supabase-Tabelle 'mitglieder' einfügen
+                // Prüfen, ob E-Mail schon existiert
+                const { data: existingData } = await _supabase
+                    .from('mitglieder')
+                    .select('email')
+                    .eq('email', emailInput)
+                    .maybeSingle();
+
+                if (existingData) {
+                    alert("Diese E-Mail-Adresse ist bereits registriert. Bitte nutze den Reiter 'Anmelden'.");
+                    return;
+                }
+
+                // In Supabase eintragen
                 const { error: insertError } = await _supabase
                     .from('mitglieder')
                     .insert([{ 
@@ -213,7 +226,7 @@
                     return;
                 }
 
-                // Erfolgreich registriert und eingeloggt
+                // Erfolgreich registriert & eingeloggt
                 localStorage.setItem('userKennung', pinInput);
                 localStorage.setItem('userEmailCache', emailInput);
                 localStorage.setItem('userVornameCache', vornameInput);
@@ -262,7 +275,7 @@
                     if (error || !data) {
                         localStorage.clear();
                         sessionStorage.clear();
-                        showLogin();
+                        showLogin('login');
                     } else {
                         sessionStorage.setItem('userEmail', data.email);
                         sessionStorage.setItem('userVorname', data.vorname || '');
@@ -270,10 +283,10 @@
                         showDashboard();
                     }
                 } catch (e) {
-                    showLogin();
+                    showLogin('login');
                 }
             } else {
-                showLogin();
+                showLogin('login');
             }
         };
     </script>
