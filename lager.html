@@ -253,8 +253,6 @@
                 const karte = document.createElement('div');
                 let katKlasse = r.kategorie ? r.kategorie.toLowerCase() : 'sonstiges';
                 karte.className = `lager-karte ${katKlasse}`;
-                
-                // Klick auf die Karte öffnet das Bearbeiten-Fenster (mit String-ID für absolute Sicherheit)
                 karte.onclick = () => oeffneBearbeitenModal(String(r.id));
 
                 let zusatzInfos = "";
@@ -323,7 +321,7 @@
                         <option value="minus">➖ Bestand abziehen (Verbrauch / Sud)</option>
                     </select>
 
-                    <label class="label-style">Menge:</label>
+                    <label class="label-style" id="mengen-label">Menge:</label>
                     <input type="number" step="0.1" id="v-menge" placeholder="z.B. 5" class="input-style">
                 </div>
 
@@ -427,8 +425,13 @@
 
                 const r = alleRohstoffe.find(item => String(item.id) === String(wahl));
                 if (r) {
-                    let preisAnzeige = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? Number(r.preis).toFixed(2) + ' €/' + (r.einheit||'') : 'Kein Preis';
-                    document.getElementById('aktueller-bestand-anzeige').innerText = `Ausgewählt: ${r.bezeichnung} | Bestand: ${r.bestand} ${r.einheit || ''} (${preisAnzeige})`;
+                    let einheit = r.einheit || '';
+                    let preisAnzeige = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? Number(r.preis).toFixed(2) + ' €/' + einheit : 'Kein Preis';
+                    
+                    document.getElementById('aktueller-bestand-anzeige').innerText = `Ausgewählt: ${r.bezeichnung} | Bestand: ${r.bestand} ${einheit} (${preisAnzeige})`;
+                    
+                    // Dynamisches Label mit exakter Einheit (z.B. "Menge in kg" oder "Menge in g")
+                    document.getElementById('mengen-label').innerText = `Menge (in ${einheit}):`;
                 }
             }
         }
@@ -506,7 +509,8 @@
                     return;
                 }
 
-                let infoText = `Bestand aktualisiert! Neuer Bestand: ${neuerBestand} ${r.einheit || ''}`;
+                let einheit = r.einheit || '';
+                let infoText = `Bestand aktualisiert! Neuer Bestand: ${neuerBestand} ${einheit}`;
                 if (aktion === 'minus' && r.preis) {
                     let kosten = menge * parseFloat(r.preis);
                     infoText += `\n\n(Entnommene Menge kostet ca. ${kosten.toFixed(2)} € für diesen Sud)`;
@@ -519,7 +523,7 @@
             zeigeLagerAnsicht();
         }
 
-        // --- BEARBEITEN / LÖSCHEN MODAL (Bei Klick auf Karte) ---
+        // --- BEARBEITEN / LÖSCHEN MODAL ---
         function oeffneBearbeitenModal(id) {
             const r = alleRohstoffe.find(item => String(item.id) === String(id));
             if (!r) return;
