@@ -30,7 +30,7 @@
             width: 100%;
             max-width: 450px;
             box-sizing: border-box;
-            position: relative; /* Wichtig für den Zurück-Button */
+            position: relative;
             min-height: 90vh;
         }
         html, body {
@@ -233,9 +233,7 @@
                 window.location.href = 'index.html';
                 return;
             }
-            // Zuerst Grundgerüst aufbauen, damit das DOM bereit ist
             zeigeLagerAnsicht();
-            // Dann Daten laden und einfügen
             await ladeLagerAusDatenbank();
             baueRohstoffListe();
         };
@@ -273,7 +271,7 @@
                 <div id="rohstoff-liste"></div>
 
                 <!-- Versions-Prüfung ganz unten -->
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.3</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.4</div>
             `;
             
             baueRohstoffListe(); 
@@ -282,7 +280,6 @@
         function setzeFilter(kategorie) {
             aktiverFilter = kategorie;
             
-            // Buttons visuell umschalten
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 if (btn.innerText.toLowerCase() === kategorie.toLowerCase() || (kategorie === 'Alle' && btn.innerText === 'Alle')) {
                     btn.classList.add('aktiv');
@@ -303,13 +300,11 @@
                 ? alleRohstoffe 
                 : alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktiverFilter.toLowerCase());
 
-            // HIER WAR DER FEHLER: gefilter statt gefiltert
             if (gefiltert.length === 0) {
                 container.innerHTML = `<p style="color: #666; font-size: 14px; margin: 20px 0; text-align: center;">Keine Rohstoffe im Lager gefunden.</p>`;
                 return;
             }
 
-            // HIER WAR DER FEHLER: gefilter statt gefiltert
             gefiltert.forEach(r => {
                 const karte = document.createElement('div');
                 let katKlasse = r.kategorie ? r.kategorie.toLowerCase() : 'sonstiges';
@@ -561,6 +556,51 @@
             await ladeLagerAusDatenbank();
             zeigeLagerAnsicht();
             oeffneVerwaltenModalMitAuswahl(r.id);
+        }
+
+        async function speichereNeuenRohstoff() {
+            const kat = document.getElementById('v-kategorie').value;
+            const bezeichnung = document.getElementById('neu-bezeichnung').value.trim();
+            const bestand = parseFloat(document.getElementById('neu-bestand').value) || 0;
+            const einheit = document.getElementById('neu-einheit').value;
+            const preisInput = document.getElementById('neu-preis').value.trim();
+            const preis = preisInput !== "" ? parseFloat(preisInput) : null;
+
+            if (bezeichnung === "") {
+                alert("Bitte gib eine Bezeichnung ein.");
+                return;
+            }
+
+            const doppelt = alleRohstoffe.find(r => r.kategorie.toLowerCase() === kat.toLowerCase() && r.bezeichnung.toLowerCase() === bezeichnung.toLowerCase());
+            if (doppelt) {
+                alert(`Den Rohstoff "${bezeichnung}" gibt es in der Kategorie "${kat}" bereits! Bitte wähle ihn im Dropdown aus.`);
+                return;
+            }
+
+            let datenObjekt = { kategorie: kat, bezeichnung, bestand, einheit, preis };
+
+            if (kat === 'Malz') {
+                datenObjekt.farbe_ebc = parseFloat(document.getElementById('neu-ebc').value) || null;
+                datenObjekt.max_gabe_prozent = parseFloat(document.getElementById('neu-maxgabe').value) || null;
+            } else if (kat === 'Hopfen') {
+                datenObjekt.alpha_saeure = parseFloat(document.getElementById('neu-alpha').value) || null;
+            } else if (kat === 'Hefe') {
+                datenObjekt.gaertemperatur = document.getElementById('neu-temp').value.trim() || null;
+                datenObjekt.vergaerungsgrad = document.getElementById('neu-evg').value.trim() || null;
+            } else {
+                datenObjekt.notiz = document.getElementById('neu-notiz') ? document.getElementById('neu-notiz').value.trim() : null;
+            }
+
+            const { error } = await _supabase.from('lager').insert([datenObjekt]);
+            if (error) {
+                alert("Fehler beim Speichern: " + error.message);
+                return;
+            }
+
+            alert("Neuer Rohstoff erfolgreich angelegt!");
+            await ladeLagerAusDatenbank();
+            zeigeLagerAnsicht();
+            oeffneVerwaltenModal();
         }
 
         // --- BEARBEITEN MASKE ---
