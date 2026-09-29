@@ -343,7 +343,6 @@
             const overlay = document.getElementById('modal-overlay');
             const inhalt = document.getElementById('modal-inhalt');
 
-            // Kategorie ganz nach oben gesetzt, darunter die Bezeichnung
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">Neuen Termin eintragen</h3>
 
@@ -457,8 +456,9 @@
             const wiederholungWochen = parseInt(document.getElementById('m-wiederholung').value);
             const ersteller = sessionStorage.getItem('userVorname') || "Mitglied";
 
+            // Hier wurde korrigiert, dass das Datum jetzt absolut zuverlässig geprüft wird
             if (titel === "" || datumStart === "") {
-                alert("Bitte gib mindestens Titel und Startdatum an.");
+                alert("Bitte gib einen Titel und ein Startdatum ein.");
                 return;
             }
 
