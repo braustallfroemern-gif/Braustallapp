@@ -71,17 +71,16 @@
             }
         });
 
-        // Supabase initialisieren (Mit deinen korrekten Schlüsseln!)
+        // Supabase initialisieren
         const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Dashboard mit neuem blauen Theme und 3 Menüpunkten
+        // Dashboard
         async function showDashboard() {
             const vorname = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "";
             const begruessung = vorname ? `Willkommen ${vorname}` : "Willkommen";
 
-            // CSS für die blauen Buttons direkt im Script definiert (kannst du später in eine CSS-Datei auslagern)
             const btnStylePrimary = "background-color: #1976D2; color: white; border: none; padding: 14px; margin: 6px 0; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);";
             const btnStyleSecondary = "background-color: #455A64; color: white; border: none; padding: 12px; margin: 30px 0 10px 0; width: 100%; border-radius: 8px; font-size: 15px; cursor: pointer;";
 
@@ -96,32 +95,45 @@
             `;
         }
 
-        // Login-Formular in Blau
+        // Login-Formular mit automatischer Erkennung (Erst- vs. Zweitlogin)
         function showLogin() {
             const inputStyle = "width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #90CAF9; border-radius: 8px; box-sizing: border-box; font-size: 16px;";
             const btnStyle = "background-color: #1976D2; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 15px; cursor: pointer;";
 
             document.getElementById('app').innerHTML = `
                 <h2 style="color: #1565C0; margin-bottom: 20px;">Braustall Login</h2>
-                <input type="email" id="email" placeholder="Deine E-Mail Adresse" style="${inputStyle}">
+                <input type="email" id="email" placeholder="Deine E-Mail-Adresse" style="${inputStyle}">
                 
+                <!-- PIN-Feld (wird beim normalen Login und bei der Registrierung gebraucht) -->
+                <div id="pin-container" style="margin-top: 8px;">
+                    <input type="password" id="kennung" placeholder="4-stellige PIN (z.B. 1234)" maxlength="4" style="${inputStyle}">
+                </div>
+
+                <!-- Zusätzliche Felder für die ERSTE Registrierung -->
                 <div id="register-fields" style="display: none; margin-top: 15px; margin-bottom: 15px; text-align: left;">
-                    <p style="color: #1565C0; font-size: 14px; margin-bottom: 10px; font-weight: bold; text-align: center;">
-                        E-Mail nicht gefunden. Bitte Namen eingeben:
+                    <p style="color: #1565C0; font-size: 13px; margin-bottom: 10px; font-weight: bold; text-align: center;">
+                        E-Mail noch unbekannt. Bitte einmalig Daten ausfüllen:
                     </p>
                     <input type="text" id="vorname" placeholder="Vorname" style="${inputStyle}">
                     <input type="text" id="nachname" placeholder="Nachname" style="${inputStyle}">
+                    <input type="text" id="strasse" placeholder="Straße" style="${inputStyle}">
+                    <input type="text" id="hausnummer" placeholder="Hausnummer" style="${inputStyle}">
+                    <input type="text" id="plz" placeholder="PLZ" style="${inputStyle}">
+                    <input type="text" id="ort" placeholder="Ort" style="${inputStyle}">
+                    <input type="date" id="geburtsdatum" placeholder="Geburtsdatum" style="${inputStyle}">
                 </div>
                 
                 <button id="login-btn" onclick="performLogin()" style="${btnStyle}">Anmelden</button>
             `;
         }
 
-        // Login Logik (ohne Offline-Fallback)
+        // Intelligente Login- / Registrierungs-Logik
         async function performLogin() {
             const emailInput = document.getElementById('email').value.trim().toLowerCase();
+            const pinInput = document.getElementById('kennung').value.trim();
+
             if (emailInput === "") {
-                alert("Bitte E-Mail eingeben");
+                alert("Bitte gib deine E-Mail-Adresse ein.");
                 return;
             }
 
@@ -129,23 +141,33 @@
             const istRegistrierungSichtbar = registerFields && registerFields.style.display === 'block';
 
             if (!istRegistrierungSichtbar) {
+                // Schritt A: Prüfen, ob die E-Mail schon in der Datenbank existiert
                 const { data, error } = await _supabase
                     .from('mitglieder') 
-                    .select('email, kennung, vorname')
+                    .select('*')
                     .eq('email', emailInput)
                     .maybeSingle();
 
                 if (error || !data) {
+                    // E-Mail existiert noch nicht -> Erst-Registrierung öffnen!
                     if (registerFields) {
                         registerFields.style.display = 'block';
                         document.getElementById('login-btn').innerText = "Registrieren & Anmelden";
+                        alert("E-Mail-Adresse nicht gefunden. Bitte fülle einmalig deine Daten und deine 4-stellige PIN aus.");
                     }
                 } else {
-                    if (data.kennung === "0000") {
-                        alert("Dieses Konto wurde zurückgesetzt. Bitte wende dich an den Admin.");
+                    // E-Mail existiert bereits -> PIN überprüfen!
+                    if (pinInput === "") {
+                        alert("Bitte gib deine 4-stellige PIN ein.");
                         return;
                     }
 
+                    if (data.kennung !== pinInput) {
+                        alert("Falsche PIN! Bitte versuche es erneut.");
+                        return;
+                    }
+
+                    // Erfolgreich eingeloggt! Daten lokal cachen
                     localStorage.setItem('userKennung', String(data.kennung));
                     localStorage.setItem('userEmailCache', String(emailInput));
                     localStorage.setItem('userVornameCache', String(data.vorname || ''));
@@ -153,26 +175,37 @@
                     sessionStorage.setItem('userEmail', emailInput);
                     sessionStorage.setItem('userVorname', String(data.vorname || ''));
                     sessionStorage.setItem('angemeldet', 'ja');
+                    
                     showDashboard();
                 }
             } else {
+                // Schritt B: Die Erst-Registrierung abschicken und in Supabase speichern
                 const vornameInput = document.getElementById('vorname').value.trim();
                 const nachnameInput = document.getElementById('nachname').value.trim();
+                const strasseInput = document.getElementById('strasse').value.trim();
+                const hausnummerInput = document.getElementById('hausnummer').value.trim();
+                const plzInput = document.getElementById('plz').value.trim();
+                const ortInput = document.getElementById('ort').value.trim();
+                const geburtsdatumInput = document.getElementById('geburtsdatum').value.trim();
 
-                if (vornameInput === "" || nachnameInput === "") {
-                    alert("Bitte trage deinen Vornamen und Nachnamen ein.");
+                if (vornameInput === "" || nachnameInput === "" || pinInput.length < 4) {
+                    alert("Bitte fülle mindestens Vorname, Nachname und eine 4-stellige PIN aus.");
                     return;
                 }
 
-                const neueKennung = String(Date.now()).slice(-8); 
-
+                // In die Supabase-Tabelle 'mitglieder' einfügen
                 const { error: insertError } = await _supabase
                     .from('mitglieder')
                     .insert([{ 
                         email: emailInput, 
                         vorname: vornameInput, 
                         nachname: nachnameInput, 
-                        kennung: neueKennung
+                        strasse: strasseInput,
+                        hausnummer: hausnummerInput,
+                        plz: plzInput,
+                        ort: ortInput,
+                        geburtsdatum: geburtsdatumInput,
+                        kennung: pinInput
                     }]);
 
                 if (insertError) {
@@ -180,7 +213,8 @@
                     return;
                 }
 
-                localStorage.setItem('userKennung', neueKennung);
+                // Erfolgreich registriert und eingeloggt
+                localStorage.setItem('userKennung', pinInput);
                 localStorage.setItem('userEmailCache', emailInput);
                 localStorage.setItem('userVornameCache', vornameInput);
                 
@@ -205,33 +239,31 @@
                     `;
                 }
             } catch (e) {
-                console.error("Fehler beim Zeichnen des Beenden-Fensters:", e);
+                console.error("Fehler:", e);
             }
 
             try { sessionStorage.clear(); } catch (e) {}
         }
 
-        // Beim Starten der Seite prüfen
+        // Beim Starten prüfen, ob der Nutzer auf diesem Gerät schon eingeloggt war
         window.onload = async function() {
             const gespeicherteKennung = localStorage.getItem('userKennung');
+            const gespeicherteEmail = localStorage.getItem('userEmailCache');
 
-            if (gespeicherteKennung) {
+            if (gespeicherteKennung && gespeicherteEmail) {
                 try {
                     const { data, error } = await _supabase
                         .from('mitglieder')
-                        .select('email, kennung, vorname')
+                        .select('*')
+                        .eq('email', gespeicherteEmail)
                         .eq('kennung', gespeicherteKennung)
                         .maybeSingle();
 
-                    if (error || !data || data.kennung === "0000") {
+                    if (error || !data) {
                         localStorage.clear();
                         sessionStorage.clear();
                         showLogin();
                     } else {
-                        localStorage.setItem('userEmailCache', data.email);
-                        localStorage.setItem('userKennung', data.kennung);
-                        localStorage.setItem('userVornameCache', data.vorname || '');
-                        
                         sessionStorage.setItem('userEmail', data.email);
                         sessionStorage.setItem('userVorname', data.vorname || '');
                         sessionStorage.setItem('angemeldet', 'ja');
