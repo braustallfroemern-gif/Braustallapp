@@ -47,7 +47,7 @@
     <div id="app">Lade...</div>
 
     <!-- Versions-Prüfung ganz unten -->
-    <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 20px;">Index Version 1.3</div>
+    <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 20px;">Index Version 1.4</div>
 
     <!-- HIER BEGINNT DEIN JAVASCRIPT-CODE -->
     <script>
@@ -83,7 +83,7 @@
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Dashboard (mit farblich hervorgehobenen Icons vor den Buttons)
+        // Dashboard (mit angepasstem Personen-Symbol)
         async function showDashboard() {
             const vorname = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "";
             const begruessung = vorname ? `Willkommen ${vorname}` : "Willkommen";
@@ -101,7 +101,7 @@
                 <button style="${btnStylePrimary}" onclick="location.href='kalender.html'"><span style="${iconStyle}">📅</span> Kalender</button>
                 <button style="${btnStylePrimary}" onclick="location.href='rezepte.html'"><span style="${iconStyle}">📖</span> Rezepte</button>
                 <button style="${btnStylePrimary}" onclick="location.href='brautag.html'"><span style="${iconStyle}">🍲</span> Brautag</button>
-                <button style="${btnStylePrimary}" onclick="location.href='persoenlicheDaten.html'"><span style="${iconStyle}">👤</span> Persönliche Daten</button>
+                <button style="${btnStylePrimary}" onclick="location.href='persoenlicheDaten.html'"><span style="${iconStyle}">🧑</span> Persönliche Daten</button>
                 
                 <button style="${btnStyleSecondary}" onclick="beendeProgramm()">❌ Programm beenden</button>
             `;
@@ -310,7 +310,7 @@
                         showDashboard();
                     }
                 } catch (e) {
-                    showLogin('login4');
+                    showLogin('login');
                 }
             } else {
                 showLogin('login');
