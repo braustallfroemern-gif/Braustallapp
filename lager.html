@@ -29,14 +29,15 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 450px;
-            text-align: center;
             box-sizing: border-box;
             position: relative;
+            min-height: 90vh;
         }
         html, body {
             overscroll-behavior-y: none; 
         }
-        /* Kleiner Zurück-Button oben links */
+
+        /* Dezent erreichbarer Zurück-Button in der oberen linken Ecke */
         .btn-back-corner {
             position: absolute;
             top: 15px;
@@ -49,25 +50,36 @@
             font-size: 13px;
             font-weight: bold;
             cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
+
+        .page-title {
+            color: #1565C0;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            font-size: 22px;
+            text-align: center;
+        }
+
         .btn-primary {
             background-color: #1976D2;
             color: white;
             border: none;
-            padding: 12px;
-            margin: 15px 0 10px 0;
+            padding: 14px;
+            margin: 0 0 15px 0;
             width: 100%;
             border-radius: 8px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
         }
         .btn-edit {
             background-color: #F57C00;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 12px;
             width: 100%;
             border-radius: 8px;
             font-size: 15px;
@@ -79,7 +91,7 @@
             background-color: #D32F2F;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 12px;
             width: 100%;
             border-radius: 8px;
             font-size: 15px;
@@ -105,11 +117,11 @@
             margin-top: 6px;
         }
 
-        /* Gleichmäßig verteilte Filter-Tabs */
+        /* Gleichmäßig verteilte Filter-Buttons */
         .filter-container {
             display: flex;
-            gap: 4px;
-            margin-bottom: 15px;
+            gap: 5px;
+            margin-bottom: 20px;
             width: 100%;
         }
         .filter-btn {
@@ -117,19 +129,18 @@
             background-color: #E3F2FD;
             color: #1976D2;
             border: 1px solid #90CAF9;
-            padding: 8px 4px;
+            padding: 10px 2px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
             cursor: pointer;
             text-align: center;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
         .filter-btn.aktiv {
             background-color: #1976D2;
             color: white;
+            border-color: #1565C0;
         }
 
         /* Lager-Karten */
@@ -176,7 +187,7 @@
             gap: 10px;
         }
 
-        /* Modal */
+        /* MODAL */
         #modal-overlay {
             display: none;
             position: fixed;
@@ -214,7 +225,7 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let alleRohstoffe = [];
-        let aktiverFilter = 'Alle'; // Standardmäßig Gesamtübersicht beim Laden
+        let aktiverFilter = 'Alle';
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -240,14 +251,12 @@
             const app = document.getElementById('app');
 
             app.innerHTML = `
-                <!-- Kleiner Zurück-Button oben links -->
                 <button class="btn-back-corner" onclick="location.href='index.html'">🔙 Zurück</button>
 
-                <h2 style="color: #1565C0; margin-top: 10px; margin-bottom: 15px;">📦 Braustall Lager</h2>
+                <h2 class="page-title">📦 Braustall Lager</h2>
                 
                 <button class="btn-primary" onclick="oeffneVerwaltenModal()">📦 Lager verwalten</button>
 
-                <!-- Gleichmäßig verteilte Filter-Leiste -->
                 <div class="filter-container">
                     <button class="filter-btn ${aktiverFilter === 'Alle' ? 'aktiv' : ''}" onclick="setzeFilter('Alle')">Alle</button>
                     <button class="filter-btn ${aktiverFilter === 'Malz' ? 'aktiv' : ''}" onclick="setzeFilter('Malz')">Malz</button>
@@ -256,7 +265,6 @@
                     <button class="filter-btn ${aktiverFilter === 'Sonstiges' ? 'aktiv' : ''}" onclick="setzeFilter('Sonstiges')">Sonstiges</button>
                 </div>
 
-                <!-- Liste der Rohstoffe -->
                 <div id="rohstoff-liste"></div>
             `;
 
@@ -277,7 +285,7 @@
                 : alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktiverFilter.toLowerCase());
 
             if (gefilter.length === 0) {
-                container.innerHTML = `<p style="color: #666; font-size: 14px; margin: 20px 0;">Keine Rohstoffe im Lager gefunden.</p>`;
+                container.innerHTML = `<p style="color: #666; font-size: 14px; margin: 20px 0; text-align: center;">Keine Rohstoffe im Lager gefunden.</p>`;
                 return;
             }
 
@@ -355,7 +363,7 @@
                     <!-- Wird dynamisch gefüllt -->
                 </select>
 
-                <!-- Bereich für Bestand buchen (Zugang / Verbrauch) -->
+                <!-- Bereich für Bestand buchen -->
                 <div id="buchungs-bereich">
                     <p id="aktueller-bestand-anzeige" style="font-size: 13px; color: #333; margin: 5px 0 10px 0; font-weight: bold;"></p>
                     
@@ -370,7 +378,6 @@
 
                     <button class="btn-primary" onclick="führeBestandsBuchungAus()">Bestand buchen</button>
                     
-                    <!-- Buttons zum Bearbeiten oder Löschen des ausgewählten Rohstoffs -->
                     <button class="btn-edit" onclick="oeffneBearbeitenMaskeAuswahl()">✏️ Rohstoff bearbeiten</button>
                     <button class="btn-delete" onclick="loescheAusgewaehltenRohstoff()">🗑️ Rohstoff löschen</button>
                 </div>
@@ -404,7 +411,7 @@
                     <button class="btn-primary" onclick="speichereNeuenRohstoff()">Neuen Rohstoff anlegen</button>
                 </div>
 
-                <button class="btn-secondary" onclick="schliesseModal()" style="margin-top: 15px; width: 100%;">Schließen</button>
+                <button class="btn-secondary" onclick="schliesseModal()" style="margin-top: 15px; width: 100%; background-color: #455A64; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">Schließen</button>
             `;
             
             overlay.style.display = 'flex';
@@ -525,6 +532,11 @@
                 return;
             }
 
+            // Daten im Hintergrund aktualisieren, Ansicht neu aufbauen, aber Fenster offen lassen!
+            await ladeLagerAusDatenbank();
+            zeigeLagerAnsicht();
+            oeffneVerwaltenModalMitAuswahl(r.id);
+
             let einheit = r.einheit || '';
             let infoText = `Bestand aktualisiert! Neuer Bestand: ${neuerBestand} ${einheit}`;
             if (aktion === 'minus' && r.preis) {
@@ -532,10 +544,6 @@
                 infoText += `\n\n(Entnommene Menge kostet ca. ${kosten.toFixed(2)} €)`;
             }
             alert(infoText);
-
-            schliesseModal();
-            await ladeLagerAusDatenbank();
-            zeigeLagerAnsicht();
         }
 
         async function speichereNeuenRohstoff() {
@@ -576,10 +584,11 @@
                 return;
             }
 
-            alert("Neuer Rohstoff erfolgreich angelegt!");
-            schliesseModal();
+            // Hintergrund aktualisieren und Fenster offen lassen für den nächsten Rohstoff
             await ladeLagerAusDatenbank();
             zeigeLagerAnsicht();
+            oeffneVerwaltenModal();
+            alert("Neuer Rohstoff erfolgreich angelegt!");
         }
 
         // --- BEARBEITEN MASKE ---
@@ -647,7 +656,7 @@
                 ${zusatzHtml}
 
                 <button class="btn-primary" onclick="speichereBearbeitetenRohstoff('${r.id}', '${r.kategorie}')">Änderungen speichern</button>
-                <button class="btn-secondary" onclick="oeffneVerwaltenModalMitAuswahl('${r.id}')" style="margin-top: 8px; width: 100%;">🔙 Zurück</button>
+                <button class="btn-secondary" onclick="oeffneVerwaltenModalMitAuswahl('${r.id}')" style="margin-top: 8px; width: 100%; background-color: #455A64; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">🔙 Zurück</button>
             `;
         }
 
@@ -684,10 +693,11 @@
                 return;
             }
 
-            alert("Rohstoff aktualisiert!");
-            schliesseModal();
+            // Hintergrund aktualisieren, aber Fenster offen lassen für den nächsten Schritt
             await ladeLagerAusDatenbank();
             zeigeLagerAnsicht();
+            oeffneVerwaltenModalMitAuswahl(id);
+            alert("Rohstoff aktualisiert!");
         }
 
         async function loescheAusgewaehltenRohstoff() {
@@ -705,10 +715,10 @@
                 return;
             }
 
-            alert("Rohstoff gelöscht.");
-            schliesseModal();
             await ladeLagerAusDatenbank();
             zeigeLagerAnsicht();
+            oeffneVerwaltenModal();
+            alert("Rohstoff gelöscht.");
         }
 
         function schliesseModal() {
