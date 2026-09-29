@@ -240,7 +240,6 @@
             const container = document.getElementById('rohstoff-liste');
             container.innerHTML = "";
 
-            // Korrigierter Filter: Wenn 'Alle', nimm alle Rohstoffe. Ansonsten exakter Match nach Kategorie.
             const gefiltert = aktiverFilter === 'Alle' 
                 ? alleRohstoffe 
                 : alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktiverFilter.toLowerCase());
@@ -254,7 +253,9 @@
                 const karte = document.createElement('div');
                 let katKlasse = r.kategorie ? r.kategorie.toLowerCase() : 'sonstiges';
                 karte.className = `lager-karte ${katKlasse}`;
-                karte.onclick = () => oeffneBearbeitenModal(r.id);
+                
+                // Klick auf die Karte öffnet das Bearbeiten-Fenster (mit String-ID für absolute Sicherheit)
+                karte.onclick = () => oeffneBearbeitenModal(String(r.id));
 
                 let zusatzInfos = "";
                 let katLower = r.kategorie ? r.kategorie.toLowerCase() : '';
@@ -271,9 +272,10 @@
                     zusatzInfos += `<span>📝 ${r.notiz}</span>`;
                 }
 
-                // Preis-Anzeige auf der Karte
                 if (r.preis !== null && r.preis !== undefined && r.preis !== "") {
                     zusatzInfos += `<span>💶 ${Number(r.preis).toFixed(2)} € / ${r.einheit || 'ME'}</span>`;
+                } else {
+                    zusatzInfos += `<span style="color: #888;">💶 Kein Preis</span>`;
                 }
 
                 karte.innerHTML = `
@@ -311,7 +313,7 @@
                     <!-- Wird dynamisch gefüllt -->
                 </select>
 
-                <!-- Bereich für Bestand buchen (wenn bestehender Rohstoff gewählt) -->
+                <!-- Bereich für Bestand buchen -->
                 <div id="buchungs-bereich">
                     <p id="aktueller-bestand-anzeige" style="font-size: 13px; color: #333; margin: 5px 0 10px 0; font-weight: bold;"></p>
                     
@@ -325,7 +327,7 @@
                     <input type="number" step="0.1" id="v-menge" placeholder="z.B. 5" class="input-style">
                 </div>
 
-                <!-- Bereich für NEUEN Rohstoff anlegen (wenn [NEU] gewählt) -->
+                <!-- Bereich für NEUEN Rohstoff anlegen -->
                 <div id="neuer-rohstoff-bereich" style="display: none;">
                     <label class="label-style">Neue Bezeichnung:</label>
                     <input type="text" id="neu-bezeichnung" placeholder="z.B. Pilsner Malz" class="input-style">
@@ -425,7 +427,8 @@
 
                 const r = alleRohstoffe.find(item => String(item.id) === String(wahl));
                 if (r) {
-                    document.getElementById('aktueller-bestand-anzeige').innerText = `Ausgewählt: ${r.bezeichnung} | Bestand: ${r.bestand} ${r.einheit || ''} (${r.preis ? Number(r.preis).toFixed(2) + ' €/' + (r.einheit||'') : 'Kein Preis hinterlegt'})`;
+                    let preisAnzeige = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? Number(r.preis).toFixed(2) + ' €/' + (r.einheit||'') : 'Kein Preis';
+                    document.getElementById('aktueller-bestand-anzeige').innerText = `Ausgewählt: ${r.bezeichnung} | Bestand: ${r.bestand} ${r.einheit || ''} (${preisAnzeige})`;
                 }
             }
         }
@@ -516,8 +519,8 @@
             zeigeLagerAnsicht();
         }
 
-        // --- BEARBEITEN / LÖSCHEN MODAL ---
-        async function oeffneBearbeitenModal(id) {
+        // --- BEARBEITEN / LÖSCHEN MODAL (Bei Klick auf Karte) ---
+        function oeffneBearbeitenModal(id) {
             const r = alleRohstoffe.find(item => String(item.id) === String(id));
             if (!r) return;
 
@@ -530,14 +533,14 @@
             if (katLower === 'malz') {
                 zusatzHtml = `
                     <label class="label-style">Farbe (EBC):</label>
-                    <input type="number" id="edit-ebc" value="${r.farbe_ebc || ''}" class="input-style">
+                    <input type="number" id="edit-ebc" value="${r.farbe_ebc !== null && r.farbe_ebc !== undefined ? r.farbe_ebc : ''}" class="input-style">
                     <label class="label-style">Max. Gabe (%):</label>
-                    <input type="number" id="edit-maxgabe" value="${r.max_gabe_prozent || ''}" class="input-style">
+                    <input type="number" id="edit-maxgabe" value="${r.max_gabe_prozent !== null && r.max_gabe_prozent !== undefined ? r.max_gabe_prozent : ''}" class="input-style">
                 `;
             } else if (katLower === 'hopfen') {
                 zusatzHtml = `
                     <label class="label-style">Alpha-Säure (%):</label>
-                    <input type="number" step="0.1" id="edit-alpha" value="${r.alpha_saeure || ''}" class="input-style">
+                    <input type="number" step="0.1" id="edit-alpha" value="${r.alpha_saeure !== null && r.alpha_saeure !== undefined ? r.alpha_saeure : ''}" class="input-style">
                 `;
             } else if (katLower === 'hefe') {
                 zusatzHtml = `
@@ -574,7 +577,7 @@
                 </div>
 
                 <label class="label-style">Preis pro Einheit (€):</label>
-                <input type="number" step="0.01" id="edit-preis" value="${r.preis || ''}" class="input-style">
+                <input type="number" step="0.01" id="edit-preis" value="${r.preis !== null && r.preis !== undefined ? r.preis : ''}" class="input-style">
 
                 ${zusatzHtml}
 
@@ -589,7 +592,8 @@
             const bezeichnung = document.getElementById('edit-bezeichnung').value.trim();
             const bestand = parseFloat(document.getElementById('edit-bestand').value) || 0;
             const einheit = document.getElementById('edit-einheit').value.trim();
-            const preis = parseFloat(document.getElementById('edit-preis').value) || null;
+            const preisInput = document.getElementById('edit-preis').value.trim();
+            const preis = preisInput !== "" ? parseFloat(preisInput) : null;
 
             if (bezeichnung === "") {
                 alert("Bitte gib eine Bezeichnung ein.");
