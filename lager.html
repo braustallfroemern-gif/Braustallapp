@@ -233,8 +233,11 @@
                 window.location.href = 'index.html';
                 return;
             }
-            await ladeLagerAusDatenbank();
+            // Zuerst Grundgerüst aufbauen, damit Elemente im DOM existieren
             zeigeLagerAnsicht();
+            // Dann Daten aus Datenbank laden und Liste befüllen
+            await ladeLagerAusDatenbank();
+            baueRohstoffListe();
         };
 
         async function ladeLagerAusDatenbank() {
@@ -267,14 +270,12 @@
 
                 <div id="rohstoff-liste"></div>
             `;
-
-            baueRohstoffListe();
         }
 
         function setzeFilter(kategorie) {
             aktiverFilter = kategorie;
-            baueRohstoffListe();
-            // Aktualisiere auch die aktiven Klassen der Filter-Buttons ohne die ganze Ansicht neu zu laden
+            
+            // Aktive Klassen bei den Buttons umschalten
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 if (btn.innerText.toLowerCase() === kategorie.toLowerCase() || (kategorie === 'Alle' && btn.innerText === 'Alle')) {
                     btn.classList.add('aktiv');
@@ -282,6 +283,8 @@
                     btn.classList.remove('aktiv');
                 }
             });
+
+            baueRohstoffListe();
         }
 
         function baueRohstoffListe() {
@@ -704,7 +707,7 @@
                 return;
             }
 
-            // Aktualisiere die Daten im Hintergrund und springe EINMAL ZURÜCK ins Haupt-Auswahlfenster ("Lager verwalten")!
+            // Daten im Hintergrund aktualisieren und exakt eine Ebene zurück in das Haupt-Auswahlfenster springen!
             await ladeLagerAusDatenbank();
             baueRohstoffListe();
             oeffneVerwaltenModalMitAuswahl(id);
