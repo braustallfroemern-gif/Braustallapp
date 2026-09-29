@@ -149,7 +149,6 @@
                     <input type="text" id="ort" placeholder="Wohnort" style="${inputStyle}">
                     
                     <label style="${labelStyle}">Geburtsdatum:</label>
-                    <!-- Als einfaches Textfeld zum direkten Eintippen -->
                     <input type="text" id="geburtsdatum" placeholder="TT.MM.JJJJ" style="${inputStyle}">
                 </div>
                 
@@ -261,13 +260,13 @@
             }
         }
 
-        // Beenden-Funktion
+        // Beenden-Funktion (im einheitlichen Braustall-Blau)
         function beendeProgramm() {
             try {
                 const appBox = document.getElementById('app');
                 if (appBox) {
                     appBox.innerHTML = `
-                        <h2 style="color: #156500;">Auf Wiedersehen!</h2>
+                        <h2 style="color: #1565C0;">Auf Wiedersehen!</h2>
                         <p style="color: #1976D2; font-weight: bold; margin-top: 20px;">Das Programm wurde ordnungsgemäß beendet.</p>
                         <p style="color: #666; font-size: 14px; margin-top: 10px;">Deine Sitzung wurde sicher geschlossen.</p>
                         <p style="color: #999; font-size: 14px; margin-top: 20px;">Du kannst diesen Browser-Tab jetzt schließen.</p>
