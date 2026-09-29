@@ -31,33 +31,37 @@
             max-width: 450px;
             text-align: center;
             box-sizing: border-box;
+            position: relative;
         }
         html, body {
             overscroll-behavior-y: none; 
+        }
+        /* Kleiner Zurück-Button oben links */
+        .btn-back-corner {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background-color: #455A64;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
         }
         .btn-primary {
             background-color: #1976D2;
             color: white;
             border: none;
             padding: 12px;
-            margin: 6px 0;
+            margin: 15px 0 10px 0;
             width: 100%;
             border-radius: 8px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .btn-secondary {
-            background-color: #455A64;
-            color: white;
-            border: none;
-            padding: 10px;
-            margin: 15px 0 5px 0;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 15px;
-            cursor: pointer;
         }
         .btn-edit {
             background-color: #F57C00;
@@ -101,24 +105,27 @@
             margin-top: 6px;
         }
 
-        /* Filter-Tabs */
+        /* Gleichmäßig verteilte Filter-Tabs */
         .filter-container {
             display: flex;
             gap: 4px;
-            overflow-x: auto;
             margin-bottom: 15px;
-            padding-bottom: 5px;
+            width: 100%;
         }
         .filter-btn {
+            flex: 1;
             background-color: #E3F2FD;
             color: #1976D2;
             border: 1px solid #90CAF9;
-            padding: 6px 10px;
+            padding: 8px 4px;
             border-radius: 6px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
+            text-align: center;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .filter-btn.aktiv {
             background-color: #1976D2;
@@ -207,7 +214,7 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let alleRohstoffe = [];
-        let aktiverFilter = 'Alle';
+        let aktiverFilter = 'Alle'; // Standardmäßig Gesamtübersicht beim Laden
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -233,12 +240,15 @@
             const app = document.getElementById('app');
 
             app.innerHTML = `
-                <h2 style="color: #1565C0; margin-bottom: 10px;">📦 Braustall Lager</h2>
+                <!-- Kleiner Zurück-Button oben links -->
+                <button class="btn-back-corner" onclick="location.href='index.html'">🔙 Zurück</button>
+
+                <h2 style="color: #1565C0; margin-top: 10px; margin-bottom: 15px;">📦 Braustall Lager</h2>
                 
                 <button class="btn-primary" onclick="oeffneVerwaltenModal()">📦 Lager verwalten</button>
 
-                <!-- Filter-Leiste -->
-                <div class="filter-container" style="margin-top: 15px;">
+                <!-- Gleichmäßig verteilte Filter-Leiste -->
+                <div class="filter-container">
                     <button class="filter-btn ${aktiverFilter === 'Alle' ? 'aktiv' : ''}" onclick="setzeFilter('Alle')">Alle</button>
                     <button class="filter-btn ${aktiverFilter === 'Malz' ? 'aktiv' : ''}" onclick="setzeFilter('Malz')">Malz</button>
                     <button class="filter-btn ${aktiverFilter === 'Hopfen' ? 'aktiv' : ''}" onclick="setzeFilter('Hopfen')">Hopfen</button>
@@ -248,8 +258,6 @@
 
                 <!-- Liste der Rohstoffe -->
                 <div id="rohstoff-liste"></div>
-
-                <button class="btn-secondary" onclick="location.href='index.html'">🔙 Zurück zum Dashboard</button>
             `;
 
             baueRohstoffListe();
@@ -396,7 +404,7 @@
                     <button class="btn-primary" onclick="speichereNeuenRohstoff()">Neuen Rohstoff anlegen</button>
                 </div>
 
-                <button class="btn-secondary" onclick="schliesseModal()">Schließen</button>
+                <button class="btn-secondary" onclick="schliesseModal()" style="margin-top: 15px; width: 100%;">Schließen</button>
             `;
             
             overlay.style.display = 'flex';
@@ -574,7 +582,7 @@
             zeigeLagerAnsicht();
         }
 
-        // --- BEARBEITEN MASKE (Öffnet sich beim Klick auf "Rohstoff bearbeiten") ---
+        // --- BEARBEITEN MASKE ---
         function oeffneBearbeitenMaskeAuswahl() {
             const wahl = document.getElementById('v-bezeichnung').value;
             if (wahl === "NEU") return;
@@ -639,7 +647,7 @@
                 ${zusatzHtml}
 
                 <button class="btn-primary" onclick="speichereBearbeitetenRohstoff('${r.id}', '${r.kategorie}')">Änderungen speichern</button>
-                <button class="btn-secondary" onclick="oeffneVerwaltenModalMitAuswahl('${r.id}')">🔙 Zurück</button>
+                <button class="btn-secondary" onclick="oeffneVerwaltenModalMitAuswahl('${r.id}')" style="margin-top: 8px; width: 100%;">🔙 Zurück</button>
             `;
         }
 
