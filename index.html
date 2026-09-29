@@ -47,7 +47,7 @@
     <div id="app">Lade...</div>
 
     <!-- Versions-Prüfung ganz unten -->
-    <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 20px;">Index Version 1.1</div>
+    <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 20px;">Index Version 1.2</div>
 
     <!-- HIER BEGINNT DEIN JAVASCRIPT-CODE -->
     <script>
@@ -83,7 +83,7 @@
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Dashboard (mit dem Icon vor "Persönliche Daten")
+        // Dashboard (mit farblich hervorgehobenen Icons vor den Buttons)
         async function showDashboard() {
             const vorname = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "";
             const begruessung = vorname ? `Willkommen ${vorname}` : "Willkommen";
@@ -91,14 +91,17 @@
             const btnStylePrimary = "background-color: #1976D2; color: white; border: none; padding: 14px; margin: 6px 0; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);";
             const btnStyleSecondary = "background-color: #455A64; color: white; border: none; padding: 12px; margin: 30px 0 10px 0; width: 100%; border-radius: 8px; font-size: 15px; cursor: pointer;";
 
+            // Icons in einen Span gepackt und mit gelber Farbe versehen, damit sie auf dem blauen Button strahlen
+            const iconStyle = "color: #FFD54F; margin-right: 8px;";
+
             document.getElementById('app').innerHTML = `
                 <h2 style="color: #1565C0; margin-bottom: 20px;">${begruessung}</h2>
                 
-                <button style="${btnStylePrimary}" onclick="location.href='lager.html'">📦 Lager</button>
-                <button style="${btnStylePrimary}" onclick="location.href='kalender.html'">📅 Kalender</button>
-                <button style="${btnStylePrimary}" onclick="location.href='rezepte.html'">📖 Rezepte</button>
-                <button style="${btnStylePrimary}" onclick="location.href='brautag.html'">🍲 Brautag</button>
-                <button style="${btnStylePrimary}" onclick="location.href='persoenlicheDaten.html'">👤 Persönliche Daten</button>
+                <button style="${btnStylePrimary}" onclick="location.href='lager.html'"><span style="${iconStyle}">📦</span> Lager</button>
+                <button style="${btnStylePrimary}" onclick="location.href='kalender.html'"><span style="${iconStyle}">📅</span> Kalender</button>
+                <button style="${btnStylePrimary}" onclick="location.href='rezepte.html'"><span style="${iconStyle}">📖</span> Rezepte</button>
+                <button style="${btnStylePrimary}" onclick="location.href='brautag.html'"><span style="${iconStyle}">🍲</span> Brautag</button>
+                <button style="${btnStylePrimary}" onclick="location.href='persoenlicheDaten.html'"><span style="${iconStyle}">👤</span> Persönliche Daten</button>
                 
                 <button style="${btnStyleSecondary}" onclick="beendeProgramm()">❌ Programm beenden</button>
             `;
