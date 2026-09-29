@@ -271,7 +271,7 @@
                 <div id="rohstoff-liste"></div>
 
                 <!-- Versions-Prüfung ganz unten -->
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.4</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.5</div>
             `;
             
             baueRohstoffListe(); 
@@ -367,7 +367,7 @@
                 <h3 style="color: #1565C0; margin-top: 0;">📦 Lager verwalten</h3>
 
                 <label class="label-style">1. Kategorie wählen:</label>
-                <select id="v-kategorie" class="input-style" onchange="aktualisiereBezeichnungDropdown()">
+                <select id="v-kategorie" class="input-style" onchange="kategorieGewechseltImModal()">
                     <option value="Malz" ${vorbelegungsKat === 'Malz' ? 'selected' : ''}>Malz</option>
                     <option value="Hopfen" ${vorbelegungsKat === 'Hopfen' ? 'selected' : ''}>Hopfen</option>
                     <option value="Hefe" ${vorbelegungsKat === 'Hefe' ? 'selected' : ''}>Hefe</option>
@@ -439,6 +439,25 @@
             }
         }
 
+        // Wenn im Modal die Kategorie gewechselt wird, Dropdown aktualisieren UND Einheit automatisch anpassen
+        function kategorieGewechseltImModal() {
+            aktualisiereBezeichnungDropdown();
+             passeEinheitAutomatischAn();
+        }
+
+        // Automatische Einheiten-Zuweisung je nach Kategorie
+        function passeEinheitAutomatischAn() {
+            const kat = document.getElementById('v-kategorie').value;
+            const einheitSelect = document.getElementById('neu-einheit');
+            if (!einheitSelect) return;
+
+            if (kat === 'Malz') {
+                einheitSelect.value = 'kg';
+            } else if (kat === 'Hopfen' || kat === 'Hefe') {
+                einheitSelect.value = 'g';
+            }
+        }
+
         function aktualisiereBezeichnungDropdown() {
             const kat = document.getElementById('v-kategorie').value;
             const dropdown = document.getElementById('v-bezeichnung');
@@ -472,6 +491,9 @@
             if (wahl === "NEU") {
                 if (buchungsBereich) buchungsBereich.style.display = 'none';
                 if (neuerBereich) neuerBereich.style.display = 'block';
+
+                // Einheit direkt beim Umschalten auf "Neu" automatisch setzen
+                passeEinheitAutomatischAn();
 
                 const dynContainer = document.getElementById('neue-dynamische-felder');
                 let html = "";
