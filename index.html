@@ -100,7 +100,8 @@
 
         // Login-Formular mit Umschalter (Anmelden vs. Erstregistrierung)
         function showLogin(modus = 'login') {
-            const inputStyle = "width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #90CAF9; border-radius: 8px; box-sizing: border-box; font-size: 16px;";
+            const inputStyle = "width: 100%; padding: 12px; margin: 4px 0 10px 0; border: 1px solid #90CAF9; border-radius: 8px; box-sizing: border-box; font-size: 16px;";
+            const labelStyle = "display: block; text-align: left; font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;";
             const btnStyle = "background-color: #1976D2; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 15px; cursor: pointer;";
             
             const isReg = (modus === 'register');
@@ -117,31 +118,46 @@
                     <button style="${isReg ? tabActive : tabInative}" onclick="showLogin('register')">Neu hier?</button>
                 </div>
 
-                <input type="email" id="email" placeholder="E-Mail-Adresse eingeben" style="${inputStyle}">
-                <!-- type="text" gewählt, damit man die PIN im Klartext sieht -->
-                <input type="text" id="kennung" placeholder="${isReg ? 'Neue 4-stellige PIN wählen (z.B. 1234)' : 'Deine 4-stellige PIN eingeben'}" maxlength="4" style="${inputStyle}">
+                <label style="${labelStyle}">E-Mail-Adresse:</label>
+                <input type="email" id="email" placeholder="deine.email@verein.de" style="${inputStyle}">
+                
+                <label style="${labelStyle}">Deine 4-stellige PIN:</label>
+                <input type="text" id="kennung" placeholder="${isReg ? 'Neue PIN wählen (z.B. 1234)' : 'Deine PIN eingeben'}" maxlength="4" style="${inputStyle}">
 
-                <!-- Zusätzliche Felder nur bei Erstregistrierung mit klaren Beschriftungen -->
-                <div id="register-fields" style="display: ${isReg ? 'block' : 'none'}; margin-top: 10px; text-align: left;">
-                    <p style="color: #1565C0; font-size: 13px; margin-bottom: 8px; font-weight: bold; text-align: center;">
+                <!-- Zusätzliche Felder nur bei Erstregistrierung mit sichtbaren Überschriften -->
+                <div id="register-fields" style="display: ${isReg ? 'block' : 'none'}; margin-top: 5px; text-align: left;">
+                    <p style="color: #1565C0; font-size: 13px; margin-bottom: 12px; font-weight: bold; text-align: center; background-color: #E3F2FD; padding: 8px; border-radius: 6px;">
                         Bitte einmalig deine persönlichen Daten ausfüllen:
                     </p>
-                    <input type="text" id="vorname" placeholder="Vorname" style="${inputStyle}">
-                    <input type="text" id="nachname" placeholder="Nachname" style="${inputStyle}">
-                    <input type="text" id="strasse" placeholder="Straße" style="${inputStyle}">
-                    <input type="text" id="hausnummer" placeholder="Hausnummer" style="${inputStyle}">
-                    <input type="text" id="plz" placeholder="Postleitzahl (PLZ)" style="${inputStyle}">
-                    <input type="text" id="ort" placeholder="Ort" style="${inputStyle}">
                     
-                    <label style="font-size: 12px; color: #555; display: block; margin-top: 5px;">Geburtsdatum:</label>
-                    <input type="date" id="geburtsdatum" style="${inputStyle}">
+                    <label style="${labelStyle}">Vorname:</label>
+                    <input type="text" id="vorname" placeholder="Dein Vorname" style="${inputStyle}">
+                    
+                    <label style="${labelStyle}">Nachname:</label>
+                    <input type="text" id="nachname" placeholder="Dein Nachname" style="${inputStyle}">
+                    
+                    <label style="${labelStyle}">Straße:</label>
+                    <input type="text" id="strasse" placeholder="Straßenname" style="${inputStyle}">
+                    
+                    <label style="${labelStyle}">Hausnummer:</label>
+                    <input type="text" id="hausnummer" placeholder="Hausnummer" style="${inputStyle}">
+                    
+                    <label style="${labelStyle}">Postleitzahl (PLZ):</label>
+                    <input type="text" id="plz" placeholder="z.B. 58730" style="${inputStyle}">
+                    
+                    <label style="${labelStyle}">Ort:</label>
+                    <input type="text" id="ort" placeholder="Wohnort" style="${inputStyle}">
+                    
+                    <label style="${labelStyle}">Geburtsdatum:</label>
+                    <!-- Als einfaches Textfeld zum direkten Eintippen -->
+                    <input type="text" id="geburtsdatum" placeholder="TT.MM.JJJJ" style="${inputStyle}">
                 </div>
                 
                 <button id="login-btn" onclick="performLogin('${modus}')" style="${btnStyle}">${isReg ? 'Jetzt registrieren & anmelden' : 'Anmelden'}</button>
             `;
         }
 
-        // Login- / Registrierungs-Logik trennt sauber nach Modus
+        // Login- / Registrierungs-Logik
         async function performLogin(modus) {
             const emailInput = document.getElementById('email').value.trim().toLowerCase();
             const pinInput = document.getElementById('kennung').value.trim();
@@ -196,7 +212,7 @@
                 const geburtsdatumInput = document.getElementById('geburtsdatum').value.trim();
 
                 if (vornameInput === "" || nachnameInput === "" || pinInput.length < 4) {
-                    alert("Bitte fülle mindestens Vorname, Nachname und eine 4-stellige PIN aus.");
+                    alert("Bitte fülle Vorname, Nachname und eine 4-stellige PIN aus.");
                     return;
                 }
 
