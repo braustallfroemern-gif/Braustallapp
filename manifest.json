@@ -1,0 +1,15 @@
+{
+  "name": "Hofbrauerei Braustall",
+  "short_name": "Braustall",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#E3F2FD",
+  "theme_color": "#1976D2",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
