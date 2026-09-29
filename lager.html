@@ -273,8 +273,11 @@
                 <div id="rohstoff-liste"></div>
 
                 <!-- Versions-Prüfung ganz unten -->
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.1</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.2</div>
             `;
+            
+            // HIER IST DIE WIEDEREINGEFÜGTE ZEILE:
+            baueRohstoffListe(); 
         }
 
         function setzeFilter(kategorie) {
@@ -661,12 +664,10 @@
                 return;
             }
 
-            // Erst Alert, dann laden, dann umschalten
             alert("Änderungen erfolgreich gespeichert!");
             await ladeLagerAusDatenbank();
             zeigeLagerAnsicht();
             
-            // HIER springt er garantiert einen Schritt zurück ins Haupt-Dropdown!
             oeffneVerwaltenModalMitAuswahl(id);
         }
 
