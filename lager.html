@@ -273,11 +273,20 @@
 
         function setzeFilter(kategorie) {
             aktiverFilter = kategorie;
-            zeigeLagerAnsicht();
+            baueRohstoffListe();
+            // Aktualisiere auch die aktiven Klassen der Filter-Buttons ohne die ganze Ansicht neu zu laden
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.innerText.toLowerCase() === kategorie.toLowerCase() || (kategorie === 'Alle' && btn.innerText === 'Alle')) {
+                    btn.classList.add('aktiv');
+                } else {
+                    btn.classList.remove('aktiv');
+                }
+            });
         }
 
         function baueRohstoffListe() {
             const container = document.getElementById('rohstoff-liste');
+            if (!container) return;
             container.innerHTML = "";
 
             const gefiltert = aktiverFilter === 'Alle' 
@@ -426,6 +435,7 @@
         function aktualisiereBezeichnungDropdown() {
             const kat = document.getElementById('v-kategorie').value;
             const dropdown = document.getElementById('v-bezeichnung');
+            if (!dropdown) return;
             dropdown.innerHTML = "";
 
             const passendeRohstoffe = alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === kat.toLowerCase());
@@ -453,8 +463,8 @@
             const kat = document.getElementById('v-kategorie').value;
 
             if (wahl === "NEU") {
-                buchungsBereich.style.display = 'none';
-                neuerBereich.style.display = 'block';
+                if (buchungsBereich) buchungsBereich.style.display = 'none';
+                if (neuerBereich) neuerBereich.style.display = 'block';
 
                 const dynContainer = document.getElementById('neue-dynamische-felder');
                 let html = "";
@@ -483,18 +493,21 @@
                         <input type="text" id="neu-notiz" placeholder="z.B. Klärung des Bieres" class="input-style">
                     `;
                 }
-                dynContainer.innerHTML = html;
+                if (dynContainer) dynContainer.innerHTML = html;
             } else {
-                buchungsBereich.style.display = 'block';
-                neuerBereich.style.display = 'none';
+                if (buchungsBereich) buchungsBereich.style.display = 'block';
+                if (neuerBereich) neuerBereich.style.display = 'none';
 
                 const r = alleRohstoffe.find(item => String(item.id) === String(wahl));
                 if (r) {
                     let einheit = r.einheit || '';
                     let preisAnzeige = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? Number(r.preis).toFixed(2) + ' €/' + einheit : 'Kein Preis';
                     
-                    document.getElementById('aktueller-bestand-anzeige').innerText = `Ausgewählt: ${r.bezeichnung} | Bestand: ${r.bestand} ${einheit} (${preisAnzeige})`;
-                    document.getElementById('mengen-label').innerText = `Menge buchen (in ${einheit}):`;
+                    const bestandAnzeige = document.getElementById('aktueller-bestand-anzeige');
+                    if (bestandAnzeige) bestandAnzeige.innerText = `Ausgewählt: ${r.bezeichnung} | Bestand: ${r.bestand} ${einheit} (${preisAnzeige})`;
+                    
+                    const mengenLabel = document.getElementById('mengen-label');
+                    if (mengenLabel) mengenLabel.innerText = `Menge buchen (in ${einheit}):`;
                 }
             }
         }
@@ -532,9 +545,8 @@
                 return;
             }
 
-            // Daten im Hintergrund aktualisieren, Ansicht neu aufbauen, aber Fenster offen lassen!
             await ladeLagerAusDatenbank();
-            zeigeLagerAnsicht();
+            baueRohstoffListe();
             oeffneVerwaltenModalMitAuswahl(r.id);
 
             let einheit = r.einheit || '';
@@ -584,9 +596,8 @@
                 return;
             }
 
-            // Hintergrund aktualisieren und Fenster offen lassen für den nächsten Rohstoff
             await ladeLagerAusDatenbank();
-            zeigeLagerAnsicht();
+            baueRohstoffListe();
             oeffneVerwaltenModal();
             alert("Neuer Rohstoff erfolgreich angelegt!");
         }
@@ -693,9 +704,9 @@
                 return;
             }
 
-            // Hintergrund aktualisieren, aber Fenster offen lassen für den nächsten Schritt
+            // Aktualisiere die Daten im Hintergrund und springe EINMAL ZURÜCK ins Haupt-Auswahlfenster ("Lager verwalten")!
             await ladeLagerAusDatenbank();
-            zeigeLagerAnsicht();
+            baueRohstoffListe();
             oeffneVerwaltenModalMitAuswahl(id);
             alert("Rohstoff aktualisiert!");
         }
@@ -716,7 +727,7 @@
             }
 
             await ladeLagerAusDatenbank();
-            zeigeLagerAnsicht();
+            baueRohstoffListe();
             oeffneVerwaltenModal();
             alert("Rohstoff gelöscht.");
         }
