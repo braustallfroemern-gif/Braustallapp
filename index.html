@@ -117,21 +117,24 @@
                     <button style="${isReg ? tabActive : tabInative}" onclick="showLogin('register')">Neu hier?</button>
                 </div>
 
-                <input type="email" id="email" placeholder="E-Mail-Adresse" style="${inputStyle}">
-                <input type="password" id="kennung" placeholder="${isReg ? 'Neue 4-stellige PIN wählen' : 'Deine 4-stellige PIN'}" maxlength="4" style="${inputStyle}">
+                <input type="email" id="email" placeholder="E-Mail-Adresse eingeben" style="${inputStyle}">
+                <!-- type="text" gewählt, damit man die PIN im Klartext sieht -->
+                <input type="text" id="kennung" placeholder="${isReg ? 'Neue 4-stellige PIN wählen (z.B. 1234)' : 'Deine 4-stellige PIN eingeben'}" maxlength="4" style="${inputStyle}">
 
-                <!-- Zusätzliche Felder nur bei Erstregistrierung -->
+                <!-- Zusätzliche Felder nur bei Erstregistrierung mit klaren Beschriftungen -->
                 <div id="register-fields" style="display: ${isReg ? 'block' : 'none'}; margin-top: 10px; text-align: left;">
                     <p style="color: #1565C0; font-size: 13px; margin-bottom: 8px; font-weight: bold; text-align: center;">
-                        Bitte einmalig deine Daten ausfüllen:
+                        Bitte einmalig deine persönlichen Daten ausfüllen:
                     </p>
                     <input type="text" id="vorname" placeholder="Vorname" style="${inputStyle}">
                     <input type="text" id="nachname" placeholder="Nachname" style="${inputStyle}">
                     <input type="text" id="strasse" placeholder="Straße" style="${inputStyle}">
                     <input type="text" id="hausnummer" placeholder="Hausnummer" style="${inputStyle}">
-                    <input type="text" id="plz" placeholder="PLZ" style="${inputStyle}">
+                    <input type="text" id="plz" placeholder="Postleitzahl (PLZ)" style="${inputStyle}">
                     <input type="text" id="ort" placeholder="Ort" style="${inputStyle}">
-                    <input type="date" id="geburtsdatum" placeholder="Geburtsdatum" style="${inputStyle}">
+                    
+                    <label style="font-size: 12px; color: #555; display: block; margin-top: 5px;">Geburtsdatum:</label>
+                    <input type="date" id="geburtsdatum" style="${inputStyle}">
                 </div>
                 
                 <button id="login-btn" onclick="performLogin('${modus}')" style="${btnStyle}">${isReg ? 'Jetzt registrieren & anmelden' : 'Anmelden'}</button>
@@ -193,7 +196,7 @@
                 const geburtsdatumInput = document.getElementById('geburtsdatum').value.trim();
 
                 if (vornameInput === "" || nachnameInput === "" || pinInput.length < 4) {
-                    alert("Bitte fülle Vorname, Nachname und eine 4-stellige PIN aus.");
+                    alert("Bitte fülle mindestens Vorname, Nachname und eine 4-stellige PIN aus.");
                     return;
                 }
 
