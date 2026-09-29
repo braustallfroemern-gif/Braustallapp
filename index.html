@@ -47,7 +47,7 @@
     <div id="app">Lade...</div>
 
     <!-- Versions-Prüfung ganz unten -->
-    <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 20px;">Index Version 1.2</div>
+    <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 20px;">Index Version 1.3</div>
 
     <!-- HIER BEGINNT DEIN JAVASCRIPT-CODE -->
     <script>
@@ -91,7 +91,7 @@
             const btnStylePrimary = "background-color: #1976D2; color: white; border: none; padding: 14px; margin: 6px 0; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);";
             const btnStyleSecondary = "background-color: #455A64; color: white; border: none; padding: 12px; margin: 30px 0 10px 0; width: 100%; border-radius: 8px; font-size: 15px; cursor: pointer;";
 
-            // Icons in einen Span gepackt und mit gelber Farbe versehen, damit sie auf dem blauen Button strahlen
+            // Klare, gut sichtbare gelbe Farbe für alle Icons
             const iconStyle = "color: #FFD54F; margin-right: 8px;";
 
             document.getElementById('app').innerHTML = `
@@ -310,7 +310,7 @@
                         showDashboard();
                     }
                 } catch (e) {
-                    showLogin('login');
+                    showLogin('login4');
                 }
             } else {
                 showLogin('login');
