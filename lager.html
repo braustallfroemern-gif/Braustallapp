@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Braustall Lager</title>
+    
+    <!-- Mobil-Icons & Manifest -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Supabase Bibliothek -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #E3F2FD;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        #app {
+            background-color: white;
+            padding: 20px 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        html, body {
+            overscroll-behavior-y: none; 
+        }
+        .btn-primary {
+            background-color: #1976D2;
+            color: white;
+            border: none;
+            padding: 12px;
+            margin: 6px 0;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-secondary {
+            background-color: #455A64;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin: 15px 0 5px 0;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .input-style {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0 12px 0;
+            border: 1px solid #90CAF9;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .label-style {
+            display: block;
+            text-align: left;
+            font-size: 13px;
+            font-weight: bold;
+            color: #1565C0;
+            margin-top: 6px;
+        }
+
+        /* Filter-Tabs */
+        .filter-container {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+        }
+        .filter-btn {
+            background-color: #E3F2FD;
+            color: #1976D2;
+            border: 1px solid #90CAF9;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .filter-btn.aktiv {
+            background-color: #1976D2;
+            color: white;
+        }
+
+        /* Lager-Karten */
+        .lager-karte {
+            background-color: #F8F9FA;
+            border: 1px solid #E0E0E0;
+            border-left: 5px solid #1976D2;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            text-align: left;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .lager-karte.malz { border-left-color: #E65100; }
+        .lager-karte.hopfen { border-left-color: #2E7D32; }
+        .lager-karte.heute, .lager-karte.hefe { border-left-color: #7B1FA2; }
+        .lager-karte.sonstiges { border-left-color: #455A64; }
+
+        .karte-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .karte-titel {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1565C0;
+        }
+        .karte-bestand {
+            font-size: 15px;
+            font-weight: bold;
+            background-color: #E3F2FD;
+            color: #1565C0;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .karte-details {
+            font-size: 12px;
+            color: #555;
+            margin-top: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* Modal */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #modal-inhalt {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 380px;
+            text-align: left;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">Lade Lager...</div>
+
+    <!-- Schwebendes Fenster (Modal) -->
+    <div id="modal-overlay">
+        <div id="modal-inhalt"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let alleRohstoffe = [];
+        let aktiverFilter = 'Alle';
+
+        window.onload = async function() {
+            const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
+            if (!angemeldet) {
+                window.location.href = 'index.html';
+                return;
+            }
+            await ladeLagerAusDatenbank();
+            zeigeLagerAnsicht();
+        };
+
+        async function ladeLagerAusDatenbank() {
+            const { data, error } = await _supabase
+                .from('lager')
+                .select('*')
+                .order('bezeichnung', { ascending: true });
+            if (!error && data) {
+                alleRohstoffe = data;
+            }
+        }
+
+        function zeigeLagerAnsicht() {
+            const app = document.getElementById('app');
+
+            app.innerHTML = `
+                <h2 style="color: #1565C0; margin-bottom: 10px;">📦 Braustall Lager</h2>
+                
+                <button class="btn-primary" onclick="oeffneNeuModal()">+ Neuen Rohstoff erfassen</button>
+
+                <!-- Filter-Leiste -->
+                <div class="filter-container" style="margin-top: 15px;">
+                    <button class="filter-btn ${aktiverFilter === 'Alle' ? 'aktiv' : ''}" onclick="setzeFilter('Alle')">Alle</button>
+                    <button class="filter-btn ${aktiverFilter === 'Malz' ? 'aktiv' : ''}" onclick="setzeFilter('Malz')">Malz</button>
+                    <button class="filter-btn ${aktiverFilter === 'Hopfen' ? 'aktiv' : ''}" onclick="setzeFilter('Hopfen')">Hopfen</button>
+                    <button class="filter-btn ${aktiverFilter === 'Hefe' ? 'aktiv' : ''}" onclick="setzeFilter('Hefe')">Hefe</button>
+                    <button class="filter-btn ${aktiverFilter === 'Sonstiges' ? 'aktiv' : ''}" onclick="setzeFilter('Sonstiges')">Sonstiges</button>
+                </div>
+
+                <!-- Liste der Rohstoffe -->
+                <div id="rohstoff-liste"></div>
+
+                <button class="btn-secondary" onclick="location.href='index.html'">🔙 Zurück zum Dashboard</button>
+            `;
+
+            baueRohstoffListe();
+        }
+
+        function setzeFilter(kategorie) {
+            aktiverFilter = kategorie;
+            zeigeLagerAnsicht();
+        }
+
+        function baueRohstoffListe() {
+            const container = document.getElementById('rohstoff-liste');
+            container.innerHTML = "";
+
+            const gefiltert = aktiverFilter === 'Alle' 
+                ? alleRohstoffe 
+                : alleRohstoffe.filter(r => r.kategorie === aktiverFilter);
+
+            if (gefilter.length === 0) {
+                container.innerHTML = `<p style="color: #666; font-size: 14px; margin: 20px 0;">Keine Rohstoffe in dieser Kategorie gefunden.</p>`;
+                return;
+            }
+
+            gefilter.forEach(r => {
+                const karte = document.createElement('div');
+                let katKlasse = r.kategorie ? r.kategorie.toLowerCase() : 'sonstiges';
+                karte.className = `lager-karte ${katKlasse}`;
+                karte.onclick = () => oeffneBearbeitenModal(r.id);
+
+                let zusatzInfos = "";
+                if (r.kategorie === 'Malz') {
+                    if (r.farbe_ebc) zusatzInfos += `<span>🎨 ${r.farbe_ebc} EBC</span>`;
+                    if (r.max_gabe_prozent) zusatzInfos += `<span>📊 Max. ${r.max_gabe_prozent}%</span>`;
+                } else if (r.kategorie === 'Hopfen') {
+                    if (r.alpha_saeure) zusatzInfos += `<span>🌿 Alpha: ${r.alpha_saeure}%</span>`;
+                } else if (r.kategorie === 'Hefe') {
+                    if (r.gaertemperatur) zusatzInfos += `<span>🌡️ ${r.gaertemperatur}</span>`;
+                    if (r.vergaerungsgrad) zusatzInfos += `<span>📈 EVG: ${r.vergaerungsgrad}</span>`;
+                } else if (r.notiz) {
+                    zusatzInfos += `<span>📝 ${r.notiz}</span>`;
+                }
+
+                karte.innerHTML = `
+                    <div class="karte-header">
+                        <span class="karte-titel">${r.bezeichnung}</span>
+                        <span class="karte-bestand">${r.bestand} ${r.einheit || ''}</span>
+                    </div>
+                    <div class="karte-details">
+                        <span style="color: #1976D2; font-weight: bold;">[${r.kategorie}]</span>
+                        ${zusatzInfos}
+                    </div>
+                `;
+                container.appendChild(karte);
+            });
+        }
+
+        // --- NEU ERFASSEN MODAL ---
+        function oeffneNeuModal() {
+            const overlay = document.getElementById('modal-overlay');
+            const inhalt = document.getElementById('modal-inhalt');
+
+            inhalt.innerHTML = `
+                <h3 style="color: #1565C0; margin-top: 0;">Neuen Rohstoff erfassen</h3>
+
+                <label class="label-style">Kategorie:</label>
+                <select id="neu-kategorie" class="input-style" onchange="aktualisiereFormularFelder()">
+                    <option value="Malz">Malz</option>
+                    <option value="Hopfen">Hopfen</option>
+                    <option value="Hefe">Hefe</option>
+                    <option value="Sonstiges">Sonstiges</option>
+                </select>
+
+                <label class="label-style">Bezeichnung:</label>
+                <input type="text" id="neu-bezeichnung" placeholder="z.B. Pilsner Malz / Cascade" class="input-style">
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 2;">
+                        <label class="label-style">Bestand:</label>
+                        <input type="number" step="0.1" id="neu-bestand" placeholder="0" class="input-style">
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="label-style">Einheit:</label>
+                        <select id="neu-einheit" class="input-style">
+                            <option value="kg">kg</option>
+                            <option value="g">g</option>
+                            <option value="Stk">Stk</option>
+                            <option value="L">L</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dynamische Zusatzfelder -->
+                <div id="dynamische-felder"></div>
+
+                <button class="btn-primary" onclick="speichereNeuenRohstoff()">Rohstoff speichern</button>
+                <button class="btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+            `;
+            overlay.style.display = 'flex';
+            aktualisiereFormularFelder();
+        }
+
+        function aktualisiereFormularFelder() {
+            const kat = document.getElementById('neu-kategorie').value;
+            const container = document.getElementById('dynamische-felder');
+            let html = "";
+
+            if (kat === 'Malz') {
+                html = `
+                    <label class="label-style">Farbe (EBC):</label>
+                    <input type="number" id="neu-ebc" placeholder="z.B. 3" class="input-style">
+                    <label class="label-style">Max. Gabe (%):</label>
+                    <input type="number" id="neu-maxgabe" placeholder="z.B. 100" class="input-style">
+                `;
+            } else if (kat === 'Hopfen') {
+                html = `
+                    <label class="label-style">Alpha-Säure (%):</label>
+                    <input type="number" step="0.1" id="neu-alpha" placeholder="z.B. 6.5" class="input-style">
+                `;
+            } else if (kat === 'Hefe') {
+                html = `
+                    <label class="label-style">Gärtemperatur:</label>
+                    <input type="text" id="neu-temp" placeholder="z.B. 18-22 °C" class="input-style">
+                    <label class="label-style">Vergärungsgrad (EVG):</label>
+                    <input type="text" id="neu-evg" placeholder="z.B. 75-80%" class="input-style">
+                `;
+            } else {
+                html = `
+                    <label class="label-style">Notiz / Verwendung:</label>
+                    <input type="text" id="neu-notiz" placeholder="z.B. Klärung des Bieres" class="input-style">
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // --- BEARBEITEN / LÖSCHEN MODAL ---
+        async function oeffneBearbeitenModal(id) {
+            const r = alleRohstoffe.find(item => String(item.id) === String(id));
+            if (!r) return;
+
+            const overlay = document.getElementById('modal-overlay');
+            const inhalt = document.getElementById('modal-inhalt');
+
+            let zusatzHtml = "";
+            if (r.kategorie === 'Malz') {
+                zusatzHtml = `
+                    <label class="label-style">Farbe (EBC):</label>
+                    <input type="number" id="edit-ebc" value="${r.farbe_ebc || ''}" class="input-style">
+                    <label class="label-style">Max. Gabe (%):</label>
+                    <input type="number" id="edit-maxgabe" value="${r.max_gabe_prozent || ''}" class="input-style">
+                `;
+            } else if (r.kategorie === 'Hopfen') {
+                zusatzHtml = `
+                    <label class="label-style">Alpha-Säure (%):</label>
+                    <input type="number" step="0.1" id="edit-alpha" value="${r.alpha_saeure || ''}" class="input-style">
+                `;
+            } else if (r.kategorie === 'Hefe') {
+                zusatzHtml = `
+                    <label class="label-style">Gärtemperatur:</label>
+                    <input type="text" id="edit-temp" value="${r.gaertemperatur || ''}" class="input-style">
+                    <label class="label-style">Vergärungsgrad (EVG):</label>
+                    <input type="text" id="edit-evg" value="${r.vergaerungsgrad || ''}" class="input-style">
+                `;
+            } else {
+                zusatzHtml = `
+                    <label class="label-style">Notiz / Verwendung:</label>
+                    <input type="text" id="edit-notiz" value="${r.notiz || ''}" class="input-style">
+                `;
+            }
+
+            inhalt.innerHTML = `
+                <h3 style="color: #1565C0; margin-top: 0;">Rohstoff bearbeiten</h3>
+
+                <label class="label-style">Kategorie (fixiert):</label>
+                <input type="text" disabled value="${r.kategorie}" class="input-style" style="background-color: #F0F4F8; color: #666;">
+
+                <label class="label-style">Bezeichnung:</label>
+                <input type="text" id="edit-bezeichnung" value="${r.bezeichnung}" class="input-style">
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 2;">
+                        <label class="label-style">Bestand:</label>
+                        <input type="number" step="0.1" id="edit-bestand" value="${r.bestand}" class="input-style">
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="label-style">Einheit:</label>
+                        <input type="text" id="edit-einheit" value="${r.einheit || ''}" class="input-style">
+                    </div>
+                </div>
+
+                ${zusatzHtml}
+
+                <button class="btn-primary" onclick="aktualisiereRohstoff('${r.id}', '${r.kategorie}')">Änderungen speichern</button>
+                <button style="background-color: #D32F2F; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; margin-top: 8px; cursor: pointer;" onclick="loescheRohstoff('${r.id}')">🗑️ Rohstoff löschen</button>
+                <button class="btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+            `;
+            overlay.style.display = 'flex';
+        }
+
+        function schliesseModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+        }
+
+        // --- DATENBANK AKTIONEN ---
+        async function speichereNeuenRohstoff() {
+            const kategorie = document.getElementById('neu-kategorie').value;
+            const bezeichnung = document.getElementById('neu-bezeichnung').value.trim();
+            const bestand = parseFloat(document.getElementById('neu-bestand').value) || 0;
+            const einheit = document.getElementById('neu-einheit').value;
+
+            if (bezeichnung === "") {
+                alert("Bitte gib eine Bezeichnung ein.");
+                return;
+            }
+
+            let datenObjekt = { kategorie, bezeichnung, bestand, einheit };
+
+            if (kategorie === 'Malz') {
+                datenObjekt.farbe_ebc = parseFloat(document.getElementById('neu-ebc').value) || null;
+                datenObjekt.max_gabe_prozent = parseFloat(document.getElementById('neu-maxgabe').value) || null;
+            } else if (kategorie === 'Hopfen') {
+                datenObjekt.alpha_saeure = parseFloat(document.getElementById('neu-alpha').value) || null;
+            } else if (kategorie === 'Hefe') {
+                datenObjekt.gaertemperatur = document.getElementById('neu-temp').value.trim() || null;
+                datenObjekt.vergaerungsgrad = document.getElementById('neu-evg').value.trim() || null;
+            } else {
+                datenObjekt.notiz = document.getElementById('neu-notiz').value.trim() || null;
+            }
+
+            const { error } = await _supabase.from('lager').insert([datenObjekt]);
+            if (error) {
+                alert("Fehler beim Speichern: " + error.message);
+                return;
+            }
+
+            alert("Rohstoff erfolgreich hinzugefügt!");
+            schliesseModal();
+            await ladeLagerAusDatenbank();
+            zeigeLagerAnsicht();
+        }
+
+        async function aktualisiereRohstoff(id, kategorie) {
+            const bezeichnung = document.getElementById('edit-bezeichnung').value.trim();
+            const bestand = parseFloat(document.getElementById('edit-bestand').value) || 0;
+            const einheit = document.getElementById('edit-einheit').value.trim();
+
+            if (bezeichnung === "") {
+                alert("Bitte gib eine Bezeichnung ein.");
+                return;
+            }
+
+            let datenObjekt = { bezeichnung, bestand, einheit };
+
+            if (kategorie === 'Malz') {
+                datenObjekt.farbe_ebc = parseFloat(document.getElementById('edit-ebc').value) || null;
+                datenObjekt.max_gabe_prozent = parseFloat(document.getElementById('edit-maxgabe').value) || null;
+            } else if (kategorie === 'Hopfen') {
+                datenObjekt.alpha_saeure = parseFloat(document.getElementById('edit-alpha').value) || null;
+            } else if (kategorie === 'Hefe') {
+                datenObjekt.gaertemperatur = document.getElementById('edit-temp').value.trim() || null;
+                datenObjekt.vergaerungsgrad = document.getElementById('edit-evg').value.trim() || null;
+            } else {
+                datenObjekt.notiz = document.getElementById('edit-notiz').value.trim() || null;
+            }
+
+            const { error } = await _supabase.from('lager').update(datenObjekt).eq('id', id);
+            if (error) {
+                alert("Fehler beim Aktualisieren: " + error.message);
+                return;
+            }
+
+            alert("Rohstoff aktualisiert!");
+            schliesseModal();
+            await ladeLagerAusDatenbank();
+            zeigeLagerAnsicht();
+        }
+
+        async function loescheRohstoff(id) {
+            if (!confirm("Möchtest du diesen Rohstoff wirklich aus dem Lager löschen?")) return;
+
+            const { error } = await _supabase.from('lager').delete().eq('id', id);
+            if (error) {
+                alert("Fehler beim Löschen: " + error.message);
+                return;
+            }
+
+            alert("Rohstoff gelöscht.");
+            schliesseModal();
+            await ladeLagerAusDatenbank();
+            zeigeLagerAnsicht();
+        }
+    </script>
+</body>
+</html>
