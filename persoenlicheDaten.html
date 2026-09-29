@@ -87,7 +87,8 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         window.onload = async function() {
-            const angemeldet = sessionStorage.getItem('angemeldet');
+            // Wir prüfen sowohl sessionStorage als auch localStorage, damit der Login-Status stabil bleibt
+            const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
             if (!angemeldet) {
                 window.location.href = 'index.html';
                 return;
@@ -133,7 +134,7 @@
                 </div>
 
                 <button class="btn-primary" onclick="speicherePersoenlicheDaten()">Änderungen speichern</button>
-                <button class="btn-secondary" onclick="location.href='index.html'">🔙 Zurück zum Dashboard</button>
+                <button class="btn-secondary" onclick="geheZumDashboard()">🔙 Zurück zum Dashboard</button>
             `;
 
             const { data, error } = await _supabase
@@ -190,11 +191,23 @@
                 return;
             }
 
+            // Sicher im localStorage absichern, damit das Dashboard den Vornamen nicht verliert
             localStorage.setItem('userKennung', kennung);
             localStorage.setItem('userVornameCache', vorname);
+            localStorage.setItem('userEmailCache', email);
+            localStorage.setItem('angemeldetCache', 'ja');
+
             sessionStorage.setItem('userVorname', vorname);
+            sessionStorage.setItem('angemeldet', 'ja');
 
             alert("Deine persönlichen Daten wurden erfolgreich aktualisiert!");
+            geheZumDashboard();
+        }
+
+        function geheZumDashboard() {
+            // Auch hier vor dem Sprung noch mal den Cache setzen
+            localStorage.setItem('angemeldetCache', 'ja');
+            sessionStorage.setItem('angemeldet', 'ja');
             window.location.href = 'index.html';
         }
     </script>
