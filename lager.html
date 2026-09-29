@@ -59,6 +59,30 @@
             font-size: 15px;
             cursor: pointer;
         }
+        .btn-edit {
+            background-color: #F57C00;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .btn-delete {
+            background-color: #D32F2F;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            margin-top: 8px;
+            cursor: pointer;
+        }
         .input-style {
             width: 100%;
             padding: 12px;
@@ -253,7 +277,7 @@
                 const karte = document.createElement('div');
                 let katKlasse = r.kategorie ? r.kategorie.toLowerCase() : 'sonstiges';
                 karte.className = `lager-karte ${katKlasse}`;
-                karte.onclick = () => oeffneBearbeitenModal(String(r.id));
+                karte.onclick = () => oeffneVerwaltenModalMitAuswahl(String(r.id));
 
                 let zusatzInfos = "";
                 let katLower = r.kategorie ? r.kategorie.toLowerCase() : '';
@@ -290,20 +314,32 @@
             });
         }
 
-        // --- LAGER VERWALTEN (BUCHEN & AUSWÄHLEN) ---
+        // --- LAGER VERWALTEN (HAUPTMASKE) ---
         function oeffneVerwaltenModal() {
+            oeffneVerwaltenModalMitAuswahl(null);
+        }
+
+        function oeffneVerwaltenModalMitAuswahl(vorbelegungsId) {
             const overlay = document.getElementById('modal-overlay');
             const inhalt = document.getElementById('modal-inhalt');
+
+            let vorbelegungsKat = "Malz";
+            if (vorbelegungsId) {
+                const rohstoffObj = alleRohstoffe.find(item => String(item.id) === String(vorbelegungsId));
+                if (rohstoffObj && rohstoffObj.kategorie) {
+                    vorbelegungsKat = rohstoffObj.kategorie;
+                }
+            }
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">📦 Lager verwalten</h3>
 
                 <label class="label-style">1. Kategorie wählen:</label>
                 <select id="v-kategorie" class="input-style" onchange="aktualisiereBezeichnungDropdown()">
-                    <option value="Malz">Malz</option>
-                    <option value="Hopfen">Hopfen</option>
-                    <option value="Hefe">Hefe</option>
-                    <option value="Sonstiges">Sonstiges</option>
+                    <option value="Malz" ${vorbelegungsKat === 'Malz' ? 'selected' : ''}>Malz</option>
+                    <option value="Hopfen" ${vorbelegungsKat === 'Hopfen' ? 'selected' : ''}>Hopfen</option>
+                    <option value="Hefe" ${vorbelegungsKat === 'Hefe' ? 'selected' : ''}>Hefe</option>
+                    <option value="Sonstiges" ${vorbelegungsKat === 'Sonstiges' ? 'selected' : ''}>Sonstiges</option>
                 </select>
 
                 <label class="label-style">2. Rohstoff auswählen:</label>
@@ -311,18 +347,24 @@
                     <!-- Wird dynamisch gefüllt -->
                 </select>
 
-                <!-- Bereich für Bestand buchen -->
+                <!-- Bereich für Bestand buchen (Zugang / Verbrauch) -->
                 <div id="buchungs-bereich">
                     <p id="aktueller-bestand-anzeige" style="font-size: 13px; color: #333; margin: 5px 0 10px 0; font-weight: bold;"></p>
                     
                     <label class="label-style">Buchungs-Art:</label>
                     <select id="v-aktion" class="input-style">
                         <option value="plus">➕ Bestand hinzufügen (Zugang)</option>
-                        <option value="minus">➖ Bestand abziehen (Verbrauch / Sud)</option>
+                        <option value="minus">➖ Bestand abziehen (Verbrauch)</option>
                     </select>
 
                     <label class="label-style" id="mengen-label">Menge:</label>
                     <input type="number" step="0.1" id="v-menge" placeholder="z.B. 5" class="input-style">
+
+                    <button class="btn-primary" onclick="führeBestandsBuchungAus()">Bestand buchen</button>
+                    
+                    <!-- Buttons zum Bearbeiten oder Löschen des ausgewählten Rohstoffs -->
+                    <button class="btn-edit" onclick="oeffneBearbeitenMaskeAuswahl()">✏️ Rohstoff bearbeiten</button>
+                    <button class="btn-delete" onclick="loescheAusgewaehltenRohstoff()">🗑️ Rohstoff löschen</button>
                 </div>
 
                 <!-- Bereich für NEUEN Rohstoff anlegen -->
@@ -350,13 +392,20 @@
                     <input type="number" step="0.01" id="neu-preis" placeholder="z.B. 2.50" class="input-style">
 
                     <div id="neue-dynamische-felder"></div>
+
+                    <button class="btn-primary" onclick="speichereNeuenRohstoff()">Neuen Rohstoff anlegen</button>
                 </div>
 
-                <button class="btn-primary" onclick="führeLagerBuchungAus()">Buchung / Speichern</button>
-                <button class="btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+                <button class="btn-secondary" onclick="schliesseModal()">Schließen</button>
             `;
+            
             overlay.style.display = 'flex';
             aktualisiereBezeichnungDropdown();
+
+            if (vorbelegungsId) {
+                document.getElementById('v-bezeichnung').value = vorbelegungsId;
+                pruefeObNeuerRohstoff();
+            }
         }
 
         function aktualisiereBezeichnungDropdown() {
@@ -369,7 +418,8 @@
             passendeRohstoffe.forEach(r => {
                 const opt = document.createElement('option');
                 opt.value = r.id;
-                opt.text = `${r.bezeichnung} (Bestand: ${r.bestand} ${r.einheit || ''})`;
+                let preisText = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? ` | Preis: ${Number(r.preis).toFixed(2)} €/${r.einheit || ''}` : ` | Kein Preis`;
+                opt.text = `${r.bezeichnung} | Bestand: ${r.bestand} ${r.einheit || ''}${preisText}`;
                 dropdown.appendChild(opt);
             });
 
@@ -429,106 +479,109 @@
                     let preisAnzeige = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? Number(r.preis).toFixed(2) + ' €/' + einheit : 'Kein Preis';
                     
                     document.getElementById('aktueller-bestand-anzeige').innerText = `Ausgewählt: ${r.bezeichnung} | Bestand: ${r.bestand} ${einheit} (${preisAnzeige})`;
-                    
-                    // Dynamisches Label mit exakter Einheit (z.B. "Menge in kg" oder "Menge in g")
-                    document.getElementById('mengen-label').innerText = `Menge (in ${einheit}):`;
+                    document.getElementById('mengen-label').innerText = `Menge buchen (in ${einheit}):`;
                 }
             }
         }
 
-        async function führeLagerBuchungAus() {
+        async function führeBestandsBuchungAus() {
             const wahl = document.getElementById('v-bezeichnung').value;
-            const kat = document.getElementById('v-kategorie').value;
+            if (wahl === "NEU") return;
 
-            if (wahl === "NEU") {
-                const bezeichnung = document.getElementById('neu-bezeichnung').value.trim();
-                const bestand = parseFloat(document.getElementById('neu-bestand').value) || 0;
-                const einheit = document.getElementById('neu-einheit').value;
-                const preis = parseFloat(document.getElementById('neu-preis').value) || null;
+            const menge = parseFloat(document.getElementById('v-menge').value);
+            const aktion = document.getElementById('v-aktion').value;
 
-                if (bezeichnung === "") {
-                    alert("Bitte gib eine Bezeichnung ein.");
-                    return;
-                }
-
-                const doppelt = alleRohstoffe.find(r => r.kategorie.toLowerCase() === kat.toLowerCase() && r.bezeichnung.toLowerCase() === bezeichnung.toLowerCase());
-                if (doppelt) {
-                    alert(`Den Rohstoff "${bezeichnung}" gibt es in der Kategorie "${kat}" bereits! Bitte wähle ihn im Dropdown aus.`);
-                    return;
-                }
-
-                let datenObjekt = { kategorie: kat, bezeichnung, bestand, einheit, preis };
-
-                if (kat === 'Malz') {
-                    datenObjekt.farbe_ebc = parseFloat(document.getElementById('neu-ebc').value) || null;
-                    datenObjekt.max_gabe_prozent = parseFloat(document.getElementById('neu-maxgabe').value) || null;
-                } else if (kat === 'Hopfen') {
-                    datenObjekt.alpha_saeure = parseFloat(document.getElementById('neu-alpha').value) || null;
-                } else if (kat === 'Hefe') {
-                    datenObjekt.gaertemperatur = document.getElementById('neu-temp').value.trim() || null;
-                    datenObjekt.vergaerungsgrad = document.getElementById('neu-evg').value.trim() || null;
-                } else {
-                    datenObjekt.notiz = document.getElementById('neu-notiz').value.trim() || null;
-                }
-
-                const { error } = await _supabase.from('lager').insert([datenObjekt]);
-                if (error) {
-                    alert("Fehler beim Speichern: " + error.message);
-                    return;
-                }
-
-                alert("Neuer Rohstoff erfolgreich angelegt!");
-
-            } else {
-                const menge = parseFloat(document.getElementById('v-menge').value);
-                const aktion = document.getElementById('v-aktion').value;
-
-                if (isNaN(menge) || menge <= 0) {
-                    alert("Bitte gib eine gültige Menge ein.");
-                    return;
-                }
-
-                const r = alleRohstoffe.find(item => String(item.id) === String(wahl));
-                if (!r) return;
-
-                let neuerBestand = parseFloat(r.bestand) || 0;
-                if (aktion === 'plus') {
-                    neuerBestand += menge;
-                } else {
-                    neuerBestand -= menge;
-                    if (neuerBestand < 0) neuerBestand = 0;
-                }
-
-                const { error } = await _supabase
-                    .from('lager')
-                    .update({ bestand: neuerBestand })
-                    .eq('id', r.id);
-
-                if (error) {
-                    alert("Fehler beim Buchen: " + error.message);
-                    return;
-                }
-
-                let einheit = r.einheit || '';
-                let infoText = `Bestand aktualisiert! Neuer Bestand: ${neuerBestand} ${einheit}`;
-                if (aktion === 'minus' && r.preis) {
-                    let kosten = menge * parseFloat(r.preis);
-                    infoText += `\n\n(Entnommene Menge kostet ca. ${kosten.toFixed(2)} € für diesen Sud)`;
-                }
-                alert(infoText);
+            if (isNaN(menge) || menge <= 0) {
+                alert("Bitte gib eine gültige Menge ein.");
+                return;
             }
+
+            const r = alleRohstoffe.find(item => String(item.id) === String(wahl));
+            if (!r) return;
+
+            let neuerBestand = parseFloat(r.bestand) || 0;
+            if (aktion === 'plus') {
+                neuerBestand += menge;
+            } else {
+                neuerBestand -= menge;
+                if (neuerBestand < 0) neuerBestand = 0;
+            }
+
+            const { error } = await _supabase
+                .from('lager')
+                .update({ bestand: neuerBestand })
+                .eq('id', r.id);
+
+            if (error) {
+                alert("Fehler beim Buchen: " + error.message);
+                return;
+            }
+
+            let einheit = r.einheit || '';
+            let infoText = `Bestand aktualisiert! Neuer Bestand: ${neuerBestand} ${einheit}`;
+            if (aktion === 'minus' && r.preis) {
+                let kosten = menge * parseFloat(r.preis);
+                infoText += `\n\n(Entnommene Menge kostet ca. ${kosten.toFixed(2)} €)`;
+            }
+            alert(infoText);
 
             schliesseModal();
             await ladeLagerAusDatenbank();
             zeigeLagerAnsicht();
         }
 
-        // --- BEARBEITEN / LÖSCHEN MODAL ---
-        function oeffneBearbeitenModal(id) {
-            const r = alleRohstoffe.find(item => String(item.id) === String(id));
+        async function speichereNeuenRohstoff() {
+            const kat = document.getElementById('v-kategorie').value;
+            const bezeichnung = document.getElementById('neu-bezeichnung').value.trim();
+            const bestand = parseFloat(document.getElementById('neu-bestand').value) || 0;
+            const einheit = document.getElementById('neu-einheit').value;
+            const preis = parseFloat(document.getElementById('neu-preis').value) || null;
+
+            if (bezeichnung === "") {
+                alert("Bitte gib eine Bezeichnung ein.");
+                return;
+            }
+
+            const doppelt = alleRohstoffe.find(r => r.kategorie.toLowerCase() === kat.toLowerCase() && r.bezeichnung.toLowerCase() === bezeichnung.toLowerCase());
+            if (doppelt) {
+                alert(`Den Rohstoff "${bezeichnung}" gibt es in der Kategorie "${kat}" bereits! Bitte wähle ihn im Dropdown aus.`);
+                return;
+            }
+
+            let datenObjekt = { kategorie: kat, bezeichnung, bestand, einheit, preis };
+
+            if (kat === 'Malz') {
+                datenObjekt.farbe_ebc = parseFloat(document.getElementById('neu-ebc').value) || null;
+                datenObjekt.max_gabe_prozent = parseFloat(document.getElementById('neu-maxgabe').value) || null;
+            } else if (kat === 'Hopfen') {
+                datenObjekt.alpha_saeure = parseFloat(document.getElementById('neu-alpha').value) || null;
+            } else if (kat === 'Hefe') {
+                datenObjekt.gaertemperatur = document.getElementById('neu-temp').value.trim() || null;
+                datenObjekt.vergaerungsgrad = document.getElementById('neu-evg').value.trim() || null;
+            } else {
+                datenObjekt.notiz = document.getElementById('neu-notiz').value.trim() || null;
+            }
+
+            const { error } = await _supabase.from('lager').insert([datenObjekt]);
+            if (error) {
+                alert("Fehler beim Speichern: " + error.message);
+                return;
+            }
+
+            alert("Neuer Rohstoff erfolgreich angelegt!");
+            schliesseModal();
+            await ladeLagerAusDatenbank();
+            zeigeLagerAnsicht();
+        }
+
+        // --- BEARBEITEN MASKE (Öffnet sich beim Klick auf "Rohstoff bearbeiten") ---
+        function oeffneBearbeitenMaskeAuswahl() {
+            const wahl = document.getElementById('v-bezeichnung').value;
+            if (wahl === "NEU") return;
+
+            const r = alleRohstoffe.find(item => String(item.id) === String(wahl));
             if (!r) return;
 
-            const overlay = document.getElementById('modal-overlay');
             const inhalt = document.getElementById('modal-inhalt');
 
             let zusatzHtml = "";
@@ -585,14 +638,12 @@
 
                 ${zusatzHtml}
 
-                <button class="btn-primary" onclick="aktualisiereRohstoffDirekt('${r.id}', '${r.kategorie}')">Änderungen speichern</button>
-                <button style="background-color: #D32F2F; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; margin-top: 8px; cursor: pointer;" onclick="loescheRohstoff('${r.id}')">🗑️ Rohstoff löschen</button>
-                <button class="btn-secondary" onclick="schliesseModal()">Abbrechen</button>
+                <button class="btn-primary" onclick="speichereBearbeitetenRohstoff('${r.id}', '${r.kategorie}')">Änderungen speichern</button>
+                <button class="btn-secondary" onclick="oeffneVerwaltenModalMitAuswahl('${r.id}')">🔙 Zurück</button>
             `;
-            overlay.style.display = 'flex';
         }
 
-        async function aktualisiereRohstoffDirekt(id, kategorie) {
+        async function speichereBearbeitetenRohstoff(id, kategorie) {
             const bezeichnung = document.getElementById('edit-bezeichnung').value.trim();
             const bestand = parseFloat(document.getElementById('edit-bestand').value) || 0;
             const einheit = document.getElementById('edit-einheit').value.trim();
@@ -616,7 +667,7 @@
                 datenObjekt.gaertemperatur = document.getElementById('edit-temp').value.trim() || null;
                 datenObjekt.vergaerungsgrad = document.getElementById('edit-evg').value.trim() || null;
             } else {
-                datenObjekt.notiz = document.getElementById('edit-notiz').value.trim() || null;
+                datenObjekt.notiz = document.getElementById('edit-notiz') ? document.getElementById('edit-notiz').value.trim() : null;
             }
 
             const { error } = await _supabase.from('lager').update(datenObjekt).eq('id', id);
@@ -631,10 +682,16 @@
             zeigeLagerAnsicht();
         }
 
-        async function loescheRohstoff(id) {
-            if (!confirm("Möchtest du diesen Rohstoff wirklich aus dem Lager löschen?")) return;
+        async function loescheAusgewaehltenRohstoff() {
+            const wahl = document.getElementById('v-bezeichnung').value;
+            if (wahl === "NEU") return;
 
-            const { error } = await _supabase.from('lager').delete().eq('id', id);
+            const r = alleRohstoffe.find(item => String(item.id) === String(wahl));
+            if (!r) return;
+
+            if (!confirm(`Möchtest du den Rohstoff "${r.bezeichnung}" wirklich komplett aus dem Lager löschen?`)) return;
+
+            const { error } = await _supabase.from('lager').delete().eq('id', r.id);
             if (error) {
                 alert("Fehler beim Löschen: " + error.message);
                 return;
