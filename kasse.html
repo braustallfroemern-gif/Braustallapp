@@ -98,28 +98,33 @@
             font-size: 15px;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .btn-danger {
             background-color: #D32F2F;
             color: white;
             border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
             cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .btn-edit-mode {
+        .btn-top-action {
             background-color: #1976D2;
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            box-sizing: border-box;
         }
 
         .input-style {
@@ -150,6 +155,15 @@
             align-items: center;
             justify-content: space-between;
             font-size: 13px;
+        }
+        /* Klickbare Zeile im Editier-Modus */
+        .buchungs-zeile.editierbar {
+            cursor: pointer;
+            border-color: #90CAF9;
+            background-color: #F0F4F8;
+        }
+        .buchungs-zeile.editierbar:active {
+            background-color: #E3F2FD;
         }
 
         .kassen-karte {
@@ -286,7 +300,7 @@
                     <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.5</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.7</div>
             `;
         }
 
@@ -308,28 +322,28 @@
                         kurzdatum = kurzdatum.substring(0, 6) + kurzdatum.substring(8);
                     }
 
-                    let aktionenHtml = "";
+                    // Im Editier-Modus wird die Zeile klickbar gemacht
+                    let zeilenKlasse = "buchungs-zeile";
+                    let klickAttribut = "";
+                    let editiereHinweis = "";
+
                     if (istKassenwart && kassenbuchEditModus) {
-                        aktionenHtml = `
-                            <div style="display: flex; gap: 4px; margin-left: 8px;">
-                                <button class="btn-edit-mode" style="padding: 3px 6px; font-size: 10px;" onclick="oeffneBuchungBearbeitenModal('${b.id}')">✏️</button>
-                                <button class="btn-danger" onclick="loescheBuchung('${b.id}')">🗑️</button>
-                            </div>
-                        `;
+                        zeilenKlasse += " editierbar";
+                        klickAttribut = `onclick="oeffneBuchungBearbeitenModal('${b.id}')"`;
+                        editiereHinweis = `<span style="font-size: 10px; color: #1976D2; margin-left: 6px;">✏️️ antippen</span>`;
                     }
 
                     buchungenHtml += `
-                        <div class="buchungs-zeile">
+                        <div class="${zeilenKlasse}" ${klickAttribut}>
                             <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1;">
                                 <span style="font-size: 10px;">${istEinnahme ? '🟢' : '🔴'}</span>
                                 <span style="color: #666; font-size: 11px; white-space: nowrap;">${kurzdatum}</span>
-                                <span style="color: #333; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${b.beschreibung || ''}</span>
+                                <span style="color: #333; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${b.beschreibung || ''} ${editiereHinweis}</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
                                 <span style="font-weight: bold; color: ${istEinnahme ? '#2E7D32' : '#D32F2F'}; font-size: 13px;">
                                     ${istEinnahme ? '+' : '-'}${betrag.toFixed(2)} €
                                 </span>
-                                ${aktionenHtml}
                             </div>
                         </div>
                     `;
@@ -339,9 +353,9 @@
             let topLeisteHtml = "";
             if (istKassenwart) {
                 topLeisteHtml = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <button class="btn-blue-action" style="margin: 0; flex: 1; margin-right: 8px; padding: 10px; font-size: 14px;" onclick="oeffneNeueBuchungModal()">➕ Neue Buchung erfassen</button>
-                        <button class="btn-edit-mode" onclick="schalteKassenbuchEditModusUm()">${kassenbuchEditModus ? '✓ Fertig' : '✏️ Editieren'}</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <button class="btn-top-action" style="flex: 1;" onclick="oeffneNeueBuchungModal()">➕ Neue Buchung erfassen</button>
+                        <button class="btn-top-action" style="flex: 0 0 auto; width: 100px;" onclick="schalteKassenbuchEditModusUm()">${kassenbuchEditModus ? '✓ Fertig' : '✏️ Editieren'}</button>
                     </div>
                 `;
             }
@@ -427,7 +441,7 @@
             zeigeKassenbuchAnsicht();
         }
 
-        // --- BUCHUNG BEARBEITEN / KORRIGIEREN ---
+        // --- BUCHUNG BEARBEITEN / LÖSCHEN IM MODAL ---
         function oeffneBuchungBearbeitenModal(id) {
             const b = alleBuchungen.find(item => String(item.id) === String(id));
             if (!b) return;
@@ -450,6 +464,7 @@
                 <input type="number" step="0.01" id="edit-kb-betrag" value="${b.betrag || 0}" class="input-style">
 
                 <button class="btn-blue-action" onclick="speichereBearbeiteteBuchung('${b.id}')">Änderungen speichern</button>
+                <button class="btn-danger" onclick="loescheBuchung('${b.id}')">🗑️ Buchung löschen</button>
                 <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 8px; width: 100%;">Abbrechen</button>
             `;
 
@@ -491,6 +506,7 @@
                 return;
             }
 
+            schliesseModal();
             await ladeDatenAusDatenbank();
             zeigeKassenbuchAnsicht();
         }
