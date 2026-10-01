@@ -128,36 +128,38 @@
             margin-top: 6px;
         }
 
+        /* GRÖSSERE, LUFTIGERE SUD-KARTEN */
         .kassen-karte {
             background-color: #F8F9FA;
-            border: 1px solid #E0E0E0;
-            border-left: 5px solid #1976D2;
-            border-radius: 8px;
-            padding: 12px;
-            margin: 10px 0;
+            border: 1px solid #D0D7DE;
+            border-left: 6px solid #1976D2;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 12px 0;
             text-align: left;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.06);
         }
         .kassen-karte.bezahlt { border-left-color: #2E7D32; background-color: #F1F8E9; }
-        .kassen-karte.offen { border-left-color: #D32F2F; }
+        .kassen-karte.offen { border-left-color: #D32F2F; background-color: #FFFBFA; }
 
         .karte-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-weight: bold;
-            font-size: 15px;
+            font-size: 16px;
             color: #1565C0;
+            margin-bottom: 6px;
         }
         .karte-details {
-            font-size: 12px;
-            color: #555;
-            margin-top: 6px;
+            font-size: 13px;
+            color: #444;
+            line-height: 1.5;
         }
         .status-badge {
-            padding: 3px 8px;
+            padding: 4px 10px;
             border-radius: 6px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
         }
         .status-badge.offen { background-color: #FFCDD2; color: #C62828; }
@@ -212,8 +214,18 @@
         };
 
         async function ladeDatenAusDatenbank() {
+            // Sude abrufen und direkt nach Status sortieren (Offene zuerst, danach ID absteigend)
             const { data: sudeData } = await _supabase.from('sude').select('*').order('id', { ascending: false });
-            if (sudeData) alleSude = sudeData;
+            if (sudeData) {
+                // Sortierung: Offene Posten zuerst
+                sudeData.sort((a, b) => {
+                    let aBezahlt = a.bezahlt && a.bezahlt.toLowerCase() === 'bezahlt';
+                    let bBezahlt = b.bezahlt && b.bezahlt.toLowerCase() === 'bezahlt';
+                    if (aBezahlt === bBezahlt) return 0;
+                    return aBezahlt ? 1 : -1; // Unbezahlte nach oben
+                });
+                alleSude = sudeData;
+            }
 
             const { data: buchData } = await _supabase.from('kassenbuch').select('*').order('id', { ascending: false });
             if (buchData) alleBuchungen = buchData;
@@ -251,7 +263,7 @@
                     <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.2</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.3</div>
             `;
         }
 
@@ -302,7 +314,6 @@
             `;
         }
 
-        // --- FLIEGENDES FENSTER: NEUE BUCHUNG ---
         function oeffneNeueBuchungModal() {
             const inhalt = document.getElementById('modal-inhalt');
 
@@ -362,7 +373,7 @@
 
             schliesseModal();
             await ladeDatenAusDatenbank();
-            zeigeKassenbuchAnsicht(); // Direkt zurück in die aktualisierte Kassenbuch-Ansicht
+            zeigeKassenbuchAnsicht();
         }
 
         async function loescheBuchung(id) {
@@ -378,7 +389,7 @@
             zeigeKassenbuchAnsicht();
         }
 
-        // --- 2. SUDE MODAL ---
+        // --- 2. SUDE MODAL (Übersichtlicher, mit Brauer & kompakter Summe) ---
         function oeffneSudeModal() {
             const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
             const inhalt = document.getElementById('modal-inhalt');
@@ -390,13 +401,14 @@
                 alleSude.forEach(s => {
                     let istBezahlt = s.bezahlt && s.bezahlt.toLowerCase() === 'bezahlt';
                     let kosten = parseFloat(s.gesamtkosten) || 0;
+                    let brauerText = s.brauer ? `👨‍🍳 Brauer: ${s.brauer}` : '';
 
                     let actionBtn = "";
                     if (!istBezahlt) {
                         if (istKassenwart) {
-                            actionBtn = `<button class="btn-success" style="padding: 5px 10px; font-size: 12px; margin-top: 6px;" onclick="markiereSudAlsBezahlt('${s.id}')">✓ Als bezahlt markieren</button>`;
+                            actionBtn = `<button class="btn-success" style="padding: 8px 12px; font-size: 13px; margin-top: 10px;" onclick="markiereSudAlsBezahlt('${s.id}')">✓ Als bezahlt markieren</button>`;
                         } else {
-                            actionBtn = `<div style="font-size: 11px; color: #888; margin-top: 4px; font-style: italic;">Offen (Nur Kassenwart kann bestätigen)</div>`;
+                            actionBtn = `<div style="font-size: 12px; color: #888; margin-top: 8px; font-style: italic;">Offen (Bestätigung durch Kassenwart ausstehend)</div>`;
                         }
                     }
 
@@ -407,8 +419,10 @@
                                 <span class="status-badge ${istBezahlt ? 'bezahlt' : 'offen'}">${istBezahlt ? 'Bezahlt' : 'Offen'}</span>
                             </div>
                             <div class="karte-details">
-                                <div>📅 ${s.datum || ''} | 💶 ${kosten.toFixed(2)} €</div>
-                                <div style="margin-top: 2px;">🛒 ${s.zutaten_details || ''}</div>
+                                <div style="font-weight: bold; margin-bottom: 2px;">💶 Gesamtbetrag: ${kosten.toFixed(2)} €</div>
+                                <div>📅 Datum: ${s.datum || ''}</div>
+                                ${brauerText ? `<div>${brauerText}</div>` : ''}
+                                <div style="margin-top: 4px; color: #666; font-size: 12px; background: rgba(0,0,0,0.03); padding: 4px 6px; border-radius: 4px;">🛒 ${s.zutaten_details || ''}</div>
                             </div>
                             ${actionBtn}
                         </div>
@@ -418,7 +432,7 @@
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">🍺 Sude & offene Posten</h3>
-                <div style="max-height: 320px; overflow-y: auto;">
+                <div style="max-height: 60vh; overflow-y: auto; padding-right: 2px;">
                     ${sudeHtml}
                 </div>
                 <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 15px; width: 100%;">Schließen</button>
