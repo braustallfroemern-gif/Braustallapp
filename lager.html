@@ -271,7 +271,7 @@
                 <div id="rohstoff-liste"></div>
 
                 <!-- Versions-Prüfung ganz unten -->
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.5</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.6</div>
             `;
             
             baueRohstoffListe(); 
@@ -322,7 +322,12 @@
                 } else if (katLower === 'hefe') {
                     if (r.gaertemperatur) zusatzInfos += `<span>🌡️ ${r.gaertemperatur}</span>`;
                     if (r.vergaerungsgrad) zusatzInfos += `<span>📈 EVG: ${r.vergaerungsgrad}</span>`;
-                } else if (r.notiz) {
+                }
+
+                // Aromatik / Notiz auf der Karte anzeigen, falls vorhanden
+                if (r.aromatik) {
+                    zusatzInfos += `<span>👃 Aromatik: ${r.aromatik}</span>`;
+                } else if (r.notiz && katLower !== 'sonstiges') {
                     zusatzInfos += `<span>📝 ${r.notiz}</span>`;
                 }
 
@@ -424,6 +429,10 @@
 
                     <div id="neue-dynamische-felder"></div>
 
+                    <!-- Aromatik / Geschmacksprofil Feld -->
+                    <label class="label-style">Aromatik / Geschmacksprofil:</label>
+                    <input type="text" id="neu-aromatik" placeholder="z.B. Zitrus, tropische Früchte, harzig" class="input-style">
+
                     <button class="btn-primary" onclick="speichereNeuenRohstoff()">Neuen Rohstoff anlegen</button>
                 </div>
 
@@ -439,13 +448,11 @@
             }
         }
 
-        // Wenn im Modal die Kategorie gewechselt wird, Dropdown aktualisieren UND Einheit automatisch anpassen
         function kategorieGewechseltImModal() {
             aktualisiereBezeichnungDropdown();
-             passeEinheitAutomatischAn();
+            passeEinheitAutomatischAn();
         }
 
-        // Automatische Einheiten-Zuweisung je nach Kategorie
         function passeEinheitAutomatischAn() {
             const kat = document.getElementById('v-kategorie').value;
             const einheitSelect = document.getElementById('neu-einheit');
@@ -492,7 +499,6 @@
                 if (buchungsBereich) buchungsBereich.style.display = 'none';
                 if (neuerBereich) neuerBereich.style.display = 'block';
 
-                // Einheit direkt beim Umschalten auf "Neu" automatisch setzen
                 passeEinheitAutomatischAn();
 
                 const dynContainer = document.getElementById('neue-dynamische-felder');
@@ -587,6 +593,7 @@
             const einheit = document.getElementById('neu-einheit').value;
             const preisInput = document.getElementById('neu-preis').value.trim();
             const preis = preisInput !== "" ? parseFloat(preisInput) : null;
+            const aromatik = document.getElementById('neu-aromatik').value.trim();
 
             if (bezeichnung === "") {
                 alert("Bitte gib eine Bezeichnung ein.");
@@ -599,7 +606,7 @@
                 return;
             }
 
-            let datenObjekt = { kategorie: kat, bezeichnung, bestand, einheit, preis };
+            let datenObjekt = { kategorie: kat, bezeichnung, bestand, einheit, preis, aromatik };
 
             if (kat === 'Malz') {
                 datenObjekt.farbe_ebc = parseFloat(document.getElementById('neu-ebc').value) || null;
@@ -689,6 +696,9 @@
 
                 ${zusatzHtml}
 
+                <label class="label-style">Aromatik / Geschmacksprofil:</label>
+                <input type="text" id="edit-aromatik" value="${r.aromatik || ''}" class="input-style" placeholder="z.B. Zitrus, harzig">
+
                 <button class="btn-primary" onclick="speichereBearbeitetenRohstoff('${r.id}', '${r.kategorie}')">Änderungen speichern</button>
                 <button class="btn-secondary" onclick="oeffneVerwaltenModalMitAuswahl('${r.id}')" style="margin-top: 8px; width: 100%; background-color: #455A64; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">🔙 Zurück</button>
             `;
@@ -700,13 +710,14 @@
             const einheit = document.getElementById('edit-einheit').value.trim();
             const preisInput = document.getElementById('edit-preis').value.trim();
             const preis = preisInput !== "" ? parseFloat(preisInput) : null;
+            const aromatik = document.getElementById('edit-aromatik').value.trim();
 
             if (bezeichnung === "") {
                 alert("Bitte gib eine Bezeichnung ein.");
                 return;
             }
 
-            let datenObjekt = { bezeichnung, bestand, einheit, preis };
+            let datenObjekt = { bezeichnung, bestand, einheit, preis, aromatik };
             let katLower = kategorie ? kategorie.toLowerCase() : '';
 
             if (katLower === 'malz') {
