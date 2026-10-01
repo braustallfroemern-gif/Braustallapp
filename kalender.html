@@ -164,7 +164,6 @@
             font-weight: bold;
         }
         
-        /* Keine Texte mehr in den Zellen, nur noch Farbe & Rahmen */
         .kalender-tag.hat-termin {
             color: white;
             font-weight: bold;
@@ -178,7 +177,7 @@
         .bg-treffen { background-color: #1976D2 !important; border-color: #0D47A1 !important; }
         .bg-veranstaltung { background-color: #2E7D32 !important; border-color: #1B5E20 !important; }
 
-        /* Schwebendes Fenster (Modal) - Jetzt größer und komfortabler */
+        /* Schwebendes Fenster (Modal) */
         #modal-overlay {
             display: none;
             position: fixed;
@@ -260,7 +259,7 @@
                 
                 <button class="btn-primary" onclick="oeffneNeuenTerminModal()">+ Neuen Termin eintragen</button>
 
-                <!-- Neue Farb-Legende -->
+                <!-- Farb-Legende -->
                 <div class="kalender-legende">
                     <div class="legende-item"><span class="legende-punkt" style="background-color: #E65100;"></span> Brautag</div>
                     <div class="legende-item"><span class="legende-punkt" style="background-color: #1976D2;"></span> Treffen</div>
@@ -348,8 +347,6 @@
                     if (hauptTermin.kategorie === 'Brautag') tagDiv.classList.add('bg-brautag');
                     else if (hauptTermin.kategorie === 'Veranstaltung') tagDiv.classList.add('bg-veranstaltung');
                     else tagDiv.classList.add('bg-treffen');
-                    
-                    // Kein Text mehr im Feld, damit die Kästchen exakt gleich groß und sauber bleiben!
                 }
 
                 tagDiv.onclick = () => oeffneTagesDetailsModal(datumStr, tAmTag);
@@ -461,7 +458,7 @@
                 <p style="font-size: 13px; color: #555; margin: 12px 0;">👤 Erstellt von: <strong>${t.ersteller || 'Unbekannt'}</strong></p>
 
                 <button class="btn-primary" onclick="aktualisiereTermin('${t.id}')">Änderungen speichern</button>
-                <button style="background-color: #D32F2F; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; margin-top: 10px; cursor: pointer;" onclick="loescheTermin('${t.id}')">🗑️ Termin löschen</button>
+                <button style="background-color: #D32F2F; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; margin-top: 10px; cursor: pointer;" onclick="loescheTermin('${t.id}')">🗑️️ Termin löschen</button>
                 <button class="btn-secondary" onclick="schliesseModal()">Abbrechen</button>
             `;
         }
@@ -517,7 +514,7 @@
         async function aktualisiereTermin(id) {
             const titel = document.getElementById('edit-titel').value.trim();
             const kategorie = document.getElementById('edit-kategorie').value;
-            const datum = document.getElementById('edit-datum").value;
+            const datum = document.getElementById('edit-datum').value;
             const uhrzeit = document.getElementById('edit-uhrzeit').value.trim();
 
             const { error } = await _supabase
