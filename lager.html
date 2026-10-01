@@ -271,7 +271,7 @@
                 <div id="rohstoff-liste"></div>
 
                 <!-- Versions-Prüfung ganz unten -->
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.6</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.7</div>
             `;
             
             baueRohstoffListe(); 
@@ -324,11 +324,15 @@
                     if (r.vergaerungsgrad) zusatzInfos += `<span>📈 EVG: ${r.vergaerungsgrad}</span>`;
                 }
 
-                // Aromatik / Notiz auf der Karte anzeigen, falls vorhanden
                 if (r.aromatik) {
-                    zusatzInfos += `<span>👃 Aromatik: ${r.aromatik}</span>`;
+                    zusatzInfos += `<span>👃 ${r.aromatik}</span>`;
                 } else if (r.notiz && katLower !== 'sonstiges') {
                     zusatzInfos += `<span>📝 ${r.notiz}</span>`;
+                }
+
+                // Alternativen auf der Karte anzeigen
+                if (r.alternativen) {
+                    zusatzInfos += `<span>🔄 Alt: ${r.alternativen}</span>`;
                 }
 
                 if (r.preis !== null && r.preis !== undefined && r.preis !== "") {
@@ -429,9 +433,11 @@
 
                     <div id="neue-dynamische-felder"></div>
 
-                    <!-- Aromatik / Geschmacksprofil Feld -->
                     <label class="label-style">Aromatik / Geschmacksprofil:</label>
-                    <input type="text" id="neu-aromatik" placeholder="z.B. Zitrus, tropische Früchte, harzig" class="input-style">
+                    <input type="text" id="neu-aromatik" placeholder="z.B. Zitrus, tropisch, harzig" class="input-style">
+
+                    <label class="label-style">Mögliche Alternativen:</label>
+                    <input type="text" id="neu-alternativen" placeholder="z.B. Cascade, Centennial" class="input-style">
 
                     <button class="btn-primary" onclick="speichereNeuenRohstoff()">Neuen Rohstoff anlegen</button>
                 </div>
@@ -594,6 +600,7 @@
             const preisInput = document.getElementById('neu-preis').value.trim();
             const preis = preisInput !== "" ? parseFloat(preisInput) : null;
             const aromatik = document.getElementById('neu-aromatik').value.trim();
+            const alternativen = document.getElementById('neu-alternativen').value.trim();
 
             if (bezeichnung === "") {
                 alert("Bitte gib eine Bezeichnung ein.");
@@ -606,7 +613,7 @@
                 return;
             }
 
-            let datenObjekt = { kategorie: kat, bezeichnung, bestand, einheit, preis, aromatik };
+            let datenObjekt = { kategorie: kat, bezeichnung, bestand, einheit, preis, aromatik, alternativen };
 
             if (kat === 'Malz') {
                 datenObjekt.farbe_ebc = parseFloat(document.getElementById('neu-ebc').value) || null;
@@ -699,6 +706,9 @@
                 <label class="label-style">Aromatik / Geschmacksprofil:</label>
                 <input type="text" id="edit-aromatik" value="${r.aromatik || ''}" class="input-style" placeholder="z.B. Zitrus, harzig">
 
+                <label class="label-style">Mögliche Alternativen:</label>
+                <input type="text" id="edit-alternativen" value="${r.alternativen || ''}" class="input-style" placeholder="z.B. Cascade, Centennial">
+
                 <button class="btn-primary" onclick="speichereBearbeitetenRohstoff('${r.id}', '${r.kategorie}')">Änderungen speichern</button>
                 <button class="btn-secondary" onclick="oeffneVerwaltenModalMitAuswahl('${r.id}')" style="margin-top: 8px; width: 100%; background-color: #455A64; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">🔙 Zurück</button>
             `;
@@ -711,13 +721,14 @@
             const preisInput = document.getElementById('edit-preis').value.trim();
             const preis = preisInput !== "" ? parseFloat(preisInput) : null;
             const aromatik = document.getElementById('edit-aromatik').value.trim();
+            const alternativen = document.getElementById('edit-alternativen').value.trim();
 
             if (bezeichnung === "") {
                 alert("Bitte gib eine Bezeichnung ein.");
                 return;
             }
 
-            let datenObjekt = { bezeichnung, bestand, einheit, preis, aromatik };
+            let datenObjekt = { bezeichnung, bestand, einheit, preis, aromatik, alternativen };
             let katLower = kategorie ? kategorie.toLowerCase() : '';
 
             if (katLower === 'malz') {
