@@ -100,7 +100,6 @@
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        /* GROSSER, SCHICKER ROTER LÖSCH-BUTTON IM POP-UP (GLEICHES FORMAT WIE SPEICHERN) */
         .btn-danger-modal {
             background-color: #D32F2F;
             color: white;
@@ -113,6 +112,33 @@
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-top: 8px;
+        }
+        /* SCHÖNE FARBIGE ADMIN-BUTTONS FÜR OFFENE SUDE */
+        .btn-admin-gruen {
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            padding: 9px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            flex: 1;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .btn-admin-rot {
+            background-color: #D32F2F;
+            color: white;
+            border: none;
+            padding: 9px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            flex: 1;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         /* BEIDE OBEREN BUTTONS ABSOLUT SYMMETRISCH UND GLEICH HOCH */
         .btn-top-action {
@@ -305,7 +331,7 @@
                     <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.9</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.11</div>
             `;
         }
 
@@ -513,7 +539,7 @@
             zeigeKassenbuchAnsicht();
         }
 
-        // --- 2. SUDE MODAL ---
+        // --- 2. SUDE MODAL (Mit grünem Bezahlt-Button, rotem Lösch-Button für offene & kompakter Ansicht für bezahlte Sude) ---
         function oeffneSudeModal() {
             const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
             const inhalt = document.getElementById('modal-inhalt');
@@ -529,17 +555,16 @@
 
                     let adminKastenHtml = "";
                     if (istKassenwart) {
-                        let bezahltButtonHtml = "";
                         if (!istBezahlt) {
-                            bezahltButtonHtml = `<button class="btn-success" onclick="markiereSudAlsBezahlt('${s.id}')">✓ Bezahlt</button>`;
+                            // Nur offene Sude bekommen die Verwaltungs-Buttons (Grün & Rot)
+                            adminKastenHtml = `
+                                <div style="display: flex; gap: 8px; margin-top: 10px; border-top: 1px dashed #DDD; padding-top: 8px;">
+                                    <button class="btn-admin-gruen" onclick="markiereSudAlsBezahlt('${s.id}')">✓ Bezahlt</button>
+                                    <button class="btn-admin-rot" onclick="loescheSudUndBucheZurueck('${s.id}')">🗑️ Sud löschen</button>
+                                </div>
+                            `;
                         }
-                        
-                        adminKastenHtml = `
-                            <div style="display: flex; gap: 8px; margin-top: 10px; border-top: 1px dashed #DDD; padding-top: 8px;">
-                                ${bezahltButtonHtml}
-                                <button class="btn-danger-kasse" onclick="loescheSudUndBucheZurueck('${s.id}')">🗑️ Sud löschen</button>
-                            </div>
-                        `;
+                        // Bezahlte Sude bleiben hier komplett frei von Buttons -> Karte schrumpft schön zusammen!
                     } else if (!istBezahlt) {
                         adminKastenHtml = `<div style="font-size: 12px; color: #888; margin-top: 8px; font-style: italic;">Offen (Bestätigung durch Kassenwart ausstehend)</div>`;
                     }
@@ -574,15 +599,13 @@
         }
 
         async function markiereSudAlsBezahlt(sudId) {
-            if (!confirm("Sud als bezahlt markieren?")) return;
-
             const { error } = await _supabase.from('sude').update({ bezahlt: 'Bezahlt' }).eq('id', sudId);
             if (error) {
                 alert("Fehler: " + error.message);
                 return;
             }
 
-            alert("Sud auf bezahlt gesetzt!");
+            alert("✓ Sud erfolgreich auf bezahlt gesetzt!");
             await ladeDatenAusDatenbank();
             zeigeKassenZentrale();
             oeffneSudeModal();
