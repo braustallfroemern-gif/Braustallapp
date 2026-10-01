@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Braustall Kasse</title>
+    
+    <!-- Mobil-Icons & Manifest -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Supabase Bibliothek -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #E3F2FD;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        #app {
+            background-color: white;
+            padding: 20px 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            box-sizing: border-box;
+            position: relative;
+            min-height: 90vh;
+        }
+        html, body {
+            overscroll-behavior-y: none; 
+        }
+
+        .btn-back-corner {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background-color: #455A64;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .page-title {
+            color: #1565C0;
+            margin-top: 35px;
+            margin-bottom: 20px;
+            font-size: 22px;
+            text-align: center;
+        }
+
+        .kassen-karte {
+            background-color: #F8F9FA;
+            border: 1px solid #E0E0E0;
+            border-left: 5px solid #1976D2;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            text-align: left;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .kassen-karte.bezahlt {
+            border-left-color: #2E7D32;
+            background-color: #F1F8E9;
+        }
+        .kassen-karte.offen {
+            border-left-color: #D32F2F;
+        }
+
+        .karte-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 15px;
+            color: #1565C0;
+        }
+        .karte-details {
+            font-size: 12px;
+            color: #555;
+            margin-top: 6px;
+        }
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .status-badge.offen {
+            background-color: #FFCDD2;
+            color: #C62828;
+        }
+        .status-badge.bezahlt {
+            background-color: #C8E6C9;
+            color: #2E7D32;
+        }
+
+        .btn-bezahlt {
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">Lade Kasse...</div>
+
+    <script>
+        const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let alleSude = [];
+
+        window.onload = async function() {
+            const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
+            if (!angemeldet) {
+                window.location.href = 'index.html';
+                return;
+            }
+            await ladeSudeAusDatenbank();
+            zeigeKassenAnsicht();
+        };
+
+        async function ladeSudeAusDatenbank() {
+            const { data, error } = await _supabase
+                .from('sude')
+                .select('*')
+                .order('id', { ascending: false });
+            if (!error && data) {
+                alleSude = data;
+            }
+        }
+
+        function zeigeKassenAnsicht() {
+            const app = document.getElementById('app');
+
+            // Prüfen ob der angemeldete Nutzer Kassenwart ist ('ja' in der Session oder Cache)
+            const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
+
+            let sudeHtml = "";
+            let offeneSumme = 0;
+
+            if (alleSude.length === 0) {
+                sudeHtml = `<p style="color: #666; font-size: 14px; margin: 30px 0; text-align: center;">Bisher sind keine Sude in der Kasse eingetragen.</p>`;
+            } else {
+                alleSude.forEach(s => {
+                    let istBezahlt = s.bezahlt && s.bezahlt.toLowerCase() === 'bezahlt';
+                    let kosten = parseFloat(s.gesamtkosten) || 0;
+
+                    if (!istBezahlt) {
+                        offeneSumme += kosten;
+                    }
+
+                    // Nur wenn der Nutzer Kassenwart ist und der Sud offen ist, wird der Button angezeigt
+                    let actionButtonHtml = "";
+                    if (!istBezahlt) {
+                        if (istKassenwart) {
+                            actionButtonHtml = `<button class="btn-bezahlt" onclick="markiereAlsBezahlt('${s.id}')">✓ Als bezahlt markieren</button>`;
+                        } else {
+                            actionButtonHtml = `<div style="font-size: 11px; color: #888; margin-top: 6px; font-style: italic;">(Zahlung offen – Nur für den Kassenwart bearbeitbar)</div>`;
+                        }
+                    }
+
+                    sudeHtml += `
+                        <div class="kassen-karte ${istBezahlt ? 'bezahlt' : 'offen'}">
+                            <div class="karte-header">
+                                <span>🍺 ${s.sud_name || 'Unbenannter Sud'}</span>
+                                <span class="status-badge ${istBezahlt ? 'bezahlt' : 'offen'}">${istBezahlt ? 'Bezahlt' : 'Offen'}</span>
+                            </div>
+                            <div class="karte-details">
+                                <div>📅 Datum: ${s.datum || 'Unbekannt'}</div>
+                                <div>🛒 Zutaten: ${s.zutaten_details || 'Keine Details'}</div>
+                                <div style="margin-top: 4px; font-weight: bold; color: #333;">💶 Betrag: ${kosten.toFixed(2)} €</div>
+                            </div>
+                            ${actionButtonHtml}
+                        </div>
+                    `;
+                });
+            }
+
+            app.innerHTML = `
+                <button class="btn-back-corner" onclick="location.href='index.html'">🔙 Zurück</button>
+
+                <h2 class="page-title">💰 Braustall Kasse</h2>
+
+                <div style="background-color: #FFF3E0; border: 1px solid #FFE0B2; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center;">
+                    <span style="font-size: 13px; color: #E65100; font-weight: bold;">Offene Gesamtsumme:</span>
+                    <div style="font-size: 20px; font-weight: bold; color: #D84315; margin-top: 2px;">${offeneSumme.toFixed(2)} €</div>
+                </div>
+
+                <h3 style="color: #1565C0; font-size: 16px; margin-bottom: 10px;">Sud-Historie & Zahlungsstatus:</h3>
+                
+                <div id="sude-liste">
+                    ${sudeHtml}
+                </div>
+
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Kasse Version 1.1</div>
+            `;
+        }
+
+        async function markiereAlsBezahlt(sudId) {
+            if (!confirm("Möchtest du diesen Sud verbindlich auf 'Bezahlt' setzen?")) return;
+
+            const { error } = await _supabase
+                .from('sude')
+                .update({ bezahlt: 'Bezahlt' })
+                .eq('id', sudId);
+
+            if (error) {
+                alert("Fehler beim Aktualisieren: " + error.message);
+                return;
+            }
+
+            alert("✅ Der Sud wurde erfolgreich auf 'Bezahlt' gesetzt!");
+            await ladeSudeAusDatenbank();
+            zeigeKassenAnsicht();
+        }
+    </script>
+</body>
+</html>
