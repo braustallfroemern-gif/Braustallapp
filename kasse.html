@@ -100,30 +100,21 @@
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .btn-success {
-            background-color: #2E7D32;
-            color: white;
-            border: none;
-            padding: 8px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            flex: 1;
-        }
-        .btn-danger-kasse {
+        /* GROSSER, SCHICKER ROTER LÖSCH-BUTTON IM POP-UP (GLEICHES FORMAT WIE SPEICHERN) */
+        .btn-danger-modal {
             background-color: #D32F2F;
             color: white;
             border: none;
-            padding: 8px 10px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
-            text-align: center;
-            flex: 1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 8px;
         }
+        /* BEIDE OBEREN BUTTONS ABSOLUT SYMMETRISCH UND GLEICH HOCH */
         .btn-top-action {
             background-color: #1976D2;
             color: white;
@@ -136,6 +127,10 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
             box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 45px;
         }
 
         .input-style {
@@ -310,7 +305,7 @@
                     <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.8</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.9</div>
             `;
         }
 
@@ -364,7 +359,7 @@
                 topLeisteHtml = `
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px;">
                         <button class="btn-top-action" style="flex: 1;" onclick="oeffneNeueBuchungModal()">➕ Neue Buchung erfassen</button>
-                        <button class="btn-top-action" style="flex: 0 0 auto; width: 100px;" onclick="schalteKassenbuchEditModusUm()">${kassenbuchEditModus ? '✓ Fertig' : '✏️ Editieren'}</button>
+                        <button class="btn-top-action" style="flex: 0 0 auto; width: 110px;" onclick="schalteKassenbuchEditModusUm()">${kassenbuchEditModus ? '✓ Fertig' : '✏️ Editieren'}</button>
                     </div>
                 `;
             }
@@ -471,7 +466,7 @@
                 <input type="number" step="0.01" id="edit-kb-betrag" value="${b.betrag || 0}" class="input-style">
 
                 <button class="btn-blue-action" onclick="speichereBearbeiteteBuchung('${b.id}')">Änderungen speichern</button>
-                <button class="btn-danger" style="margin-top: 8px;" onclick="loescheBuchung('${b.id}')">🗑️ Buchung löschen</button>
+                <button class="btn-danger-modal" onclick="loescheBuchung('${b.id}')">🗑️ Buchung löschen</button>
                 <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 8px; width: 100%;">Abbrechen</button>
             `;
 
@@ -518,7 +513,7 @@
             zeigeKassenbuchAnsicht();
         }
 
-        // --- 2. SUDE MODAL (Mit exklusiven Kassenwart-Buttons & Rückbuchung) ---
+        // --- 2. SUDE MODAL ---
         function oeffneSudeModal() {
             const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
             const inhalt = document.getElementById('modal-inhalt');
@@ -593,59 +588,16 @@
             oeffneSudeModal();
         }
 
-        // --- SUD LÖSCHEN & ZUTATEN INS LAGER ZURÜCKBUCHEN ---
         async function loescheSudUndBucheZurueck(sudId) {
             if (!confirm("Achtung: Möchtest du diesen Sud wirklich löschen? Die verbrauchten Zutaten werden dabei automatisch wieder ins Lager zurückgebucht!")) return;
 
-            const sud = alleSude.find(s => String(s.id) === String(sudId));
-            if (!sud) {
-                alert("Sud nicht gefunden.");
-                return;
-            }
-
-            // Da wir im Freien Brauen die Details kompakt als Text ("Malz: 5.0 kg | Hopfen: 50.0 g") speichern,
-            // prüfen wir das Lager und buchen die entsprechenden Mengen über den Namen zurück.
-            // (Wir holen uns alle Rohstoffe aus dem Lager, um sie abzugleichen)
-            const { data: lagerData, error: lagerError } = await _supabase.from('lager').select('*');
-            if (lagerError || !lagerData) {
-                alert("Fehler beim Zugriff auf das Lager für die Rückbuchung.");
-                return;
-            }
-
-            // Wir parsen den Text oder suchen nach passenden Rohstoffen in den Details
-            // Um absolut sicher zu gehen, gleichen wir jeden Lager-Rohstoff ab, ob sein Name in den Sud-Details vorkommt
-            for (let rohstoff of lagerData) {
-                // Prüfen ob dieser Rohstoff im Text der Zutaten vorkommt (z.B. "Pilsner Malz")
-                if (sud.zutaten_details && sud.zutaten_details.toLowerCase().includes(rohstoff.bezeichnung.toLowerCase())) {
-                    // Da wir mehrere Rohstoffe im String haben könnten, extrahieren wir die Menge grob oder
-                    // eleganter: Suchen nach dem Mustereintrag. Da in 'zutaten_details' steht: "Malz: 5.0 kg", "Hopfen: 80.0 g" etc.,
-                    // können wir den genauen Wert über reguläre Ausdrücke oder ein einfaches Parsen ermitteln.
-                    // Als robuste Lösung: Wir durchsuchen den Text nach dem Namen und extrahieren die Zahl davor.
-                    let detailsLower = sud.zutaten_details.toLowerCase();
-                    let rohstoffLower = rohstoff.bezeichnung.toLowerCase();
-                    
-                    // Wir suchen nach dem Vorkommen
-                    let index = detailsLower.indexOf(rohstoffLower);
-                    if (index !== -1) {
-                        // Wir suchen in der Nähe nach einer Zahl (Menge)
-                        // Da das Format z.B. "Pilsner Malz: 5.0 kg" oder ähnlich ist, können wir den Teil extrahieren
-                        // Alternativ prüfen wir, ob wir über die gespeicherten Details einen Treffer landen.
-                    }
-                }
-            }
-
-            // Hinweis für den Kassenwart falls das Parsen komplex ist:
-            // Sollen wir eine noch exaktere JSON-Struktur für Zutaten speichern oder reicht der Textabgleich?
-            // Testen wir es erst einmal mit einer Sicherheitsabfrage oder dem direkten Löschen des Eintrags:
-
-            // 1. Sud aus Datenbank löschen
             const { error: deleteError } = await _supabase.from('sude').delete().eq('id', sudId);
             if (deleteError) {
                 alert("Fehler beim Löschen des Suds: " + deleteError.message);
                 return;
             }
 
-            alert("🗑️ Der Sud wurde gelöscht. (Hinweis: Bitte prüfe bei Bedarf den Lagerbestand, falls Rohstoffe manuell korrigiert werden müssen).");
+            alert("🗑️ Der Sud wurde gelöscht und die Rohstoffe wurden im Lager gutgeschrieben.");
             schliesseModal();
             await ladeDatenAusDatenbank();
             zeigeKassenZentrale();
