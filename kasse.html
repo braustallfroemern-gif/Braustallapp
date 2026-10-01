@@ -55,9 +55,77 @@
         .page-title {
             color: #1565C0;
             margin-top: 35px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-size: 22px;
             text-align: center;
+        }
+
+        .btn-primary {
+            background-color: #1976D2;
+            color: white;
+            border: none;
+            padding: 16px;
+            margin: 10px 0;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .btn-secondary-action {
+            background-color: #546E7A;
+            color: white;
+            border: none;
+            padding: 16px;
+            margin: 10px 0;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .btn-success {
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-danger {
+            background-color: #D32F2F;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .input-style {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0 12px 0;
+            border: 1px solid #90CAF9;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .label-style {
+            display: block;
+            text-align: left;
+            font-size: 13px;
+            font-weight: bold;
+            color: #1565C0;
+            margin-top: 6px;
         }
 
         .kassen-karte {
@@ -70,13 +138,8 @@
             text-align: left;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .kassen-karte.bezahlt {
-            border-left-color: #2E7D32;
-            background-color: #F1F8E9;
-        }
-        .kassen-karte.offen {
-            border-left-color: #D32F2F;
-        }
+        .kassen-karte.bezahlt { border-left-color: #2E7D32; background-color: #F1F8E9; }
+        .kassen-karte.offen { border-left-color: #D32F2F; }
 
         .karte-header {
             display: flex;
@@ -97,25 +160,28 @@
             font-size: 11px;
             font-weight: bold;
         }
-        .status-badge.offen {
-            background-color: #FFCDD2;
-            color: #C62828;
-        }
-        .status-badge.bezahlt {
-            background-color: #C8E6C9;
-            color: #2E7D32;
-        }
+        .status-badge.offen { background-color: #FFCDD2; color: #C62828; }
+        .status-badge.bezahlt { background-color: #C8E6C9; color: #2E7D32; }
 
-        .btn-bezahlt {
-            background-color: #2E7D32;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 8px;
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #modal-inhalt {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 92%;
+            max-width: 420px;
+            text-align: left;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-height: 92vh;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -123,12 +189,17 @@
 
     <div id="app">Lade Kasse...</div>
 
+    <div id="modal-overlay">
+        <div id="modal-inhalt"></div>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let alleSude = [];
+        let alleBuchungen = [];
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -136,103 +207,236 @@
                 window.location.href = 'index.html';
                 return;
             }
-            await ladeSudeAusDatenbank();
-            zeigeKassenAnsicht();
+            await ladeDatenAusDatenbank();
+            zeigeKassenZentrale();
         };
 
-        async function ladeSudeAusDatenbank() {
-            const { data, error } = await _supabase
-                .from('sude')
-                .select('*')
-                .order('id', { ascending: false });
-            if (!error && data) {
-                alleSude = data;
-            }
+        async function ladeDatenAusDatenbank() {
+            const { data: sudeData } = await _supabase.from('sude').select('*').order('id', { ascending: false });
+            if (sudeData) alleSude = sudeData;
+
+            const { data: buchData } = await _supabase.from('kassenbuch').select('*').order('id', { ascending: false });
+            if (buchData) alleBuchungen = buchData;
         }
 
-        function zeigeKassenAnsicht() {
+        function berechneKassenstand() {
+            let summe = 0;
+            alleBuchungen.forEach(b => {
+                let betrag = parseFloat(b.betrag) || 0;
+                if (b.art && b.art.toLowerCase() === 'einnahme') {
+                    summe += betrag;
+                } else if (b.art && b.art.toLowerCase() === 'ausgabe') {
+                    summe -= betrag;
+                }
+            });
+            return summe;
+        }
+
+        function zeigeKassenZentrale() {
             const app = document.getElementById('app');
-
-            // Prüfen ob der angemeldete Nutzer Kassenwart ist ('ja' in der Session oder Cache)
-            const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
-
-            let sudeHtml = "";
-            let offeneSumme = 0;
-
-            if (alleSude.length === 0) {
-                sudeHtml = `<p style="color: #666; font-size: 14px; margin: 30px 0; text-align: center;">Bisher sind keine Sude in der Kasse eingetragen.</p>`;
-            } else {
-                alleSude.forEach(s => {
-                    let istBezahlt = s.bezahlt && s.bezahlt.toLowerCase() === 'bezahlt';
-                    let kosten = parseFloat(s.gesamtkosten) || 0;
-
-                    if (!istBezahlt) {
-                        offeneSumme += kosten;
-                    }
-
-                    // Nur wenn der Nutzer Kassenwart ist und der Sud offen ist, wird der Button angezeigt
-                    let actionButtonHtml = "";
-                    if (!istBezahlt) {
-                        if (istKassenwart) {
-                            actionButtonHtml = `<button class="btn-bezahlt" onclick="markiereAlsBezahlt('${s.id}')">✓ Als bezahlt markieren</button>`;
-                        } else {
-                            actionButtonHtml = `<div style="font-size: 11px; color: #888; margin-top: 6px; font-style: italic;">(Zahlung offen – Nur für den Kassenwart bearbeitbar)</div>`;
-                        }
-                    }
-
-                    sudeHtml += `
-                        <div class="kassen-karte ${istBezahlt ? 'bezahlt' : 'offen'}">
-                            <div class="karte-header">
-                                <span>🍺 ${s.sud_name || 'Unbenannter Sud'}</span>
-                                <span class="status-badge ${istBezahlt ? 'bezahlt' : 'offen'}">${istBezahlt ? 'Bezahlt' : 'Offen'}</span>
-                            </div>
-                            <div class="karte-details">
-                                <div>📅 Datum: ${s.datum || 'Unbekannt'}</div>
-                                <div>🛒 Zutaten: ${s.zutaten_details || 'Keine Details'}</div>
-                                <div style="margin-top: 4px; font-weight: bold; color: #333;">💶 Betrag: ${kosten.toFixed(2)} €</div>
-                            </div>
-                            ${actionButtonHtml}
-                        </div>
-                    `;
-                });
-            }
+            const kassenstand = berechneKassenstand();
 
             app.innerHTML = `
                 <button class="btn-back-corner" onclick="location.href='index.html'">🔙 Zurück</button>
 
                 <h2 class="page-title">💰 Braustall Kasse</h2>
 
-                <div style="background-color: #FFF3E0; border: 1px solid #FFE0B2; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center;">
-                    <span style="font-size: 13px; color: #E65100; font-weight: bold;">Offene Gesamtsumme:</span>
-                    <div style="font-size: 20px; font-weight: bold; color: #D84315; margin-top: 2px;">${offeneSumme.toFixed(2)} €</div>
+                <div style="background-color: #E8F5E9; border: 1px solid #C8E6C9; border-radius: 8px; padding: 15px; margin-bottom: 25px; text-align: center;">
+                    <span style="font-size: 13px; color: #2E7D32; font-weight: bold;">Aktueller Kassenbestand:</span>
+                    <div style="font-size: 24px; font-weight: bold; color: #1B5E20; margin-top: 4px;">${kassenstand.toFixed(2)} €</div>
                 </div>
 
-                <h3 style="color: #1565C0; font-size: 16px; margin-bottom: 10px;">Sud-Historie & Zahlungsstatus:</h3>
-                
-                <div id="sude-liste">
-                    ${sudeHtml}
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                    <button class="btn-primary" onclick="oeffneKassenbuchModal()">📖 Kassenbuch</button>
+                    <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Kasse Version 1.1</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.1</div>
             `;
         }
 
-        async function markiereAlsBezahlt(sudId) {
-            if (!confirm("Möchtest du diesen Sud verbindlich auf 'Bezahlt' setzen?")) return;
+        function oeffneKassenbuchModal() {
+            const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
+            const inhalt = document.getElementById('modal-inhalt');
 
-            const { error } = await _supabase
-                .from('sude')
-                .update({ bezahlt: 'Bezahlt' })
-                .eq('id', sudId);
+            // Einzigartige Beschreibungen für die Autovervollständigung (Vorschlagsliste) sammeln
+            let einigartigeBeschreibungen = [...new Set(alleBuchungen.map(b => b.beschreibung).filter(Boolean))];
+            let datalistOptions = "";
+            einigartigeBeschreibungen.forEach(b => {
+                datalistOptions += `<option value="${b}">`;
+            });
 
-            if (error) {
-                alert("Fehler beim Aktualisieren: " + error.message);
+            let buchungenHtml = "";
+            if (alleBuchungen.length === 0) {
+                buchungenHtml = `<p style="color: #666; font-size: 13px; text-align: center; margin: 15px 0;">Noch keine Buchungen im Kassenbuch.</p>`;
+            } else {
+                alleBuchungen.forEach(b => {
+                    let istEinnahme = b.art && b.art.toLowerCase() === 'einnahme';
+                    let betrag = parseFloat(b.betrag) || 0;
+
+                    buchungenHtml += `
+                        <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-left: 4px solid ${istEinnahme ? '#2E7D32' : '#D32F2F'}; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 13px;">
+                            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                                <span style="color: ${istEinnahme ? '#2E7D32' : '#D32F2F'};">${b.art || 'Buchung'}</span>
+                                <span style="color: #333;">${istEinnahme ? '+' : '-'}${betrag.toFixed(2)} €</span>
+                            </div>
+                            <div style="color: #555; margin-top: 3px;">${b.beschreibung || 'Keine Beschreibung'}</div>
+                            <div style="color: #888; font-size: 11px; margin-top: 2px;">📅 ${b.datum || ''}</div>
+                            ${istKassenwart ? `<div style="margin-top: 6px; text-align: right;"><button class="btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="loescheBuchung('${b.id}')">🗑️ Löschen</button></div>` : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            let neuerEintragBereich = "";
+            if (istKassenwart) {
+                neuerEintragBereich = `
+                    <div style="background-color: #F1F8E9; border: 1px solid #C8E6C9; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: #2E7D32; margin: 0 0 10px 0; font-size: 14px;">➕ Neue Buchung erfassen</h4>
+                        
+                        <label class="label-style">Art:</label>
+                        <select id="kb-art" class="input-style" style="margin-bottom: 8px;">
+                            <option value="Einnahme">Einnahme</option>
+                            <option value="Ausgabe">Ausgabe</option>
+                        </select>
+
+                        <label class="label-style">Beschreibung:</label>
+                        <input type="text" id="kb-beschreibung" list="vorschlaege-liste" placeholder="Tippen oder auswählen..." class="input-style" style="margin-bottom: 8px;">
+                        <datalist id="vorschlaege-liste">
+                            ${datalistOptions}
+                        </datalist>
+
+                        <label class="label-style">Betrag (€):</label>
+                        <input type="number" step="0.01" id="kb-betrag" placeholder="z.B. 25.00" class="input-style" style="margin-bottom: 10px;">
+
+                        <button class="btn-success" onclick="speichereNeueBuchung()">Buchung speichern</button>
+                    </div>
+                `;
+            } else {
+                neuerEintragBereich = `<p style="font-size: 12px; color: #888; font-style: italic; text-align: center; margin-bottom: 15px;">(Neue Buchungen können nur vom Kassenwart vorgenommen werden)</p>`;
+            }
+
+            inhalt.innerHTML = `
+                <h3 style="color: #1565C0; margin-top: 0;">📖 Kassenbuch</h3>
+                ${neuerEintragBereich}
+                <h4 style="color: #1565C0; font-size: 14px; margin-bottom: 8px;">Bisherige Buchungen:</h4>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    ${buchungenHtml}
+                </div>
+                <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 15px; width: 100%;">Schließen</button>
+            `;
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        async function speichereNeueBuchung() {
+            const art = document.getElementById('kb-art').value;
+            const beschreibung = document.getElementById('kb-beschreibung').value.trim();
+            const betrag = parseFloat(document.getElementById('kb-betrag').value);
+
+            if (beschreibung === "" || isNaN(betrag) || betrag <= 0) {
+                alert("Bitte fülle Beschreibung und einen gültigen Betrag aus.");
                 return;
             }
 
-            alert("✅ Der Sud wurde erfolgreich auf 'Bezahlt' gesetzt!");
-            await ladeSudeAusDatenbank();
-            zeigeKassenAnsicht();
+            const heute = new Date().toLocaleDateString('de-DE');
+            const { error } = await _supabase.from('kassenbuch').insert([{
+                datum: heute,
+                art: art,
+                beschreibung: beschreibung,
+                betrag: betrag
+            }]);
+
+            if (error) {
+                alert("Fehler beim Speichern: " + error.message);
+                return;
+            }
+
+            alert("Buchung erfolgreich gespeichert!");
+            await ladeDatenAusDatenbank();
+            zeigeKassenZentrale();
+            oeffneKassenbuchModal();
+        }
+
+        async function loescheBuchung(id) {
+            if (!confirm("Möchtest du diese Buchung wirklich löschen?")) return;
+
+            const { error } = await _supabase.from('kassenbuch').delete().eq('id', id);
+            if (error) {
+                alert("Fehler beim Löschen: " + error.message);
+                return;
+            }
+
+            await ladeDatenAusDatenbank();
+            zeigeKassenZentrale();
+            oeffneKassenbuchModal();
+        }
+
+        function oeffneSudeModal() {
+            const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
+            const inhalt = document.getElementById('modal-inhalt');
+
+            let sudeHtml = "";
+            if (alleSude.length === 0) {
+                sudeHtml = `<p style="color: #666; font-size: 13px; text-align: center; margin: 15px 0;">Keine Sude eingetragen.</p>`;
+            } else {
+                alleSude.forEach(s => {
+                    let istBezahlt = s.bezahlt && s.bezahlt.toLowerCase() === 'bezahlt';
+                    let kosten = parseFloat(s.gesamtkosten) || 0;
+
+                    let actionBtn = "";
+                    if (!istBezahlt) {
+                        if (istKassenwart) {
+                            actionBtn = `<button class="btn-success" style="padding: 5px 10px; font-size: 12px; margin-top: 6px;" onclick="markiereSudAlsBezahlt('${s.id}')">✓ Als bezahlt markieren</button>`;
+                        } else {
+                            actionBtn = `<div style="font-size: 11px; color: #888; margin-top: 4px; font-style: italic;">Offen (Nur Kassenwart kann bestätigen)</div>`;
+                        }
+                    }
+
+                    sudeHtml += `
+                        <div class="kassen-karte ${istBezahlt ? 'bezahlt' : 'offen'}">
+                            <div class="karte-header">
+                                <span>🍺 ${s.sud_name || 'Sud'}</span>
+                                <span class="status-badge ${istBezahlt ? 'bezahlt' : 'offen'}">${istBezahlt ? 'Bezahlt' : 'Offen'}</span>
+                            </div>
+                            <div class="karte-details">
+                                <div>📅 ${s.datum || ''} | 💶 ${kosten.toFixed(2)} €</div>
+                                <div style="margin-top: 2px;">🛒 ${s.zutaten_details || ''}</div>
+                            </div>
+                            ${actionBtn}
+                        </div>
+                    `;
+                });
+            }
+
+            inhalt.innerHTML = `
+                <h3 style="color: #1565C0; margin-top: 0;">🍺 Sude & offene Posten</h3>
+                <div style="max-height: 320px; overflow-y: auto;">
+                    ${sudeHtml}
+                </div>
+                <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 15px; width: 100%;">Schließen</button>
+            `;
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        async function markiereSudAlsBezahlt(sudId) {
+            if (!confirm("Sud als bezahlt markieren?")) return;
+
+            const { error } = await _supabase.from('sude').update({ bezahlt: 'Bezahlt' }).eq('id', sudId);
+            if (error) {
+                alert("Fehler: " + error.message);
+                return;
+            }
+
+            alert("Sud auf bezahlt gesetzt!");
+            await ladeDatenAusDatenbank();
+            zeigeKassenZentrale();
+            oeffneSudeModal();
+        }
+
+        function schliesseModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
         }
     </script>
 </body>
