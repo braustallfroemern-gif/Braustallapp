@@ -210,11 +210,9 @@
         };
 
         async function ladeDatenAusDatenbank() {
-            // Rohstoffe laden
             const { data: lagerData } = await _supabase.from('lager').select('*').order('bezeichnung', { ascending: true });
             if (lagerData) alleRohstoffe = lagerData;
 
-            // Sude zählen, um die nächste Sud-Nummer zu ermitteln
             const { count, error } = await _supabase.from('sude').select('*', { count: 'exact', head: true });
             if (!error && count !== null) {
                 alleSudeCount = count;
@@ -235,14 +233,12 @@
                     <button class="btn-secondary-action" onclick="alert('Die Rezeptdatenbank folgt im nächsten Schritt!')">📖 Brauen aus Rezeptdatenbank</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.1</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.2</div>
             `;
         }
 
-        // --- FREIES BRAUEN MODAL ---
         async function oeffneFreiesBrauenModal() {
             rezeptZutaten = [];
-            // Vor dem Öffnen einmal kurz die aktuelle Sud-Anzahl frisch holen
             const { count } = await _supabase.from('sude').select('*', { count: 'exact', head: true });
             if (count !== null) {
                 alleSudeCount = count;
@@ -254,8 +250,6 @@
 
         function erzeugeModalInhalt() {
             const inhalt = document.getElementById('modal-inhalt');
-
-            // Nächste Sud-Nummer berechnen (Anzahl + 1)
             const naechsteSudNummer = alleSudeCount + 1;
             const voreingestellterNamePrefix = `Sud ${naechsteSudNummer} - `;
 
@@ -428,7 +422,26 @@
             }
 
             let gesamtkosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
-            let zutatenZusammenfassung = rezeptZutaten.map(z => `${z.menge} ${z.einheit} ${z.bezeichnung}`).join(', ');
+            
+            // Kompakte Zusammenfassung nach Kategorien berechnen (z.B. "Malz: 5.5 kg, Hopfen: 80 g")
+            let kategorienSummen = {};
+            rezeptZutaten.forEach(z => {
+                let kat = z.kategorie || 'Sonstiges';
+                if (!kategorienSummen[kat]) kategorienSummen[kat] = { menge: 0, einheit: z.einheit, kosten: 0 };
+                kategorienSummen[kat].menge += z.menge;
+                kategorienSummen[kat].kosten += z.kosten;
+            });
+
+            let zutatenZusammenfassungParts = [];
+            for (let kat in kategorienSummen) {
+                let info = kategorienSummen[kat];
+                zutatenZusammenfassungParts.der = `${kat}: ${info.menge.toFixed(1)} ${info.einheit} (${info.kosten.toFixed(2)} €)`;
+                zutatenZusammenfassungParts.push(`${kat}: ${info.menge.toFixed(1)} ${info.einheit} (${info.kosten.toFixed(2)} €)`);
+            }
+            let zutatenZusammenfassung = zutatenZusammenfassungParts.join(' | ');
+
+            // Angemeldeten Brauer auslesen
+            const brauerName = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || 'Mitglied';
 
             // 1. Lagerbestand abziehen
             for (let z of rezeptZutaten) {
@@ -449,7 +462,7 @@
                 }
             }
 
-            // 2. Sud in die Historie eintragen
+            // 2. Sud in die Historie eintragen (inkl. Brauer)
             const heute = new Date().toLocaleDateString('de-DE');
             const { error: sudError } = await _supabase
                 .from('sude')
@@ -458,7 +471,8 @@
                     sud_name: sudName,
                     zutaten_details: zutatenZusammenfassung,
                     gesamtkosten: gesamtkosten,
-                    bezahlt: 'Offen'
+                    bezahlt: 'Offen',
+                    brauer: brauerName
                 }]);
 
             if (sudError) {
