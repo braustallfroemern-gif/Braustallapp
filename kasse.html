@@ -247,83 +247,91 @@
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
-                    <button class="btn-primary" onclick="oeffneKassenbuchModal()">📖 Kassenbuch</button>
+                    <button class="btn-primary" onclick="zeigeKassenbuchAnsicht()">📖 Kassenbuch</button>
                     <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.1</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.2</div>
             `;
         }
 
-        function oeffneKassenbuchModal() {
+        // --- 1. KASSENBUCH VOLLANSICHT ---
+        function zeigeKassenbuchAnsicht() {
             const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
-            const inhalt = document.getElementById('modal-inhalt');
-
-            // Einzigartige Beschreibungen für die Autovervollständigung (Vorschlagsliste) sammeln
-            let einigartigeBeschreibungen = [...new Set(alleBuchungen.map(b => b.beschreibung).filter(Boolean))];
-            let datalistOptions = "";
-            einigartigeBeschreibungen.forEach(b => {
-                datalistOptions += `<option value="${b}">`;
-            });
+            const app = document.getElementById('app');
 
             let buchungenHtml = "";
             if (alleBuchungen.length === 0) {
-                buchungenHtml = `<p style="color: #666; font-size: 13px; text-align: center; margin: 15px 0;">Noch keine Buchungen im Kassenbuch.</p>`;
+                buchungenHtml = `<p style="color: #666; font-size: 14px; text-align: center; margin: 30px 0;">Noch keine Buchungen im Kassenbuch vorhanden.</p>`;
             } else {
                 alleBuchungen.forEach(b => {
                     let istEinnahme = b.art && b.art.toLowerCase() === 'einnahme';
                     let betrag = parseFloat(b.betrag) || 0;
 
                     buchungenHtml += `
-                        <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-left: 4px solid ${istEinnahme ? '#2E7D32' : '#D32F2F'}; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 13px;">
+                        <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-left: 5px solid ${istEinnahme ? '#2E7D32' : '#D32F2F'}; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 14px;">
                             <div style="display: flex; justify-content: space-between; font-weight: bold;">
                                 <span style="color: ${istEinnahme ? '#2E7D32' : '#D32F2F'};">${b.art || 'Buchung'}</span>
-                                <span style="color: #333;">${istEinnahme ? '+' : '-'}${betrag.toFixed(2)} €</span>
+                                <span style="color: #333; font-size: 15px;">${istEinnahme ? '+' : '-'}${betrag.toFixed(2)} €</span>
                             </div>
-                            <div style="color: #555; margin-top: 3px;">${b.beschreibung || 'Keine Beschreibung'}</div>
-                            <div style="color: #888; font-size: 11px; margin-top: 2px;">📅 ${b.datum || ''}</div>
-                            ${istKassenwart ? `<div style="margin-top: 6px; text-align: right;"><button class="btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="loescheBuchung('${b.id}')">🗑️ Löschen</button></div>` : ''}
+                            <div style="color: #333; margin-top: 4px; font-weight: 500;">${b.beschreibung || 'Keine Beschreibung'}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                                <span style="color: #888; font-size: 12px;">📅 ${b.datum || ''}</span>
+                                ${istKassenwart ? `<button class="btn-danger" style="padding: 4px 10px; font-size: 12px;" onclick="loescheBuchung('${b.id}')">🗑️ Löschen</button>` : ''}
+                            </div>
                         </div>
                     `;
                 });
             }
 
-            let neuerEintragBereich = "";
+            let neuerEintragButton = "";
             if (istKassenwart) {
-                neuerEintragBereich = `
-                    <div style="background-color: #F1F8E9; border: 1px solid #C8E6C9; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                        <h4 style="color: #2E7D32; margin: 0 0 10px 0; font-size: 14px;">➕ Neue Buchung erfassen</h4>
-                        
-                        <label class="label-style">Art:</label>
-                        <select id="kb-art" class="input-style" style="margin-bottom: 8px;">
-                            <option value="Einnahme">Einnahme</option>
-                            <option value="Ausgabe">Ausgabe</option>
-                        </select>
-
-                        <label class="label-style">Beschreibung:</label>
-                        <input type="text" id="kb-beschreibung" list="vorschlaege-liste" placeholder="Tippen oder auswählen..." class="input-style" style="margin-bottom: 8px;">
-                        <datalist id="vorschlaege-liste">
-                            ${datalistOptions}
-                        </datalist>
-
-                        <label class="label-style">Betrag (€):</label>
-                        <input type="number" step="0.01" id="kb-betrag" placeholder="z.B. 25.00" class="input-style" style="margin-bottom: 10px;">
-
-                        <button class="btn-success" onclick="speichereNeueBuchung()">Buchung speichern</button>
-                    </div>
-                `;
-            } else {
-                neuerEintragBereich = `<p style="font-size: 12px; color: #888; font-style: italic; text-align: center; margin-bottom: 15px;">(Neue Buchungen können nur vom Kassenwart vorgenommen werden)</p>`;
+                neuerEintragButton = `<button class="btn-success" style="margin-bottom: 15px;" onclick="oeffneNeueBuchungModal()">➕ Neue Buchung erfassen</button>`;
             }
 
-            inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">📖 Kassenbuch</h3>
-                ${neuerEintragBereich}
-                <h4 style="color: #1565C0; font-size: 14px; margin-bottom: 8px;">Bisherige Buchungen:</h4>
-                <div style="max-height: 250px; overflow-y: auto;">
+            app.innerHTML = `
+                <button class="btn-back-corner" onclick="zeigeKassenZentrale()">🔙 Zurück</button>
+
+                <h2 class="page-title">📖 Kassenbuch</h2>
+
+                ${neuerEintragButton}
+
+                <div style="max-height: 60vh; overflow-y: auto;">
                     ${buchungenHtml}
                 </div>
-                <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 15px; width: 100%;">Schließen</button>
+            `;
+        }
+
+        // --- FLIEGENDES FENSTER: NEUE BUCHUNG ---
+        function oeffneNeueBuchungModal() {
+            const inhalt = document.getElementById('modal-inhalt');
+
+            let einigartigeBeschreibungen = [...new Set(alleBuchungen.map(b => b.beschreibung).filter(Boolean))];
+            let datalistOptions = "";
+            einigartigeBeschreibungen.forEach(b => {
+                datalistOptions += `<option value="${b}">`;
+            });
+
+            inhalt.innerHTML = `
+                <h3 style="color: #1565C0; margin-top: 0;">➕ Neue Buchung</h3>
+                
+                <label class="label-style">Art:</label>
+                <select id="kb-art" class="input-style">
+                    <option value="Einnahme">Einnahme</option>
+                    <option value="Ausgabe">Ausgabe</option>
+                </select>
+
+                <label class="label-style">Beschreibung:</label>
+                <input type="text" id="kb-beschreibung" list="vorschlaege-liste" placeholder="Tippen oder auswählen..." class="input-style">
+                <datalist id="vorschlaege-liste">
+                    ${datalistOptions}
+                </datalist>
+
+                <label class="label-style">Betrag (€):</label>
+                <input type="number" step="0.01" id="kb-betrag" placeholder="z.B. 25.00" class="input-style">
+
+                <button class="btn-success" onclick="speichereNeueBuchung()">Buchung speichern</button>
+                <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 8px; width: 100%;">Abbrechen</button>
             `;
 
             document.getElementById('modal-overlay').style.display = 'flex';
@@ -352,10 +360,9 @@
                 return;
             }
 
-            alert("Buchung erfolgreich gespeichert!");
+            schliesseModal();
             await ladeDatenAusDatenbank();
-            zeigeKassenZentrale();
-            oeffneKassenbuchModal();
+            zeigeKassenbuchAnsicht(); // Direkt zurück in die aktualisierte Kassenbuch-Ansicht
         }
 
         async function loescheBuchung(id) {
@@ -368,10 +375,10 @@
             }
 
             await ladeDatenAusDatenbank();
-            zeigeKassenZentrale();
-            oeffneKassenbuchModal();
+            zeigeKassenbuchAnsicht();
         }
 
+        // --- 2. SUDE MODAL ---
         function oeffneSudeModal() {
             const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
             const inhalt = document.getElementById('modal-inhalt');
