@@ -37,7 +37,6 @@
             overscroll-behavior-y: none; 
         }
 
-        /* ZURÜCK-BUTTON OBEN LINKS */
         .btn-back-corner {
             position: absolute;
             top: 15px;
@@ -117,7 +116,6 @@
             margin-top: 6px;
         }
 
-        /* FILTER-BUTTONS IM MODAL */
         .filter-container {
             display: flex;
             gap: 4px;
@@ -143,7 +141,6 @@
             border-color: #1565C0;
         }
 
-        /* REZEPT-LISTE IM MODAL */
         .rezept-tabelle {
             width: 100%;
             border-collapse: collapse;
@@ -162,7 +159,6 @@
             border-bottom: 1px solid #E0E0E0;
         }
 
-        /* MODAL (Fliegendes Fenster) */
         #modal-overlay {
             display: none;
             position: fixed;
@@ -189,7 +185,6 @@
 
     <div id="app">Lade Brautag...</div>
 
-    <!-- Schwebendes Fenster (Modal) für Freies Brauen -->
     <div id="modal-overlay">
         <div id="modal-inhalt"></div>
     </div>
@@ -200,8 +195,9 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let alleRohstoffe = [];
+        let alleSudeCount = 0;
         let aktuellerFilterModal = 'Malz';
-        let rezeptZutaten = []; // Hier landen die ausgewählten Zutaten für den Sud
+        let rezeptZutaten = [];
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -209,17 +205,19 @@
                 window.location.href = 'index.html';
                 return;
             }
-            await ladeLagerAusDatenbank();
+            await ladeDatenAusDatenbank();
             zeigeBrautagStartseite();
         };
 
-        async function ladeLagerAusDatenbank() {
-            const { data, error } = await _supabase
-                .from('lager')
-                .select('*')
-                .order('bezeichnung', { ascending: true });
-            if (!error && data) {
-                alleRohstoffe = data;
+        async function ladeDatenAusDatenbank() {
+            // Rohstoffe laden
+            const { data: lagerData } = await _supabase.from('lager').select('*').order('bezeichnung', { ascending: true });
+            if (lagerData) alleRohstoffe = lagerData;
+
+            // Sude zählen, um die nächste Sud-Nummer zu ermitteln
+            const { count, error } = await _supabase.from('sude').select('*', { count: 'exact', head: true });
+            if (!error && count !== null) {
+                alleSudeCount = count;
             }
         }
 
@@ -237,13 +235,19 @@
                     <button class="btn-secondary-action" onclick="alert('Die Rezeptdatenbank folgt im nächsten Schritt!')">📖 Brauen aus Rezeptdatenbank</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.0</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.1</div>
             `;
         }
 
         // --- FREIES BRAUEN MODAL ---
-        function oeffneFreiesBrauenModal() {
-            rezeptZutaten = []; // Liste für neuen Sud leeren
+        async function oeffneFreiesBrauenModal() {
+            rezeptZutaten = [];
+            // Vor dem Öffnen einmal kurz die aktuelle Sud-Anzahl frisch holen
+            const { count } = await _supabase.from('sude').select('*', { count: 'exact', head: true });
+            if (count !== null) {
+                alleSudeCount = count;
+            }
+            
             erzeugeModalInhalt();
             document.getElementById('modal-overlay').style.display = 'flex';
         }
@@ -251,7 +255,10 @@
         function erzeugeModalInhalt() {
             const inhalt = document.getElementById('modal-inhalt');
 
-            // Passende Rohstoffe für den aktuellen Modal-Filter filtern
+            // Nächste Sud-Nummer berechnen (Anzahl + 1)
+            const naechsteSudNummer = alleSudeCount + 1;
+            const voreingestellterNamePrefix = `Sud ${naechsteSudNummer} - `;
+
             const gefiltert = alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktuellerFilterModal.toLowerCase());
 
             let dropdownOptionen = "";
@@ -265,7 +272,6 @@
                 });
             }
 
-            // Gesamtkosten der aktuellen Rezept-Liste berechnen
             let gesamtKosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
 
             let zutatenTabelleHtml = "";
@@ -287,8 +293,9 @@
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">🍺 Freies Brauen</h3>
 
-                <label class="label-style">1. Sud-Name / Bezeichnung:</label>
-                <input type="text" id="sud-name" placeholder="z.B. Braustall Bockbier" class="input-style" value="Mein Braustall Sud">
+                <label class="label-style">1. Sud-Bezeichnung:</label>
+                <input type="text" id="sud-name" class="input-style" value="${voreingestellterNamePrefix}" placeholder="z.B. Bockbier 18°P">
+                <small style="color: #666; display: block; margin-top: -8px; margin-bottom: 10px;">(Die Nummer wird automatisch fortlaufend vergeben)</small>
 
                 <label class="label-style">2. Kategorie wählen:</label>
                 <div class="filter-container">
@@ -339,7 +346,6 @@
                 <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 5px; width: 100%;">Abbrechen</button>
             `;
 
-            // Einheit für die initial ausgewählte Zutat direkt vorbelegen
             schlageEinheitVor();
         }
 
@@ -382,18 +388,15 @@
             const rohstoff = alleRohstoffe.find(r => String(r.id) === String(rohstoffId));
             if (!rohstoff) return;
 
-            // Prüfen, ob Bestand ausreicht (Warnung, aber kein striktes Blockieren, falls man mal Restbestände verbraucht)
             if (menge > rohstoff.bestand) {
                 if (!confirm(`Achtung: Du willst ${menge} ${rohstoff.einheit} verbrauchen, aber es sind laut Lager nur ${rohstoff.bestand} ${rohstoff.einheit} vorhanden. Trotzdem hinzufügen?`)) {
                     return;
                 }
             }
 
-            // Preis berechnen (Preis pro Einheit * Menge)
             let einzelpreis = parseFloat(rohstoff.preis) || 0;
             let gesamtpreis = einzelpreis * menge;
 
-            // Zur Rezept-Liste hinzufügen
             rezeptZutaten.push({
                 id: rohstoff.id,
                 bezeichnung: rohstoff.bezeichnung,
@@ -403,7 +406,6 @@
                 kosten: gesamtpreis
             });
 
-            // Modal-Inhalt neu zeichnen, damit die Tabelle live aktualisiert wird
             erzeugeModalInhalt();
         }
 
@@ -419,7 +421,7 @@
             }
 
             const sudNameInput = document.getElementById('sud-name').value.trim();
-            const sudName = sudNameInput !== "" ? sudNameInput : "Freier Sud";
+            const sudName = sudNameInput !== "" ? sudNameInput : `Sud ${alleSudeCount + 1}`;
 
             if (!confirm(`Möchtest du den Sud "${sudName}" jetzt ansetzen? Die verbrauchten Mengen werden direkt aus dem Lager abgezogen.`)) {
                 return;
@@ -428,7 +430,7 @@
             let gesamtkosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
             let zutatenZusammenfassung = rezeptZutaten.map(z => `${z.menge} ${z.einheit} ${z.bezeichnung}`).join(', ');
 
-            // 1. Lagerbestände in Supabase aktualisieren (für jede Zutat den Bestand abziehen)
+            // 1. Lagerbestand abziehen
             for (let z of rezeptZutaten) {
                 const rohstoff = alleRohstoffe.find(r => String(r.id) === String(z.id));
                 if (rohstoff) {
@@ -447,7 +449,7 @@
                 }
             }
 
-            // 2. Sud in die Historie (Tabelle 'sude') eintragen
+            // 2. Sud in die Historie eintragen
             const heute = new Date().toLocaleDateString('de-DE');
             const { error: sudError } = await _supabase
                 .from('sude')
@@ -464,9 +466,9 @@
                 return;
             }
 
-            alert("🍻 Sud erfolgreich gebucht! Die Lagerbestände wurden aktualisiert und der Sud wurde in der Historie gespeichert.");
+            alert("🍻 Sud erfolgreich gebucht! Die Lagerbestände wurden aktualisiert und der Sud wurde in der Kasse hinterlegt.");
             schliesseModal();
-            await ladeLagerAusDatenbank(); // Lager im Hintergrund neu einlesen
+            await ladeDatenAusDatenbank();
         }
 
         function schliesseModal() {
