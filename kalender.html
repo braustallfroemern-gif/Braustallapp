@@ -52,11 +52,12 @@
             background-color: #455A64;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 12px;
             margin: 15px 0 5px 0;
             width: 100%;
             border-radius: 8px;
             font-size: 15px;
+            font-weight: bold;
             cursor: pointer;
         }
         .input-style {
@@ -75,6 +76,31 @@
             font-weight: bold;
             color: #1565C0;
             margin-top: 6px;
+        }
+
+        /* Kalender Legende */
+        .kalender-legende {
+            display: flex;
+            justify-content: space-around;
+            background-color: #F8F9FA;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 8px 5px;
+            margin: 10px 0 15px 0;
+            font-size: 11px;
+            font-weight: bold;
+            color: #444;
+        }
+        .legende-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .legende-punkt {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
         }
 
         /* Kalender Grid Design */
@@ -102,7 +128,7 @@
         .wochentage-grid, .tage-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
+            gap: 5px;
         }
         .wochentag {
             font-weight: bold;
@@ -113,14 +139,14 @@
         .kalender-tag {
             background-color: #F8F9FA;
             border: 1px solid #E0E0E0;
-            border-radius: 6px;
-            min-height: 55px;
-            padding: 6px;
+            border-radius: 8px;
+            min-height: 48px;
+            padding: 4px;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
+            justify-content: center;
             align-items: center;
-            font-size: 14px;
+            font-size: 15px;
             position: relative;
             cursor: pointer;
         }
@@ -134,31 +160,17 @@
             font-weight: bold;
         }
         .tag-nummer {
-            font-size: 13px;
-            margin-bottom: 2px;
+            font-size: 14px;
             font-weight: bold;
         }
         
+        /* Keine Texte mehr in den Zellen, nur noch Farbe & Rahmen */
         .kalender-tag.hat-termin {
             color: white;
             font-weight: bold;
-            font-size: 12px;
-            justify-content: space-between;
         }
         .kalender-tag.hat-termin .tag-nummer {
             color: white;
-            font-size: 12px;
-        }
-        .tag-titel-kurz {
-            font-size: 10px;
-            line-height: 1.1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            width: 100%;
-            text-align: center;
         }
 
         /* Kategorien-Farben */
@@ -166,7 +178,7 @@
         .bg-treffen { background-color: #1976D2 !important; border-color: #0D47A1 !important; }
         .bg-veranstaltung { background-color: #2E7D32 !important; border-color: #1B5E20 !important; }
 
-        /* Schwebendes Fenster (Modal) */
+        /* Schwebendes Fenster (Modal) - Jetzt größer und komfortabler */
         #modal-overlay {
             display: none;
             position: fixed;
@@ -178,26 +190,28 @@
         }
         #modal-inhalt {
             background-color: white;
-            padding: 20px;
+            padding: 24px 20px;
             border-radius: 12px;
-            width: 90%;
-            max-width: 380px;
+            width: 92%;
+            max-width: 420px;
             text-align: left;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
             max-height: 90vh;
             overflow-y: auto;
         }
         .termin-karte-liste {
-            background-color: #F0F4F8;
-            border-left: 4px solid #1976D2;
-            padding: 10px 12px;
-            margin: 8px 0;
-            border-radius: 6px;
-            font-size: 13px;
+            background-color: #F8F9FA;
+            border: 1px solid #D0D7DE;
+            border-left: 6px solid #1976D2;
+            padding: 12px 14px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 14px;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
     </style>
 </head>
@@ -219,7 +233,7 @@
         let alleTermine = [];
 
         window.onload = async function() {
-            const angemeldet = sessionStorage.getItem('angemeldet');
+            const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
             if (!angemeldet) {
                 window.location.href = 'index.html';
                 return;
@@ -245,6 +259,13 @@
                 <h2 style="color: #1565C0; margin-bottom: 10px;">📅 Braustall Kalender</h2>
                 
                 <button class="btn-primary" onclick="oeffneNeuenTerminModal()">+ Neuen Termin eintragen</button>
+
+                <!-- Neue Farb-Legende -->
+                <div class="kalender-legende">
+                    <div class="legende-item"><span class="legende-punkt" style="background-color: #E65100;"></span> Brautag</div>
+                    <div class="legende-item"><span class="legende-punkt" style="background-color: #1976D2;"></span> Treffen</div>
+                    <div class="legende-item"><span class="legende-punkt" style="background-color: #2E7D32;"></span> Veranstaltung</div>
+                </div>
 
                 <!-- Monats-Navigation -->
                 <div class="kalender-header" style="margin-top: 15px;">
@@ -327,11 +348,8 @@
                     if (hauptTermin.kategorie === 'Brautag') tagDiv.classList.add('bg-brautag');
                     else if (hauptTermin.kategorie === 'Veranstaltung') tagDiv.classList.add('bg-veranstaltung');
                     else tagDiv.classList.add('bg-treffen');
-
-                    const titelSpan = document.createElement('div');
-                    titelSpan.className = 'tag-titel-kurz';
-                    titelSpan.innerText = hauptTermin.titel;
-                    tagDiv.appendChild(titelSpan);
+                    
+                    // Kein Text mehr im Feld, damit die Kästchen exakt gleich groß und sauber bleiben!
                 }
 
                 tagDiv.onclick = () => oeffneTagesDetailsModal(datumStr, tAmTag);
@@ -387,27 +405,31 @@
             let formatiertesDatum = `${teile[2]}.${teile[1]}.${teile[0]}`;
 
             let html = `
-                <h3 style="color: #1565C0; margin-top: 0;">Termine am ${formatiertesDatum}</h3>
+                <h3 style="color: #1565C0; margin-top: 0; font-size: 18px;">Termine am ${formatiertesDatum}</h3>
             `;
 
             if (termineListe.length === 0) {
-                html += `<p style="color: #666; font-size: 14px;">An diesem Tag sind keine Termine eingetragen.</p>`;
+                html += `<p style="color: #666; font-size: 15px; margin: 20px 0;">An diesem Tag sind keine Termine eingetragen.</p>`;
             } else {
                 termineListe.forEach(t => {
+                    let katFarbe = '#1976D2';
+                    if (t.kategorie === 'Brautag') katFarbe = '#E65100';
+                    else if (t.kategorie === 'Veranstaltung') katFarbe = '#2E7D32';
+
                     html += `
-                        <div class="termin-karte-liste" onclick="oeffneTerminBearbeitenModal('${t.id}')">
+                        <div class="termin-karte-liste" style="border-left-color: ${katFarbe};" onclick="oeffneTerminBearbeitenModal('${t.id}')">
                             <div>
-                                <strong style="color: #1565C0; font-size: 15px;">${t.titel}</strong><br>
-                                <span style="font-size: 12px; color: #444;">Kategorie: ${t.kategorie} ${t.uhrzeit ? '| ' + t.uhrzeit + ' Uhr' : ''}</span><br>
-                                <span style="font-size: 11px; color: #666; font-weight: bold;">👤 Eingetragen von: ${t.ersteller || 'Unbekannt'}</span>
+                                <strong style="color: #1565C0; font-size: 16px;">${t.titel}</strong><br>
+                                <span style="font-size: 13px; color: #444;">Kategorie: <b>${t.kategorie}</b> ${t.uhrzeit ? '| ⏰ ' + t.uhrzeit + ' Uhr' : ''}</span><br>
+                                <span style="font-size: 12px; color: #666; font-weight: bold; margin-top: 4px; display: inline-block;">👤 Eingetragen von: ${t.ersteller || 'Unbekannt'}</span>
                             </div>
-                            <span style="font-size: 18px; color: #1976D2;">&#9998;</span>
+                            <span style="font-size: 20px; color: #1976D2; padding-left: 10px;">&#9998;</span>
                         </div>
                     `;
                 });
             }
 
-            html += `<button class="btn-secondary" onclick="schliesseModal()">Schließen</button>`;
+            html += `<button class="btn-secondary" style="margin-top: 15px;" onclick="schliesseModal()">Schließen</button>`;
             inhalt.innerHTML = html;
             overlay.style.display = 'flex';
         }
@@ -418,7 +440,7 @@
 
             const inhalt = document.getElementById('modal-inhalt');
             inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">Termin bearbeiten</h3>
+                <h3 style="color: #1565C0; margin-top: 0; font-size: 18px;">Termin bearbeiten</h3>
 
                 <label class="label-style">Kategorie:</label>
                 <select id="edit-kategorie" class="input-style">
@@ -436,10 +458,10 @@
                 <label class="label-style">Uhrzeit:</label>
                 <input type="text" id="edit-uhrzeit" value="${t.uhrzeit || ''}" class="input-style">
 
-                <p style="font-size: 12px; color: #666; margin: 10px 0;">👤 Erstellt von: <strong>${t.ersteller || 'Unbekannt'}</strong></p>
+                <p style="font-size: 13px; color: #555; margin: 12px 0;">👤 Erstellt von: <strong>${t.ersteller || 'Unbekannt'}</strong></p>
 
                 <button class="btn-primary" onclick="aktualisiereTermin('${t.id}')">Änderungen speichern</button>
-                <button style="background-color: #D32F2F; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; margin-top: 8px; cursor: pointer;" onclick="loescheTermin('${t.id}')">🗑️ Termin löschen</button>
+                <button style="background-color: #D32F2F; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; margin-top: 10px; cursor: pointer;" onclick="loescheTermin('${t.id}')">🗑️ Termin löschen</button>
                 <button class="btn-secondary" onclick="schliesseModal()">Abbrechen</button>
             `;
         }
@@ -454,9 +476,8 @@
             const datumStart = document.getElementById('m-datum').value;
             const uhrzeit = document.getElementById('m-uhrzeit').value.trim();
             const wiederholungWochen = parseInt(document.getElementById('m-wiederholung').value);
-            const ersteller = sessionStorage.getItem('userVorname') || "Mitglied";
+            const ersteller = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "Mitglied";
 
-            // Hier wurde korrigiert, dass das Datum jetzt absolut zuverlässig geprüft wird
             if (titel === "" || datumStart === "") {
                 alert("Bitte gib einen Titel und ein Startdatum ein.");
                 return;
@@ -496,7 +517,7 @@
         async function aktualisiereTermin(id) {
             const titel = document.getElementById('edit-titel').value.trim();
             const kategorie = document.getElementById('edit-kategorie').value;
-            const datum = document.getElementById('edit-datum').value;
+            const datum = document.getElementById('edit-datum").value;
             const uhrzeit = document.getElementById('edit-uhrzeit').value.trim();
 
             const { error } = await _supabase
