@@ -233,7 +233,7 @@
                     <button class="btn-secondary-action" onclick="alert('Die Rezeptdatenbank folgt im nächsten Schritt!')">📖 Brauen aus Rezeptdatenbank</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.2</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.3</div>
             `;
         }
 
@@ -417,13 +417,8 @@
             const sudNameInput = document.getElementById('sud-name').value.trim();
             const sudName = sudNameInput !== "" ? sudNameInput : `Sud ${alleSudeCount + 1}`;
 
-            if (!confirm(`Möchtest du den Sud "${sudName}" jetzt ansetzen? Die verbrauchten Mengen werden direkt aus dem Lager abgezogen.`)) {
-                return;
-            }
-
             let gesamtkosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
             
-            // Kompakte Zusammenfassung nach Kategorien berechnen (z.B. "Malz: 5.5 kg, Hopfen: 80 g")
             let kategorienSummen = {};
             rezeptZutaten.forEach(z => {
                 let kat = z.kategorie || 'Sonstiges';
@@ -435,12 +430,10 @@
             let zutatenZusammenfassungParts = [];
             for (let kat in kategorienSummen) {
                 let info = kategorienSummen[kat];
-                zutatenZusammenfassungParts.der = `${kat}: ${info.menge.toFixed(1)} ${info.einheit} (${info.kosten.toFixed(2)} €)`;
                 zutatenZusammenfassungParts.push(`${kat}: ${info.menge.toFixed(1)} ${info.einheit} (${info.kosten.toFixed(2)} €)`);
             }
             let zutatenZusammenfassung = zutatenZusammenfassungParts.join(' | ');
 
-            // Angemeldeten Brauer auslesen
             const brauerName = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || 'Mitglied';
 
             // 1. Lagerbestand abziehen
@@ -462,7 +455,7 @@
                 }
             }
 
-            // 2. Sud in die Historie eintragen (inkl. Brauer)
+            // 2. Sud in die Historie eintragen
             const heute = new Date().toLocaleDateString('de-DE');
             const { error: sudError } = await _supabase
                 .from('sude')
@@ -480,7 +473,8 @@
                 return;
             }
 
-            alert("🍻 Sud erfolgreich gebucht! Die Lagerbestände wurden aktualisiert und der Sud wurde in der Kasse hinterlegt.");
+            // Nur eine einzige, saubere Erfolgsmeldung
+            alert(`🍻 ${sudName} erfolgreich gebraut! Die Lagerbestände wurden aktualisiert und der Sud wurde in der Kasse hinterlegt.`);
             schliesseModal();
             await ladeDatenAusDatenbank();
         }
