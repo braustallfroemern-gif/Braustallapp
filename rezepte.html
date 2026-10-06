@@ -193,16 +193,8 @@
         }
 
         function oeffneManuelleEingabeAnsicht() {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
-
-                <h2 class="page-title">📋 Manuelle Eingabe</h2>
-                <div class="info-box">
-                    Hier kannst du einen bestehenden Rezept-Zettel mit allen Mengenangaben, Stammwürze und Zutaten erfassen und fest im System abspeichern.
-                </div>
-                <p style="text-align: center; color: #666; font-size: 14px; margin-top: 40px;">(Eingabemaske für Malz, Hopfen & Hefe folgt im nächsten Schritt)</p>
-            `;
+            // Leitet direkt auf deine neue, separate Eingabeseite weiter
+            window.location.href = 'rezept_neu.html';
         }
 
         function oeffneAssistentAnsicht() {
