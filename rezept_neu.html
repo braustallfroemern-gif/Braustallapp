@@ -178,17 +178,7 @@
 
             <label class="label-style">Bierstil:</label>
             <select id="bier-stil" class="select-style">
-                <option value="Kellerbier / Zwickel">Kellerbier / Zwickel</option>
-                <option value="Pilsner">Pilsner</option>
-                <option value="Helles">Helles / Lager</option>
-                <option value="Weizen / Weißbier">Weizen / Weißbier</option>
-                <option value="Altbier">Altbier</option>
-                <option value="Kölsch">Kölsch</option>
-                <option value="Bockbier">Bockbier / Doppelbock</option>
-                <option value="Pale Ale">Pale Ale</option>
-                <option value="IPA">IPA (India Pale Ale)</option>
-                <option value="Stout / Porter">Stout / Porter</option>
-                <option value="Sonstiges">Sonstiges</option>
+                <option value="">Lade Bierstile aus Datenbank...</option>
             </select>
 
             <div class="grid-2">
@@ -293,10 +283,27 @@
                 window.location.href = 'index.html';
                 return;
             }
+            await ladeBierstile();
             await ladeLagerRohstoffe();
             fuegeMalzZeileHinzu();
             fuegeHopfenZeileHinzu();
         };
+
+        async function ladeBierstile() {
+            const { data, error } = await _supabase.from('bierstile').select('*').order('name', { ascending: true });
+            const select = document.getElementById('bier-stil');
+            
+            if (error || !data || data.length === 0) {
+                select.innerHTML = `<option value="Sonstiges">Sonstiges (Fehler beim Laden)</option>`;
+                return;
+            }
+
+            let html = '';
+            data.forEach(stil => {
+                html += `<option value="${stil.name}">${stil.name} (${stil.gaerart})</option>`;
+            });
+            select.innerHTML = html;
+        }
 
         async function ladeLagerRohstoffe() {
             const { data, error } = await _supabase.from('lager').select('*').order('bezeichnung', { ascending: true });
