@@ -271,7 +271,7 @@
                 <div id="rohstoff-liste"></div>
 
                 <!-- Versions-Prüfung ganz unten -->
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.7</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.8</div>
             `;
             
             baueRohstoffListe(); 
@@ -320,6 +320,7 @@
                 } else if (katLower === 'hopfen') {
                     if (r.alpha_saeure) zusatzInfos += `<span>🌿 Alpha: ${r.alpha_saeure}%</span>`;
                 } else if (katLower === 'hefe') {
+                    if (r.gaerart) zusatzInfos += `<span>🧬 ${r.gaerart}</span>`;
                     if (r.gaertemperatur) zusatzInfos += `<span>🌡️ ${r.gaertemperatur}</span>`;
                     if (r.vergaerungsgrad) zusatzInfos += `<span>📈 EVG: ${r.vergaerungsgrad}</span>`;
                 }
@@ -330,7 +331,6 @@
                     zusatzInfos += `<span>📝 ${r.notiz}</span>`;
                 }
 
-                // Alternativen auf der Karte anzeigen
                 if (r.alternativen) {
                     zusatzInfos += `<span>🔄 Alt: ${r.alternativen}</span>`;
                 }
@@ -523,6 +523,11 @@
                     `;
                 } else if (kat === 'Hefe') {
                     html = `
+                        <label class="label-style">Gärart:</label>
+                        <select id="neu-gaerart" class="input-style">
+                            <option value="Obergärig">Obergärig</option>
+                            <option value="Untergärig">Untergärig</option>
+                        </select>
                         <label class="label-style">Gärtemperatur:</label>
                         <input type="text" id="neu-temp" placeholder="z.B. 18-22 °C" class="input-style">
                         <label class="label-style">Vergärungsgrad (EVG):</label>
@@ -621,6 +626,7 @@
             } else if (kat === 'Hopfen') {
                 datenObjekt.alpha_saeure = parseFloat(document.getElementById('neu-alpha').value) || null;
             } else if (kat === 'Hefe') {
+                datenObjekt.gaerart = document.getElementById('neu-gaerart').value || 'Obergärig';
                 datenObjekt.gaertemperatur = document.getElementById('neu-temp').value.trim() || null;
                 datenObjekt.vergaerungsgrad = document.getElementById('neu-evg').value.trim() || null;
             } else {
@@ -665,7 +671,13 @@
                     <input type="number" step="0.1" id="edit-alpha" value="${r.alpha_saeure !== null && r.alpha_saeure !== undefined ? r.alpha_saeure : ''}" class="input-style">
                 `;
             } else if (katLower === 'hefe') {
+                const gaerartVal = r.gaerart || 'Obergärig';
                 zusatzHtml = `
+                    <label class="label-style">Gärart:</label>
+                    <select id="edit-gaerart" class="input-style">
+                        <option value="Obergärig" ${gaerartVal === 'Obergärig' ? 'selected' : ''}>Obergärig</option>
+                        <option value="Untergärig" ${gaerartVal === 'Untergärig' ? 'selected' : ''}>Untergärig</option>
+                    </select>
                     <label class="label-style">Gärtemperatur:</label>
                     <input type="text" id="edit-temp" value="${r.gaertemperatur || ''}" class="input-style">
                     <label class="label-style">Vergärungsgrad (EVG):</label>
@@ -737,6 +749,7 @@
             } else if (katLower === 'hopfen') {
                 datenObjekt.alpha_saeure = parseFloat(document.getElementById('edit-alpha').value) || null;
             } else if (katLower === 'hefe') {
+                datenObjekt.gaerart = document.getElementById('edit-gaerart').value || 'Obergärig';
                 datenObjekt.gaertemperatur = document.getElementById('edit-temp').value.trim() || null;
                 datenObjekt.vergaerungsgrad = document.getElementById('edit-evg').value.trim() || null;
             } else {
