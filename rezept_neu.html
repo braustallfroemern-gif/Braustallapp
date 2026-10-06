@@ -165,6 +165,8 @@
             max-width: 400px;
             text-align: left;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -323,7 +325,6 @@
 
             if (!stil) return;
 
-            // Platzhalter und Hilfetexte aktualisieren
             document.getElementById('stammwuerze').placeholder = `z.B. ${stil.stammwuerze_min} - ${stil.stammwuerze_max}`;
             document.getElementById('hinweis-stammwuerze').innerText = `Stil-Norm: ${stil.stammwuerze_min} bis ${stil.stammwuerze_max} °P`;
 
@@ -407,7 +408,7 @@
 
         function pruefeMalzAuswahl(selectElement) {
             if (selectElement.value === 'NEU_ANLEGEN') {
-                oeffneLagerSchnellErfassung('Malz', selectElement);
+                oeffneLagerSchnellErfassung('Malz');
             }
         }
 
@@ -433,54 +434,100 @@
 
         function pruefeHopfenAuswahl(selectElement) {
             if (selectElement.value === 'NEU_ANLEGEN') {
-                oeffneLagerSchnellErfassung('Hopfen', selectElement);
+                oeffneLagerSchnellErfassung('Hopfen');
             }
         }
 
         function oeffneLagerSchnellErfassung(kategorie) {
-            document.getElementById('modal-titel').innerText = `Neuen Rohstoff (${kategorie}) ins Lager`;
+            document.getElementById('modal-titel').innerText = `Neuen Rohstoff (${kategorie}) anlegen`;
             
-            let zusatzFeldHtml = '';
-            if (kategorie === 'Hefe') {
-                zusatzFeldHtml = `
+            let spezifischeFelder = '';
+            if (kategorie === 'Malz') {
+                spezifischeFelder = `
+                    <label class="label-style">Farbe (EBC):</label>
+                    <input type="number" id="neu-ebc" placeholder="z.B. 3" class="input-style">
+                    <label class="label-style">Max. Gabe (%):</label>
+                    <input type="number" id="neu-maxgabe" placeholder="z.B. 100" class="input-style">
+                `;
+            } else if (kategorie === 'Hopfen') {
+                spezifischeFelder = `
+                    <label class="label-style">Alpha-Säure (%):</label>
+                    <input type="number" step="0.1" id="neu-alpha" placeholder="z.B. 6.5" class="input-style">
+                `;
+            } else if (kategorie === 'Hefe') {
+                spezifischeFelder = `
                     <label class="label-style">Gärart:</label>
-                    <select id="neue-hefe-gaerart" class="select-style">
+                    <select id="neu-gaerart" class="input-style">
                         <option value="Obergärig">Obergärig</option>
                         <option value="Untergärig">Untergärig</option>
                     </select>
+                    <label class="label-style">Gärtemperatur:</label>
+                    <input type="text" id="neu-temp" placeholder="z.B. 18-22 °C" class="input-style">
+                    <label class="label-style">Vergärungsgrad (EVG):</label>
+                    <input type="text" id="neu-evg" placeholder="z.B. 75-80%" class="input-style">
                 `;
             }
 
+            const standardEinheit = (kategorie === 'Malz') ? 'kg' : 'g';
+
             document.getElementById('modal-body').innerHTML = `
                 <label class="label-style">Bezeichnung:</label>
-                <input type="text" id="neuer-rohstoff-name" class="input-style" placeholder="z.B. Cascade Hopfen">
+                <input type="text" id="neuer-rohstoff-name" class="input-style" placeholder="z.B. ${kategorie === 'Malz' ? 'Pilsner Malz' : kategorie === 'Hopfen' ? 'Cascade' : 'SafAle US-05'}">
                 
-                ${zusatzFeldHtml}
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 2;">
+                        <label class="label-style">Anfangsbestand:</label>
+                        <input type="number" step="0.1" id="neuer-rohstoff-bestand" class="input-style" value="10">
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="label-style">Einheit:</label>
+                        <input type="text" id="neuer-rohstoff-einheit" class="input-style" value="${standardEinheit}" disabled style="background-color: #F0F4F8;">
+                    </div>
+                </div>
 
-                <label class="label-style">Start-Bestand (Menge):</label>
-                <input type="number" step="0.1" id="neuer-rohstoff-bestand" class="input-style" value="10">
+                <label class="label-style">Preis pro Einheit (€):</label>
+                <input type="number" step="0.01" id="neuer-rohstoff-preis" placeholder="z.B. 2.50" class="input-style">
 
-                <button class="btn-primary" onclick="speichereNeuenRohstoffInLager('${kategorie}')">💾 Im Lager speichern & auswählen</button>
+                ${spezifischeFelder}
+
+                <label class="label-style">Aromatik / Geschmacksprofil:</label>
+                <input type="text" id="neuer-rohstoff-aromatik" placeholder="z.B. Zitrus, harzig" class="input-style">
+
+                <label class="label-style">Mögliche Alternativen:</label>
+                <input type="text" id="neuer-rohstoff-alternativen" placeholder="z.B. Cascade, Centennial" class="input-style">
+
+                <button class="btn-primary" onclick="speichereVollstaendigenRohstoffInLager('${kategorie}')">💾 Im Lager speichern & auswählen</button>
                 <button class="btn-primary" style="background-color: #546E7A; margin-top: 6px;" onclick="schliesseModal()">Abbrechen</button>
             `;
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
-        async function speichereNeuenRohstoffInLager(kategorie) {
+        async function speichereVollstaendigenRohstoffInLager(kategorie) {
             let bezeichnung = document.getElementById('neuer-rohstoff-name').value.trim();
             const bestand = parseFloat(document.getElementById('neuer-rohstoff-bestand').value) || 0;
-            const einheit = kategorie === 'Malz' ? 'kg' : 'g';
+            const einheit = (kategorie === 'Malz') ? 'kg' : 'g';
+            const preisInput = document.getElementById('neuer-rohstoff-preis').value.trim();
+            const preis = preisInput !== "" ? parseFloat(preisInput) : null;
+            const aromatik = document.getElementById('neuer-rohstoff-aromatik').value.trim();
+            const alternativen = document.getElementById('neuer-rohstoff-alternativen').value.trim();
 
             if (!bezeichnung) {
-                alert("Bitte Namen eingeben.");
+                alert("Bitte gib eine Bezeichnung ein.");
                 return;
             }
 
-            let datenObjekt = { kategorie: kategorie, bezeichnung: bezeichnung, bestand: bestand, einheit: einheit };
+            let datenObjekt = { kategorie: kategorie, bezeichnung: bezeichnung, bestand: bestand, einheit: einheit, preis: preis, aromatik: aromatik, alternativen: alternativen };
 
-            if (kategorie === 'Hefe') {
-                const gaerart = document.getElementById('neue-hefe-gaerart').value;
+            if (kategorie === 'Malz') {
+                datenObjekt.farbe_ebc = parseFloat(document.getElementById('neu-ebc').value) || null;
+                datenObjekt.max_gabe_prozent = parseFloat(document.getElementById('neu-maxgabe').value) || null;
+            } else if (kategorie === 'Hopfen') {
+                datenObjekt.alpha_saeure = parseFloat(document.getElementById('neu-alpha').value) || null;
+            } else if (kategorie === 'Hefe') {
+                const gaerart = document.getElementById('neu-gaerart').value;
                 datenObjekt.gaerart = gaerart;
+                datenObjekt.gaertemperatur = document.getElementById('neu-temp').value.trim() || null;
+                datenObjekt.vergaerungsgrad = document.getElementById('neu-evg').value.trim() || null;
                 bezeichnung = `${bezeichnung} (${gaerart})`;
                 datenObjekt.bezeichnung = bezeichnung;
             }
@@ -495,9 +542,13 @@
             await ladeLagerRohstoffe();
 
             if (kategorie.toLowerCase().includes('malz')) {
-                document.querySelectorAll('.malz-select').forEach(sel => sel.innerHTML = baueMalzOptionen(bezeichnung));
+                document.querySelectorAll('.malz-select').forEach(sel => {
+                    if (sel.value === 'NEU_ANLEGEN') sel.innerHTML = baueMalzOptionen(bezeichnung);
+                });
             } else if (kategorie.toLowerCase().includes('hopfen')) {
-                document.querySelectorAll('.hopfen-select').forEach(sel => sel.innerHTML = baueHopfenOptionen(bezeichnung));
+                document.querySelectorAll('.hopfen-select').forEach(sel => {
+                    if (sel.value === 'NEU_ANLEGEN') sel.innerHTML = baueHopfenOptionen(bezeichnung);
+                });
             } else {
                 aktualisiereHefeDropdown();
                 document.getElementById('hefe-name').value = bezeichnung;
@@ -505,7 +556,7 @@
             }
 
             schliesseModal();
-            alert(`"${bezeichnung}" wurde ins Lager aufgenommen und direkt ausgewählt! 🍻`);
+            alert(`"${bezeichnung}" wurde vollständig ins Lager aufgenommen und ausgewählt! 🍻`);
         }
 
         function schliesseModal() {
