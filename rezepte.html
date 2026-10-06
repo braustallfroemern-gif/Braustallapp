@@ -1,3 +1,12 @@
+Hier ist der vollständige und erweiterte Code für deine rezepte.html.
+
+Ich habe die Funktion für „Vorhandene Rezepte“ komplett ausgebaut. Wenn du darauf klickst, lädt das System nun alle Rezepte aus der Supabase-Datenbank, zeigt sie in schicken Karten mit den Sternen, dem Bierstil, den Eckdaten (Stammwürze, IBU, EBC) sowie den Aktions-Buttons an.
+
+Wenn du auf „🍺 Brauen (Skalieren)“ klickst, fragt das System nach der gewünschten Literzahl für heute, rechnet alle Malz- und Hopfenmengen im Hintergrund hoch oder runter und zeigt dir die fertige Skalierungs-Ansicht an!
+
+Hier ist der komplette Code für deine rezepte.html:
+
+HTML
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -28,7 +37,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
             box-sizing: border-box;
             position: relative;
             min-height: 90vh;
@@ -97,6 +106,59 @@
             text-align: left;
         }
 
+        /* Rezept-Karten in der Liste */
+        .rezept-card {
+            background: #F8F9FA;
+            border: 1px solid #CFD8DC;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+        .rezept-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+        .rezept-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1565C0;
+        }
+        .rezept-stil {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        .rezept-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+            color: #333;
+            background: #E3F2FD;
+            padding: 6px 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        .rezept-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-card {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn-brauen { background-color: #2E7D32; color: white; }
+        .btn-loeschen { background-color: #C62828; color: white; }
+        .btn-details { background-color: #455A64; color: white; }
+
         #modal-overlay {
             display: none;
             position: fixed;
@@ -111,10 +173,10 @@
             padding: 20px;
             border-radius: 12px;
             width: 92%;
-            max-width: 420px;
+            max-width: 440px;
             text-align: left;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            max-height: 92vh;
+            max-height: 90vh;
             overflow-y: auto;
         }
     </style>
@@ -153,11 +215,11 @@
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <button class="btn-menu" onclick="oeffneVorhandeneRezepteModal()">
+                    <button class="btn-menu" onclick="ladeVorhandeneRezepte()">
                         <span style="font-size: 22px;">📚</span>
                         <div>
                             <div>Vorhandene Rezepte</div>
-                            <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Ansehen, Skalieren, Brauen, Bearbeiten & Löschen</small>
+                            <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Ansehen, Skalieren, Brauen & Löschen</small>
                         </div>
                     </button>
 
@@ -178,22 +240,147 @@
                     </button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Rezepte Version 1.1</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Rezepte Version 1.2</div>
             `;
         }
 
-        function oeffneVorhandeneRezepteModal() {
+        async function ladeVorhandeneRezepte() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
+                <h2 class="page-title">📚 Vorhandene Rezepte</h2>
+                <p style="text-align: center; color: #666;">Lade Rezepte aus der Datenbank...</p>
+            `;
+
+            const { data: rezepte, error } = await _supabase.from('rezepte').select('*').order('name', { ascending: true });
+
+            if (error) {
+                app.innerHTML = `
+                    <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
+                    <h2 class="page-title">📚 Vorhandene Rezepte</h2>
+                    <p style="color: red; text-align: center;">Fehler beim Laden: ${error.message}</p>
+                `;
+                return;
+            }
+
+            if (!rezepte || rezepte.length === 0) {
+                app.innerHTML = `
+                    <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
+                    <h2 class="page-title">📚 Vorhandene Rezepte</h2>
+                    <div class="info-box" style="text-align: center;">Noch keine Rezepte gespeichert. Nutze die manuelle Eingabe, um ein erstes Rezept anzulegen!</div>
+                `;
+                return;
+            }
+
+            let html = `
+                <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
+                <h2 class="page-title">📚 Vorhandene Rezepte</h2>
+                <div style="margin-bottom: 15px; font-size: 13px; color: #555; text-align: center;">Wähle ein Rezept aus, um es für den Brautag zu skalieren oder zu verwalten.</div>
+            `;
+
+            rezepte.forEach(r => {
+                const sterne = r.bewertung ? '⭐'.repeat(Math.round(r.bewertung)) + ` (${r.bewertung})` : 'Noch nicht bewertet';
+                html += `
+                    <div class="rezept-card">
+                        <div class="rezept-header">
+                            <span class="rezept-name">${escapeHtml(r.name)}</span>
+                            <span style="font-size: 13px; color: #F57F17;">${sterne}</span>
+                        </div>
+                        <div class="rezept-stil">Stil: <b>${escapeHtml(r.stil || 'Unbekannt')}</b></div>
+                        <div class="rezept-meta">
+                            <div><b>${r.stammwuerze || '-'}</b> °P</div>
+                            <div><b>${r.ibu || '-'}</b> IBU</div>
+                            <div><b>${r.ebc || '-'}</b> EBC</div>
+                            <div>Basis: <b>${r.liter || 50} L</b></div>
+                        </div>
+                        <div class="rezept-actions">
+                            <button class="btn-card btn-brauen" onclick='skaliereUndBraue(${JSON.stringify(r)})'>🍺 Brauen</button>
+                            <button class="btn-card btn-details" onclick='zeigRezeptDetails(${JSON.stringify(r)})'>👁️ Details</button>
+                            <button class="btn-card btn-loeschen" onclick="loescheRezept('${r.id}', '${escapeHtml(r.name)}')">🗑️ Löschen</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            app.innerHTML = html;
+        }
+
+        function skaliereUndBraue(rezept) {
             const inhalt = document.getElementById('modal-inhalt');
             inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">📚 Vorhandene Rezepte</h3>
-                <p style="font-size: 13px; color: #555;">Hier laden wir gleich alle gespeicherten Rezepte aus der Datenbank. Man kann ein Rezept auswählen, die Literzahl für den Brautag anpassen (Skalierung) oder fehlerhafte Rezepte (Murks) direkt löschen.</p>
-                <button class="btn-menu" style="background-color: #546E7A; justify-content: center; margin-top: 15px;" onclick="schliesseModal()">Schließen</button>
+                <h3 style="color: #1565C0; margin-top: 0;">🍺 Rezept brauen & skalieren</h3>
+                <p style="font-size: 13px; color: #555;"><b>${escapeHtml(rezept.name)}</b> ist aktuell auf <b>${rezept.liter || 50} Liter</b> ausgelegt.</p>
+                
+                <label style="font-size: 12px; font-weight: bold; display: block; margin-top: 10px;">Gewünschte Ausschlagmenge heute (Liter):</label>
+                <input type="number" id="ziel-liter" value="${rezept.liter || 50}" style="width: 100%; padding: 10px; margin: 6px 0 15px 0; border: 1px solid #90CAF9; border-radius: 6px; box-sizing: border-box; font-size: 15px;">
+
+                <button class="btn-menu" style="justify-content: center; margin: 0 0 8px 0;" onclick='berechneSkalierung(${JSON.stringify(rezept)})'>🚀 Mengen berechnen</button>
+                <button class="btn-menu" style="background-color: #546E7A; justify-content: center; margin: 0;" onclick="schliesseModal()">Abbrechen</button>
             `;
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
+        function berechneSkalierung(rezept) {
+            const zielLiter = parseFloat(document.getElementById('ziel-liter').value) || (rezept.liter || 50);
+            const basisLiter = rezept.liter || 50;
+            const faktor = zielLiter / basisLiter;
+
+            let schuettungHtml = '';
+            if (rezept.schuettung && rezept.schuettung.length > 0) {
+                rezept.schuettung.forEach(m => {
+                    const skaliertKg = (m.menge_kg * faktor).toFixed(2);
+                    schuettungHtml += `<li><b>${skaliertKg} kg</b> ${escapeHtml(m.name)} <small style="color:#666;">(Orig: ${m.menge_kg} kg)</small></li>`;
+                });
+            } else {
+                schuettungHtml = '<li>Keine Malzangaben hinterlegt.</li>';
+            }
+
+            let hopfenHtml = '';
+            if (rezept.hopfung && rezept.hopfung.length > 0) {
+                rezept.hopfung.forEach(h => {
+                    const skaliertG = Math.round(h.menge_g * faktor);
+                    hopfenHtml += `<li><b>${skaliertG} g</b> ${escapeHtml(h.name)} <small style="color:#666;">(${h.kochzeit_min} Min, ${h.alpha_prozent}% Alpha - Orig: ${h.menge_g}g)</small></li>`;
+                });
+            } else {
+                hopfenHtml = '<li>Keine Hopfenangaben hinterlegt.</li>';
+            }
+
+            const inhalt = document.getElementById('modal-inhalt');
+            inhalt.innerHTML = `
+                <h3 style="color: #1565C0; margin-top: 0;">🍻 Brau-Ansicht: ${escapeHtml(rezept.name)}</h3>
+                <div style="background: #E3F2FD; padding: 8px; border-radius: 6px; font-size: 13px; margin-bottom: 10px;">
+                    Zielmenge: <b>${zielLiter} Liter</b> (Faktor: ${faktor.toFixed(2)})
+                </div>
+
+                <div style="font-size: 13px; font-weight: bold; color: #333; margin-top: 8px;">Skalierte Schüttung (Malz):</div>
+                <ul style="font-size: 13px; padding-left: 20px; margin: 4px 0;">${schuettungHtml}</ul>
+
+                <div style="font-size: 13px; font-weight: bold; color: #333; margin-top: 10px;">Skalierte Hopfung:</div>
+                <ul style="font-size: 13px; padding-left: 20px; margin: 4px 0;">${hopfenHtml}</ul>
+
+                <div style="font-size: 13px; margin-top: 10px;"><b>Hefe:</b> ${escapeHtml(rezept.hefe || 'Keine Angabe')} (${escapeHtml(rezept.gaer_temp || '-')})</div>
+                
+                <button class="btn-menu" style="background-color: #546E7A; justify-content: center; margin-top: 15px;" onclick="schliesseModal()">Schließen</button>
+            `;
+        }
+
+        function zeigRezeptDetails(rezept) {
+            skaliereUndBraue(rezept); // Nutzt vorerst die gleiche Ansicht
+        }
+
+        async function loescheRezept(id, name) {
+            if (!confirm(`Möchtest du das Rezept "${name}" wirklich unwiderruflich löschen?`)) return;
+
+            const { error } = await _supabase.from('rezepte').delete().eq('id', id);
+            if (error) {
+                alert("Fehler beim Löschen: " + error.message);
+                return;
+            }
+            alert("Rezept wurde gelöscht.");
+            ladeVorhandeneRezepte();
+        }
+
         function oeffneManuelleEingabeAnsicht() {
-            // Leitet direkt auf deine neue, separate Eingabeseite weiter
             window.location.href = 'rezept_neu.html';
         }
 
@@ -201,17 +388,19 @@
             const app = document.getElementById('app');
             app.innerHTML = `
                 <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
-
                 <h2 class="page-title">🧙‍♂️ Braumeister-Assistent</h2>
-                <div class="info-box">
-                    Der geführte Fragebogen hilft dir Schritt für Schritt bei der Erstellung – inklusive integriertem Brauwissen und Stil-Checks.
-                </div>
+                <div class="info-box">Der geführte Fragebogen hilft dir Schritt für Schritt bei der Erstellung – inklusive integriertem Brauwissen und Stil-Checks.</div>
                 <p style="text-align: center; color: #666; font-size: 14px; margin-top: 40px;">(Schritt-für-Schritt-Assistent folgt im nächsten Schritt)</p>
             `;
         }
 
         function schliesseModal() {
             document.getElementById('modal-overlay').style.display = 'none';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
     </script>
 </body>
