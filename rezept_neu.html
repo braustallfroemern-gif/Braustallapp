@@ -80,7 +80,7 @@
         .input-style, .select-style {
             width: 100%;
             padding: 10px;
-            margin: 4px 0 10px 0;
+            margin: 4px 0 2px 0;
             border: 1px solid #90CAF9;
             border-radius: 6px;
             box-sizing: border-box;
@@ -93,6 +93,12 @@
             font-size: 12px;
             font-weight: bold;
             color: #333;
+        }
+        .stil-hinweis {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+            text-align: left;
         }
 
         .grid-2 {
@@ -177,7 +183,7 @@
             <input type="text" id="rezept-name" class="input-style" placeholder="z.B. Braustall Kellerbier">
 
             <label class="label-style">Bierstil:</label>
-            <select id="bier-stil" class="select-style">
+            <select id="bier-stil" class="select-style" onchange="aktualisiereStilHinweise()">
                 <option value="">Lade Bierstile aus Datenbank...</option>
             </select>
 
@@ -188,18 +194,21 @@
                 </div>
                 <div>
                     <label class="label-style">Stammwürze (°P):</label>
-                    <input type="number" step="0.1" id="stammwuerze" class="input-style" placeholder="12.5">
+                    <input type="number" step="0.1" id="stammwuerze" class="input-style" placeholder="z.B. 12.0">
+                    <div id="hinweis-stammwuerze" class="stil-hinweis">Zulässig: -</div>
                 </div>
             </div>
 
             <div class="grid-2">
                 <div>
                     <label class="label-style">Geplante IBU (Bittere):</label>
-                    <input type="number" id="ibu-wert" class="input-style" placeholder="32">
+                    <input type="number" id="ibu-wert" class="input-style" placeholder="z.B. 35">
+                    <div id="hinweis-ibu" class="stil-hinweis">Zulässig: -</div>
                 </div>
                 <div>
                     <label class="label-style">Geplante EBC (Farbe):</label>
-                    <input type="number" id="ebc-wert" class="input-style" placeholder="15">
+                    <input type="number" id="ebc-wert" class="input-style" placeholder="z.B. 12">
+                    <div id="hinweis-ebc" class="stil-hinweis">Zulässig: -</div>
                 </div>
             </div>
             
@@ -273,6 +282,7 @@
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        let alleBierstile = [];
         let lagerMalzListe = [];
         let lagerHopfenListe = [];
         let lagerHefeListe = [];
@@ -298,11 +308,30 @@
                 return;
             }
 
+            alleBierstile = data;
             let html = '';
             data.forEach(stil => {
                 html += `<option value="${stil.name}">${stil.name} (${stil.gaerart})</option>`;
             });
             select.innerHTML = html;
+            aktualisiereStilHinweise();
+        }
+
+        function aktualisiereStilHinweise() {
+            const ausgewählterName = document.getElementById('bier-stil').value;
+            const stil = alleBierstile.find(s => s.name === ausgewählterName);
+
+            if (!stil) return;
+
+            // Platzhalter und Hilfetexte aktualisieren
+            document.getElementById('stammwuerze').placeholder = `z.B. ${stil.stammwuerze_min} - ${stil.stammwuerze_max}`;
+            document.getElementById('hinweis-stammwuerze').innerText = `Stil-Norm: ${stil.stammwuerze_min} bis ${stil.stammwuerze_max} °P`;
+
+            document.getElementById('ibu-wert').placeholder = `z.B. ${stil.ibu_min} - ${stil.ibu_max}`;
+            document.getElementById('hinweis-ibu').innerText = `Stil-Norm: ${stil.ibu_min} bis ${stil.ibu_max} IBU`;
+
+            document.getElementById('ebc-wert').placeholder = `z.B. ${stil.ebc_min} - ${stil.ebc_max}`;
+            document.getElementById('hinweis-ebc').innerText = `Stil-Norm: ${stil.ebc_min} bis ${stil.ebc_max} EBC`;
         }
 
         async function ladeLagerRohstoffe() {
