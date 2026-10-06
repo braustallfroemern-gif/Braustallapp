@@ -299,8 +299,6 @@
         };
 
         async function ladeLagerRohstoffe() {
-            // Wir lesen die Rohstoffe aus eurer Lagertabelle (Tabelle heißt üblicherweise 'lager' oder ähnlich, wir passen das an)
-            // Falls die Tabelle anders heißt, fangen wir es ab. Hier nehmen wir an, eure Lagertabelle hat Spalten 'name' und 'kategorie' (Malz, Hopfen, Hefe)
             const { data, error } = await _supabase.from('lager').select('*');
             
             if (!error && data) {
@@ -309,7 +307,6 @@
                 lagerHefeListe = data.filter(item => (item.kategorie || '').toLowerCase().includes('hefe'));
             }
 
-            // Fallback, falls noch nichts im Lager steht, damit man testen kann
             if (lagerMalzListe.length === 0) lagerMalzListe = [{name: 'Pilsner Malz'}, {name: 'Münchner Malz I'}, {name: 'Caramalz'}];
             if (lagerHopfenListe.length === 0) lagerHopfenListe = [{name: 'Chinook'}, {name: 'Cascade'}, {name: 'Hallertauer Mittelfrüh'}];
             if (lagerHefeListe.length === 0) lagerHefeListe = [{name: 'SafAle S-04 (Obergärig)'}, {name: 'W-34/70 (Untergärig)'}];
@@ -405,10 +402,24 @@
         function oeffneLagerSchnellErfassung(kategorie, dropdownRef = null) {
             aktuellesDropdownElement = dropdownRef;
             document.getElementById('modal-titel').innerText = `Neuen Rohstoff (${kategorie}) ins Lager`;
+            
+            let zusatzFeldHtml = '';
+            if (kategorie === 'Hefe') {
+                zusatzFeldHtml = `
+                    <label class="label-style">Gärart:</label>
+                    <select id="neue-hefe-gaerart" class="select-style">
+                        <option value="Obergärig">Obergärig</option>
+                        <option value="Untergärig">Untergärig</option>
+                    </select>
+                `;
+            }
+
             document.getElementById('modal-body').innerHTML = `
                 <label class="label-style">Bezeichnung:</label>
-                <input type="text" id="neuer-rohstoff-name" class="input-style" placeholder="z.B. Cascade Hopfen">
+                <input type="text" id="neuer-rohstoff-name" class="input-style" placeholder="z.B. SafAle US-05">
                 
+                ${zusatzFeldHtml}
+
                 <label class="label-style">Start-Bestand (Menge):</label>
                 <input type="number" step="0.1" id="neuer-rohstoff-bestand" class="input-style" value="10">
 
@@ -419,7 +430,7 @@
         }
 
         async function speichereNeuenRohstoffInLager(kategorie) {
-            const name = document.getElementById('neuer-rohstoff-name').value.trim();
+            let name = document.getElementById('neuer-rohstoff-name').value.trim();
             const bestand = parseFloat(document.getElementById('neuer-rohstoff-bestand').value) || 0;
 
             if (!name) {
@@ -427,15 +438,18 @@
                 return;
             }
 
-            // In Supabase Lagertabelle eintragen
+            // Wenn es Hefe ist, fügen wir die Gärart direkt klammernd an den Namen an, damit man es sofort sieht
+            if (kategorie === 'Hefe') {
+                const gaerart = document.getElementById('neue-hefe-gaerart').value;
+                name = `${name} (${gaerart})`;
+            }
+
             const { error } = await _supabase.from('lager').insert([{ name: name, kategorie: kategorie, bestand: bestand }]);
 
             if (error) {
-                alert("Fehler beim Speichern im Lager: " + error.message + "\n(Hinweis: Ist die Tabelle 'lager' vorhanden?)");
-                // Lokaler Fallback, falls Lagertabelle nicht existiert
+                alert("Fehler beim Speichern im Lager: " + error.message);
             }
 
-            // Direkt lokal hinzufügen und Dropdown aktualisieren
             if (kategorie.toLowerCase().includes('malz')) {
                 lagerMalzListe.push({ name: name });
                 document.querySelectorAll('.malz-select').forEach(sel => sel.innerHTML = baueMalzOptionen(name));
