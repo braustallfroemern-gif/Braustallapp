@@ -299,7 +299,7 @@
         };
 
         async function ladeLagerRohstoffe() {
-            const { data, error } = await _supabase.from('lager').select('*');
+            const { data, error } = await _supabase.from('lager').select('*').order('bezeichnung', { ascending: true });
             
             if (!error && data) {
                 lagerMalzListe = data.filter(item => (item.kategorie || '').toLowerCase().includes('malz'));
@@ -307,9 +307,9 @@
                 lagerHefeListe = data.filter(item => (item.kategorie || '').toLowerCase().includes('hefe'));
             }
 
-            if (lagerMalzListe.length === 0) lagerMalzListe = [{name: 'Pilsner Malz'}, {name: 'Münchner Malz I'}, {name: 'Caramalz'}];
-            if (lagerHopfenListe.length === 0) lagerHopfenListe = [{name: 'Chinook'}, {name: 'Cascade'}, {name: 'Hallertauer Mittelfrüh'}];
-            if (lagerHefeListe.length === 0) lagerHefeListe = [{name: 'SafAle S-04 (Obergärig)'}, {name: 'W-34/70 (Untergärig)'}];
+            if (lagerMalzListe.length === 0) lagerMalzListe = [{bezeichnung: 'Pilsner Malz'}, {bezeichnung: 'Münchner Malz I'}, {bezeichnung: 'Caramalz'}];
+            if (lagerHopfenListe.length === 0) lagerHopfenListe = [{bezeichnung: 'Chinook'}, {bezeichnung: 'Cascade'}, {bezeichnung: 'Hallertauer Mittelfrüh'}];
+            if (lagerHefeListe.length === 0) lagerHefeListe = [{bezeichnung: 'SafAle S-04 (Obergärig)'}, {bezeichnung: 'W-34/70 (Untergärig)'}];
 
             aktualisiereHefeDropdown();
         }
@@ -317,7 +317,8 @@
         function baueMalzOptionen(aktuellerWert = '') {
             let html = `<option value="">-- Malz wählen --</option>`;
             lagerMalzListe.forEach(m => {
-                html += `<option value="${m.name}" ${m.name === aktuellerWert ? 'selected' : ''}>${m.name}</option>`;
+                const bez = m.bezeichnung || m.name || '';
+                html += `<option value="${bez}" ${bez === aktuellerWert ? 'selected' : ''}>${bez}</option>`;
             });
             html += `<option value="NEU_ANLEGEN" style="color: #1976D2; font-weight: bold;">➕ Neues Malz im Lager anlegen...</option>`;
             return html;
@@ -326,7 +327,8 @@
         function baueHopfenOptionen(aktuellerWert = '') {
             let html = `<option value="">-- Hopfen wählen --</option>`;
             lagerHopfenListe.forEach(h => {
-                html += `<option value="${h.name}" ${h.name === aktuellerWert ? 'selected' : ''}>${h.name}</option>`;
+                const bez = h.bezeichnung || h.name || '';
+                html += `<option value="${bez}" ${bez === aktuellerWert ? 'selected' : ''}>${bez}</option>`;
             });
             html += `<option value="NEU_ANLEGEN" style="color: #1976D2; font-weight: bold;">➕ Neuen Hopfen im Lager anlegen...</option>`;
             return html;
@@ -336,7 +338,8 @@
             const select = document.getElementById('hefe-name');
             let html = `<option value="">-- Hefe wählen --</option>`;
             lagerHefeListe.forEach(h => {
-                html += `<option value="${h.name}">${h.name}</option>`;
+                const bez = h.bezeichnung || h.name || '';
+                html += `<option value="${bez}">${bez}</option>`;
             });
             html += `<option value="NEU_ANLEGEN" style="color: #1976D2; font-weight: bold;">➕ Neue Hefe im Lager anlegen...</option>`;
             select.innerHTML = html;
@@ -398,9 +401,7 @@
             }
         }
 
-        let aktuellesDropdownElement = null;
-        function oeffneLagerSchnellErfassung(kategorie, dropdownRef = null) {
-            aktuellesDropdownElement = dropdownRef;
+        function oeffneLagerSchnellErfassung(kategorie) {
             document.getElementById('modal-titel').innerText = `Neuen Rohstoff (${kategorie}) ins Lager`;
             
             let zusatzFeldHtml = '';
@@ -416,7 +417,7 @@
 
             document.getElementById('modal-body').innerHTML = `
                 <label class="label-style">Bezeichnung:</label>
-                <input type="text" id="neuer-rohstoff-name" class="input-style" placeholder="z.B. SafAle US-05">
+                <input type="text" id="neuer-rohstoff-name" class="input-style" placeholder="z.B. Cascade Hopfen">
                 
                 ${zusatzFeldHtml}
 
@@ -430,41 +431,45 @@
         }
 
         async function speichereNeuenRohstoffInLager(kategorie) {
-            let name = document.getElementById('neuer-rohstoff-name').value.trim();
+            let bezeichnung = document.getElementById('neuer-rohstoff-name').value.trim();
             const bestand = parseFloat(document.getElementById('neuer-rohstoff-bestand').value) || 0;
+            const einheit = kategorie === 'Malz' ? 'kg' : 'g';
 
-            if (!name) {
+            if (!bezeichnung) {
                 alert("Bitte Namen eingeben.");
                 return;
             }
 
-            // Wenn es Hefe ist, fügen wir die Gärart direkt klammernd an den Namen an, damit man es sofort sieht
+            let datenObjekt = { kategorie: kategorie, bezeichnung: bezeichnung, bestand: bestand, einheit: einheit };
+
             if (kategorie === 'Hefe') {
                 const gaerart = document.getElementById('neue-hefe-gaerart').value;
-                name = `${name} (${gaerart})`;
+                datenObjekt.gaerart = gaerart;
+                bezeichnung = `${bezeichnung} (${gaerart})`;
+                datenObjekt.bezeichnung = bezeichnung;
             }
 
-            const { error } = await _supabase.from('lager').insert([{ name: name, kategorie: kategorie, bestand: bestand }]);
+            const { error } = await _supabase.from('lager').insert([datenObjekt]);
 
             if (error) {
                 alert("Fehler beim Speichern im Lager: " + error.message);
+                return;
             }
 
+            await ladeLagerRohstoffe();
+
             if (kategorie.toLowerCase().includes('malz')) {
-                lagerMalzListe.push({ name: name });
-                document.querySelectorAll('.malz-select').forEach(sel => sel.innerHTML = baueMalzOptionen(name));
+                document.querySelectorAll('.malz-select').forEach(sel => sel.innerHTML = baueMalzOptionen(bezeichnung));
             } else if (kategorie.toLowerCase().includes('hopfen')) {
-                lagerHopfenListe.push({ name: name });
-                document.querySelectorAll('.hopfen-select').forEach(sel => sel.innerHTML = baueHopfenOptionen(name));
+                document.querySelectorAll('.hopfen-select').forEach(sel => sel.innerHTML = baueHopfenOptionen(bezeichnung));
             } else {
-                lagerHefeListe.push({ name: name });
                 aktualisiereHefeDropdown();
-                document.getElementById('hefe-name').value = name;
+                document.getElementById('hefe-name').value = bezeichnung;
                 pruefeHefeAuswahl(document.getElementById('hefe-name'));
             }
 
             schliesseModal();
-            alert(`"${name}" wurde ins Lager aufgenommen und direkt ausgewählt! 🍻`);
+            alert(`"${bezeichnung}" wurde ins Lager aufgenommen und direkt ausgewählt! 🍻`);
         }
 
         function schliesseModal() {
