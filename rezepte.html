@@ -55,44 +55,33 @@
         .page-title {
             color: #1565C0;
             margin-top: 35px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             font-size: 22px;
             text-align: center;
         }
 
-        .btn-primary {
+        .btn-menu {
             background-color: #1976D2;
             color: white;
             border: none;
-            padding: 18px 16px;
-            margin: 12px 0;
+            padding: 16px;
+            margin: 10px 0;
             width: 100%;
             border-radius: 10px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: left;
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        .btn-secondary-action {
-            background-color: #546E7A;
-            color: white;
-            border: none;
-            padding: 18px 16px;
-            margin: 12px 0;
-            width: 100%;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            text-align: left;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .btn-menu.secondary {
+            background-color: #0288D1;
+        }
+        .btn-menu.assistant {
+            background-color: #00796B;
         }
 
         .info-box {
@@ -101,7 +90,7 @@
             border-left: 5px solid #1976D2;
             border-radius: 8px;
             padding: 12px 15px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             font-size: 13px;
             color: #444;
             line-height: 1.4;
@@ -132,7 +121,7 @@
 </head>
 <body>
 
-    <div id="app">Lade Rezepte...</div>
+    <div id="app">Lade Rezepte-Zentrale...</div>
 
     <div id="modal-overlay">
         <div id="modal-inhalt"></div>
@@ -160,20 +149,28 @@
                 <h2 class="page-title">📖 Braustall Rezepte</h2>
 
                 <div class="info-box">
-                    <b>Willkommen in der Rezept-Zentrale!</b> Wähle aus, ob du ein bestehendes Rezept verwalten oder ein neues Projekt starten möchtest.
+                    <b>Rezept-Zentrale:</b> Wähle aus, ob du bestehende Rezepte verwalten und skalieren, ein neues Rezept manuell erfassen oder den geführten Assistenten nutzen möchtest.
                 </div>
 
-                <div style="display: flex; flexDirection: column; gap: 5px;">
-                    <button class="btn-primary" onclick="oeffneManuelleRezeptListe()">
-                        <span style="font-size: 24px;">📋</span>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <button class="btn-menu" onclick="oeffneVorhandeneRezepteModal()">
+                        <span style="font-size: 22px;">📚</span>
                         <div>
-                            <div>Rezept-Datenbank & Manuell</div>
-                            <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Zettel erfassen & Mengenangaben skalieren</small>
+                            <div>Vorhandene Rezepte</div>
+                            <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Ansehen, Skalieren, Brauen, Bearbeiten & Löschen</small>
                         </div>
                     </button>
 
-                    <button class="btn-secondary-action" onclick="oeffneAssistentIntro()">
-                        <span style="font-size: 24px;">🧙‍♂️</span>
+                    <button class="btn-menu secondary" onclick="oeffneManuelleEingabeAnsicht()">
+                        <span style="font-size: 22px;">📋</span>
+                        <div>
+                            <div>Rezept manuelle Eingabe</div>
+                            <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Zettel-Import & neues Rezept in Datenbank speichern</small>
+                        </div>
+                    </button>
+
+                    <button class="btn-menu assistant" onclick="oeffneAssistentAnsicht()">
+                        <span style="font-size: 22px;">🧙‍♂️</span>
                         <div>
                             <div>Neues Rezept entwickeln</div>
                             <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Geführter Braumeister-Assistent mit Brauwissen</small>
@@ -181,28 +178,44 @@
                     </button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 50px;">Rezepte Version 1.0</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Rezepte Version 1.1</div>
             `;
         }
 
-        function oeffneManuelleRezeptListe() {
+        function oeffneVorhandeneRezepteModal() {
             const inhalt = document.getElementById('modal-inhalt');
             inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">📋 Rezept-Datenbank</h3>
-                <p style="font-size: 14px; color: #555;">Hier entsteht die Ansicht für gespeicherte Rezepte und den manuellen Zettel-Import mit automatischer Liter-Skalierung.</p>
-                <button class="btn-secondary-action" onclick="schliesseModal()" style="width: 100%; margin-top: 15px;">Schließen</button>
+                <h3 style="color: #1565C0; margin-top: 0;">📚 Vorhandene Rezepte</h3>
+                <p style="font-size: 13px; color: #555;">Hier laden wir gleich alle gespeicherten Rezepte aus der Datenbank. Man kann ein Rezept auswählen, die Literzahl für den Brautag anpassen (Skalierung) oder fehlerhafte Rezepte (Murks) direkt löschen.</p>
+                <button class="btn-menu" style="background-color: #546E7A; justify-content: center; margin-top: 15px;" onclick="schliesseModal()">Schließen</button>
             `;
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
-        function oeffneAssistentIntro() {
-            const inhalt = document.getElementById('modal-inhalt');
-            inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">🧙‍♂️ Braumeister-Assistent</h3>
-                <p style="font-size: 14px; color: #555;">Hier entsteht der Schritt-für-Schritt-Fragebogen (Stilwahl, Stammwürze, Schüttung, Hopfen-Checks & Hefeberatung).</p>
-                <button class="btn-secondary-action" onclick="schliesseModal()" style="width: 100%; margin-top: 15px;">Schließen</button>
+        function oeffneManuelleEingabeAnsicht() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
+
+                <h2 class="page-title">📋 Manuelle Eingabe</h2>
+                <div class="info-box">
+                    Hier kannst du einen bestehenden Rezept-Zettel mit allen Mengenangaben, Stammwürze und Zutaten erfassen und fest im System abspeichern.
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px; margin-top: 40px;">(Eingabemaske für Malz, Hopfen & Hefe folgt im nächsten Schritt)</p>
             `;
-            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function oeffneAssistentAnsicht() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
+
+                <h2 class="page-title">🧙‍♂️ Braumeister-Assistent</h2>
+                <div class="info-box">
+                    Der geführte Fragebogen hilft dir Schritt für Schritt bei der Erstellung – inklusive integriertem Brauwissen und Stil-Checks.
+                </div>
+                <p style="text-align: center; color: #666; font-size: 14px; margin-top: 40px;">(Schritt-für-Schritt-Assistent folgt im nächsten Schritt)</p>
+            `;
         }
 
         function schliesseModal() {
