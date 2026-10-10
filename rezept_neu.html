@@ -240,7 +240,7 @@
             </div>
         </div>
 
-        <!-- 2. Wasser & Aufbereitung (Getrennt nach Hauptguss & Nachguss) -->
+        <!-- 2. Wasser & Aufbereitung -->
         <div class="section-box">
             <div class="section-title">2. Wasser & Aufbereitung</div>
             
@@ -286,7 +286,7 @@
             <div id="malz-container"></div>
         </div>
 
-        <!-- 4. Maischplan (Rasten mit chronologischer Sortierung) -->
+        <!-- 4. Maischplan (Rasten) -->
         <div class="section-box">
             <div class="section-title">4. Maischplan (Rasten)</div>
             
@@ -310,18 +310,34 @@
             </div>
         </div>
 
-        <!-- 6. Hopfung & Whirlpool -->
+        <!-- 6. Hopfung (Aufgeteilt in Kochgaben, Whirlpool & Kalthopfung) -->
         <div class="section-box">
             <div class="section-title">
-                <span>6. Hopfung & Whirlpool</span>
-                <button class="btn-small" onclick="fuegeHopfenZeileHinzu()">+ Hopfen</button>
+                <span>6. Hopfung (Kochgaben)</span>
+                <button class="btn-small" onclick="fuegeKochhopfenZeileHinzu()">+ Kochhopfen</button>
             </div>
-            <div id="hopfen-container"></div>
+            <div id="kochhopfen-container"></div>
         </div>
 
-        <!-- 7. Hefe & Gärführung -->
         <div class="section-box">
-            <div class="section-title">7. Hefe & Gärführung</div>
+            <div class="section-title">
+                <span>7. Whirlpool-Hopfung</span>
+                <button class="btn-small" onclick="fuegeWhirlpoolHopfenZeileHinzu()">+ Whirlpool-Hopfen</button>
+            </div>
+            <div id="whirlpool-container"></div>
+        </div>
+
+        <div class="section-box">
+            <div class="section-title">
+                <span>8. Kalthopfung (Stopfen)</span>
+                <button class="btn-small" onclick="fuegeKalthopfenZeileHinzu()">+ Kalthopfen</button>
+            </div>
+            <div id="kalthopfen-container"></div>
+        </div>
+
+        <!-- 9. Hefe & Gärführung -->
+        <div class="section-box">
+            <div class="section-title">9. Hefe & Gärführung</div>
             
             <label class="label-style">Hefestrain:</label>
             <select id="hefe-name" class="select-style" onchange="pruefeHefeAuswahl(this)">
@@ -372,12 +388,11 @@
             
             fuegeMalzZeileHinzu();
             
-            // 5 leere Rasten-Zeilen als neutraler Start
             for (let i = 0; i < 5; i++) {
                 fuegeRastZeile();
             }
 
-            fuegeHopfenZeileHinzu();
+            fuegeKochhopfenZeileHinzu();
         };
 
         async function ladeBierstile() {
@@ -498,7 +513,6 @@
             }
         }
 
-        // Rasten-Zeilen mit chronologisch sortiertem Dropdown und leeren Startwerten
         function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
             const container = document.getElementById('rast-container');
             const div = document.createElement('div');
@@ -520,23 +534,49 @@
             container.appendChild(div);
         }
 
-        function fuegeHopfenZeileHinzu(name = '', menge = '', kochzeit = '', artTemp = '', alpha = '') {
-            const container = document.getElementById('hopfen-container');
+        // 1. Kochhopfen-Zeilen (Hopfen, g, min vor Ende)
+        function fuegeKochhopfenZeileHinzu(name = '', menge = '', zeit = '') {
+            const container = document.getElementById('kochhopfen-container');
             const div = document.createElement('div');
-            div.style.cssText = "background: #fff; padding: 6px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 6px;";
+            div.style.cssText = "display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 6px; align-items: center; margin-bottom: 6px;";
             div.innerHTML = `
-                <div style="display: flex; gap: 4px; margin-bottom: 4px;">
-                    <select class="select-style hopfen-select" style="margin:0; flex: 2;" onchange="pruefeHopfenAuswahl(this)">
-                        ${baueHopfenOptionen(name)}
-                    </select>
-                    <input type="number" step="1" class="input-style hopfen-menge" placeholder="g" value="${menge}" style="margin:0; flex: 1;">
-                    <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.parentElement.remove()">X</button>
-                </div>
-                <div style="display: flex; gap: 4px;">
-                    <input type="number" class="input-style hopfen-zeit" placeholder="min vor Ende" value="${kochzeit}" style="margin:0; font-size:12px; flex: 1;">
-                    <input type="text" class="input-style hopfen-art" placeholder="Gabe / Temp (z.B. Whirlpool 80°C)" value="${artTemp}" style="margin:0; font-size:12px; flex: 2;">
-                    <input type="number" step="0.1" class="input-style hopfen-alpha" placeholder="Alpha %" value="${alpha}" style="margin:0; font-size:12px; flex: 1;">
-                </div>
+                <select class="select-style kochhopfen-select" style="margin:0;" onchange="pruefeHopfenAuswahl(this)">
+                    ${baueHopfenOptionen(name)}
+                </select>
+                <input type="number" step="1" class="input-style kochhopfen-menge" placeholder="g" value="${menge}" style="margin:0;">
+                <input type="number" class="input-style kochhopfen-zeit" placeholder="min" value="${zeit}" style="margin:0;">
+                <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // 2. Whirlpool-Hopfen-Zeilen (Hopfen, g, Temperatur in °C)
+        function fuegeWhirlpoolHopfenZeileHinzu(name = '', menge = '', temp = '') {
+            const container = document.getElementById('whirlpool-container');
+            const div = document.createElement('div');
+            div.style.cssText = "display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 6px; align-items: center; margin-bottom: 6px;";
+            div.innerHTML = `
+                <select class="select-style wp-select" style="margin:0;" onchange="pruefeHopfenAuswahl(this)">
+                    ${baueHopfenOptionen(name)}
+                </select>
+                <input type="number" step="1" class="input-style wp-menge" placeholder="g" value="${menge}" style="margin:0;">
+                <input type="number" class="input-style wp-temp" placeholder="°C" value="${temp}" style="margin:0;">
+                <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // 3. Kalthopfen-Zeilen (Hopfen, g)
+        function fuegeKalthopfenZeileHinzu(name = '', menge = '') {
+            const container = document.getElementById('kalthopfen-container');
+            const div = document.createElement('div');
+            div.style.cssText = "display: grid; grid-template-columns: 2fr 1fr auto; gap: 6px; align-items: center; margin-bottom: 6px;";
+            div.innerHTML = `
+                <select class="select-style kalt-select" style="margin:0;" onchange="pruefeHopfenAuswahl(this)">
+                    ${baueHopfenOptionen(name)}
+                </select>
+                <input type="number" step="1" class="input-style kalt-menge" placeholder="g" value="${menge}" style="margin:0;">
+                <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
         }
@@ -655,7 +695,7 @@
                     if (sel.value === 'NEU_ANLEGEN') sel.innerHTML = baueMalzOptionen(bezeichnung);
                 });
             } else if (kategorie.toLowerCase().includes('hopfen')) {
-                document.querySelectorAll('.hopfen-select').forEach(sel => {
+                document.querySelectorAll('select[class*="select"]').forEach(sel => {
                     if (sel.value === 'NEU_ANLEGEN') sel.innerHTML = baueHopfenOptionen(bezeichnung);
                 });
             } else {
@@ -709,7 +749,7 @@
                 if (mName && mName !== 'NEU_ANLEGEN') schuettung.push({ name: mName, menge_kg: mMenge });
             });
 
-            // Rasten sammeln (nur Zeilen speichern, bei denen eine Rastart ausgewählt wurde)
+            // Rasten sammeln
             let rasten = [];
             document.querySelectorAll('#rast-container > div').forEach(row => {
                 const rName = row.querySelector('.rast-name').value;
@@ -720,15 +760,30 @@
                 }
             });
 
-            // Hopfung sammeln
-            let hopfung = [];
-            document.querySelectorAll('#hopfen-container > div').forEach(row => {
-                const hName = row.querySelector('.hopfen-select').value;
-                const hMenge = parseFloat(row.querySelector('.hopfen-menge').value) || 0;
-                const hZeit = parseInt(row.querySelector('.hopfen-zeit').value) || 0;
-                const hArt = row.querySelector('.hopfen-art').value.trim();
-                const hAlpha = parseFloat(row.querySelector('.hopfen-alpha').value) || 0;
-                if (hName && hName !== 'NEU_ANLEGEN') hopfung.push({ name: hName, menge_g: hMenge, kochzeit_min: hZeit, gabe_art: hArt, alpha_prozent: hAlpha });
+            // Kochhopfen sammeln
+            let kochhopfen = [];
+            document.querySelectorAll('#kochhopfen-container > div').forEach(row => {
+                const hName = row.querySelector('.kochhopfen-select').value;
+                const hMenge = parseFloat(row.querySelector('.kochhopfen-menge').value) || 0;
+                const hZeit = parseInt(row.querySelector('.kochhopfen-zeit').value) || 0;
+                if (hName && hName !== 'NEU_ANLEGEN') kochhopfen.push({ name: hName, menge_g: hMenge, kochzeit_min: hZeit });
+            });
+
+            // Whirlpool-Hopfen sammeln
+            let whirlpoolHopfen = [];
+            document.querySelectorAll('#whirlpool-container > div').forEach(row => {
+                const hName = row.querySelector('.wp-select').value;
+                const hMenge = parseFloat(row.querySelector('.wp-menge').value) || 0;
+                const hTemp = parseFloat(row.querySelector('.wp-temp').value) || 0;
+                if (hName && hName !== 'NEU_ANLEGEN') whirlpoolHopfen.push({ name: hName, menge_g: hMenge, temperatur_c: hTemp });
+            });
+
+            // Kalthopfen sammeln
+            let kalthopfen = [];
+            document.querySelectorAll('#kalthopfen-container > div').forEach(row => {
+                const hName = row.querySelector('.kalt-select').value;
+                const hMenge = parseFloat(row.querySelector('.kalt-menge').value) || 0;
+                if (hName && hName !== 'NEU_ANLEGEN') kalthopfen.push({ name: hName, menge_g: hMenge });
             });
 
             const rezeptDaten = {
@@ -748,7 +803,9 @@
                 kochzeit_gesamt: kochzeitGesamt,
                 schuettung: schuettung,
                 rasten: rasten,
-                hopfung: hopfung,
+                hopfung: kochhopfen, // Abwärtskompatibilität
+                whirlpool_hopfung: whirlpoolHopfen,
+                kalthopfung: kalthopfen,
                 hefe: hefe,
                 gaer_temp: gaerTemp,
                 notizen: notizen,
@@ -762,7 +819,7 @@
                 return;
             }
 
-            alert("Rezept erfolgreich gespeichert! 🍻");
+            alert("Rezept mit sauber getrennter Hopfung erfolgreich gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
