@@ -106,33 +106,51 @@
             grid-template-columns: 1fr 1fr;
             gap: 8px;
         }
-        .grid-3 {
+
+        /* ------------------------------------------------ */
+        /* PERFEKT AUSGERICHTETE GRID-LAYOUTS (TECHNISCH SAUBER) */
+        /* ------------------------------------------------ */
+
+        /* Malz: Sorte (2fr) | kg (1fr) | X (auto) */
+        .grid-malz-head, .grid-malz-row {
             display: grid;
-            grid-template-columns: 2fr 1fr auto;
+            grid-template-columns: 2fr 1fr 32px;
             gap: 6px;
             align-items: center;
             margin-bottom: 6px;
         }
 
-        /* Tabellen-Layout für Rasten & Hopfen mit Überschriften */
-        .table-header-grid-3 {
+        /* Rasten: Rastart (2fr) | °C (1fr) | min (1fr) */
+        .grid-rast-head, .grid-rast-row {
             display: grid;
-            grid-template-columns: 2fr 1fr auto;
+            grid-template-columns: 2fr 1fr 1fr;
             gap: 6px;
-            font-size: 11px;
-            font-weight: bold;
-            color: #555;
-            margin-bottom: 4px;
-            padding: 0 2px;
+            align-items: center;
+            margin-bottom: 6px;
         }
-        .table-header-grid-4 {
+
+        /* Kochhopfen & Whirlpool: Sorte (2fr) | g (1fr) | Zeit/Temp (1fr) | X (auto) */
+        .grid-hopfen-4-head, .grid-hopfen-4-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr auto;
+            grid-template-columns: 2fr 1fr 1fr 32px;
             gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        /* Kalthopfen: Sorte (2fr) | g (1fr) | X (auto) */
+        .grid-hopfen-3-head, .grid-hopfen-3-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 32px;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .table-head-label {
             font-size: 11px;
             font-weight: bold;
             color: #555;
-            margin-bottom: 4px;
             padding: 0 2px;
         }
 
@@ -153,11 +171,27 @@
             background-color: #E3F2FD;
             color: #1565C0;
             border: 1px solid #90CAF9;
-            padding: 4px 8px;
+            padding: 6px 8px;
             border-radius: 4px;
             font-size: 12px;
             font-weight: bold;
             cursor: pointer;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-delete {
+            background-color: #FFEBEE;
+            color: #C62828;
+            border: 1px solid #FFCDD2;
+            font-weight: bold;
+            height: 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* Modal für Lager-Schnell-Erfassung */
@@ -286,9 +320,9 @@
                 <span>3. Schüttung (Malz aus Lager)</span>
                 <button class="btn-small" onclick="fuegeMalzZeileHinzu()">+ Malz</button>
             </div>
-            <div class="table-header-grid-3" style="margin-bottom: 2px;">
+            <div class="grid-malz-head table-head-label">
                 <div>Malzsorte</div>
-                <div>Menge (kg)</div>
+                <div>g (kg)</div>
                 <div></div>
             </div>
             <div id="malz-container"></div>
@@ -297,11 +331,10 @@
         <!-- 4. Maischplan (Rasten) -->
         <div class="section-box">
             <div class="section-title">4. Maischplan (Rasten)</div>
-            
-            <div class="table-header-grid-3">
+            <div class="grid-rast-head table-head-label">
                 <div>Rastart</div>
-                <div>Temperatur (°C)</div>
-                <div>Dauer (min)</div>
+                <div>°C</div>
+                <div>min</div>
             </div>
             <div id="rast-container"></div>
         </div>
@@ -318,16 +351,16 @@
             </div>
         </div>
 
-        <!-- 6. Hopfung mit klaren Überschriften -->
+        <!-- 6. Hopfung (Kochgaben, Whirlpool, Kalthopfung) -->
         <div class="section-box">
             <div class="section-title">
                 <span>Kochgaben (Hopfenkochen)</span>
                 <button class="btn-small" onclick="fuegeKochhopfenZeileHinzu()">+ Hopfen</button>
             </div>
-            <div class="table-header-grid-4">
+            <div class="grid-hopfen-4-head table-head-label">
                 <div>Hopfensorte</div>
-                <div>Menge (g)</div>
-                <div>Kochzeit (min)</div>
+                <div>g</div>
+                <div>min</div>
                 <div></div>
             </div>
             <div id="kochhopfen-container"></div>
@@ -338,10 +371,10 @@
                 <span>Whirlpool-Hopfung</span>
                 <button class="btn-small" onclick="fuegeWhirlpoolHopfenZeileHinzu()">+ Hopfen</button>
             </div>
-            <div class="table-header-grid-4">
+            <div class="grid-hopfen-4-head table-head-label">
                 <div>Hopfensorte</div>
-                <div>Menge (g)</div>
-                <div>Temperatur (°C)</div>
+                <div>g</div>
+                <div>°C</div>
                 <div></div>
             </div>
             <div id="whirlpool-container"></div>
@@ -352,9 +385,9 @@
                 <span>Kalthopfung (Stopfen)</span>
                 <button class="btn-small" onclick="fuegeKalthopfenZeileHinzu()">+ Hopfen</button>
             </div>
-            <div class="table-header-grid-3">
+            <div class="grid-hopfen-3-head table-head-label">
                 <div>Hopfensorte</div>
-                <div>Menge (g)</div>
+                <div>g</div>
                 <div></div>
             </div>
             <div id="kalthopfen-container"></div>
@@ -521,14 +554,13 @@
         function fuegeMalzZeileHinzu(name = '', menge = '') {
             const container = document.getElementById('malz-container');
             const div = document.createElement('div');
-            div.className = 'table-header-grid-3';
-            div.style.marginBottom = '6px';
+            div.className = 'grid-malz-row';
             div.innerHTML = `
                 <select class="select-style malz-select" style="margin:0;" onchange="pruefeMalzAuswahl(this)">
                     ${baueMalzOptionen(name)}
                 </select>
                 <input type="number" step="0.1" class="input-style malz-menge" placeholder="0.0" value="${menge}" style="margin:0;">
-                <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
+                <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
         }
@@ -542,8 +574,7 @@
         function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
             const container = document.getElementById('rast-container');
             const div = document.createElement('div');
-            div.className = 'table-header-grid-3';
-            div.style.marginBottom = '6px';
+            div.className = 'grid-rast-row';
 
             const rastOptionen = ['Einmaischen', 'Gummirast', 'Eiweißrast', 'Kombirast', 'Maltoserast', 'Verzuckerungsrast', 'Abmaischen'];
             let optionsHtml = '<option value="">-- bitte wählen --</option>';
@@ -565,15 +596,14 @@
         function fuegeKochhopfenZeileHinzu(name = '', menge = '', zeit = '') {
             const container = document.getElementById('kochhopfen-container');
             const div = document.createElement('div');
-            div.className = 'table-header-grid-4';
-            div.style.marginBottom = '6px';
+            div.className = 'grid-hopfen-4-row';
             div.innerHTML = `
                 <select class="select-style kochhopfen-select" style="margin:0;" onchange="pruefeHopfenAuswahl(this)">
                     ${baueHopfenOptionen(name)}
                 </select>
                 <input type="number" step="1" class="input-style kochhopfen-menge" placeholder="0" value="${menge}" style="margin:0;">
                 <input type="number" class="input-style kochhopfen-zeit" placeholder="0" value="${zeit}" style="margin:0;">
-                <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
+                <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
         }
@@ -582,15 +612,14 @@
         function fuegeWhirlpoolHopfenZeileHinzu(name = '', menge = '', temp = '') {
             const container = document.getElementById('whirlpool-container');
             const div = document.createElement('div');
-            div.className = 'table-header-grid-4';
-            div.style.marginBottom = '6px';
+            div.className = 'grid-hopfen-4-row';
             div.innerHTML = `
                 <select class="select-style wp-select" style="margin:0;" onchange="pruefeHopfenAuswahl(this)">
                     ${baueHopfenOptionen(name)}
                 </select>
                 <input type="number" step="1" class="input-style wp-menge" placeholder="0" value="${menge}" style="margin:0;">
                 <input type="number" class="input-style wp-temp" placeholder="0" value="${temp}" style="margin:0;">
-                <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
+                <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
         }
@@ -599,14 +628,13 @@
         function fuegeKalthopfenZeileHinzu(name = '', menge = '') {
             const container = document.getElementById('kalthopfen-container');
             const div = document.createElement('div');
-            div.className = 'table-header-grid-3';
-            div.style.marginBottom = '6px';
+            div.className = 'grid-hopfen-3-row';
             div.innerHTML = `
                 <select class="select-style kalt-select" style="margin:0;" onchange="pruefeHopfenAuswahl(this)">
                     ${baueHopfenOptionen(name)}
                 </select>
                 <input type="number" step="1" class="input-style kalt-menge" placeholder="0" value="${menge}" style="margin:0;">
-                <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
+                <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
         }
@@ -849,7 +877,7 @@
                 return;
             }
 
-            alert("Rezept perfekt und übersichtlich gespeichert! 🍻");
+            alert("Rezept im perfekten Techniker-Layout gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
