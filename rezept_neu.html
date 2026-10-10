@@ -286,7 +286,7 @@
             <div id="malz-container"></div>
         </div>
 
-        <!-- 4. Maischplan (Rasten mit festen Spalten & leeren Startzeilen) -->
+        <!-- 4. Maischplan (Rasten mit chronologischer Sortierung) -->
         <div class="section-box">
             <div class="section-title">4. Maischplan (Rasten)</div>
             
@@ -343,7 +343,7 @@
         <button class="btn-primary" onclick="speichereRezeptInDatenbank()">💾 Rezept in Datenbank speichern</button>
     </div>
 
-    <!-- Modal für Rohstoff-Schnell-Erfassung -->
+    <!-- Modal für Lager-Schnell-Erfassung -->
     <div id="modal-overlay">
         <div id="modal-inhalt">
             <h3 id="modal-titel" style="color: #1565C0; margin-top: 0;">Neuen Rohstoff anlegen</h3>
@@ -498,13 +498,13 @@
             }
         }
 
-        // Leere Rasten-Zeilen mit Dropdown und leeren Startwerten
+        // Rasten-Zeilen mit chronologisch sortiertem Dropdown und leeren Startwerten
         function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
             const container = document.getElementById('rast-container');
             const div = document.createElement('div');
             div.className = 'rast-row-grid';
 
-            const rastOptionen = ['Gummirast', 'Eiweißrast', 'Maltoserast', 'Verzuckerungsrast', 'Abmaischen', 'Kombirast', 'Einschleimrast'];
+            const rastOptionen = ['Einmaischen', 'Gummirast', 'Eiweißrast', 'Kombirast', 'Maltoserast', 'Verzuckerungsrast', 'Abmaischen'];
             let optionsHtml = '<option value="">-- bitte eingeben --</option>';
             rastOptionen.forEach(opt => {
                 optionsHtml += `<option value="${opt}" ${opt === aktiveRast ? 'selected' : ''}>${opt}</option>`;
