@@ -100,6 +100,19 @@
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .btn-wiederholen {
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 8px;
+        }
         .btn-danger-modal {
             background-color: #D32F2F;
             color: white;
@@ -111,8 +124,9 @@
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 8px;
+            margin-top: 4px;
         }
+        /* SCHÖNE FARBIGE ADMIN-BUTTONS FÜR OFFENE SUDE */
         .btn-admin-gruen {
             background-color: #2E7D32;
             color: white;
@@ -139,13 +153,14 @@
             flex: 1;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
+        /* OBERE AKTIONSLISTE */
         .btn-top-action {
             background-color: #1976D2;
             color: white;
             border: none;
-            padding: 12px;
+            padding: 10px 12px;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -154,7 +169,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            height: 45px;
+            height: 42px;
         }
 
         .input-style {
@@ -342,7 +357,7 @@
                     <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.15</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.16</div>
             `;
         }
 
@@ -398,8 +413,8 @@
             if (istKassenwart) {
                 topLeisteHtml = `
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px;">
-                        <button class="btn-top-action" style="flex: 1;" onclick="oeffneNeueBuchungModal()">➕ Neue Buchung erfassen</button>
-                        <button class="btn-top-action" style="flex: 0 0 auto; width: 110px;" onclick="schalteKassenbuchEditModusUm()">${kassenbuchEditModus ? '✓ Fertig' : '✏️ Editieren'}</button>
+                        <button class="btn-top-action" style="flex: 1;" onclick="oeffneNeueBuchungModal()">➕ Neu</button>
+                        <button class="btn-top-action" style="flex: 1;" onclick="schalteKassenbuchEditModusUm()">${kassenbuchEditModus ? '✓ Fertig' : '✏️ Bearbeiten'}</button>
                     </div>
                 `;
             }
@@ -432,11 +447,9 @@
             zeigeKassenbuchAnsicht();
         }
 
-        function oeffneNeueBuchungModal() {
+        function oeffneNeueBuchungModal(vorbelegung = null) {
             const inhalt = document.getElementById('modal-inhalt');
 
-            // SMARTE FILTERUNG: Zählt, wie oft eine Beschreibung vorkommt. 
-            // Nur Beschreibungen, die MINDENSENS 2x verwendet wurden, landen im Pulldown!
             let beschreibungsZaehler = {};
             alleBuchungen.forEach(b => {
                 if (b.beschreibung) {
@@ -457,29 +470,34 @@
                 kontoListOptions += `<option value="${k}">`;
             });
 
+            const artWert = vorbelegung ? vorbelegung.art : 'Ausgabe';
+            const kontoWert = vorbelegung ? (vorbelegung.konto || '') : '';
+            const beschreibungWert = vorbelegung ? (vorbelegung.beschreibung || '') : '';
+            const betragWert = vorbelegung ? (vorbelegung.betrag || '') : '';
+
             inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">➕ Neue Buchung</h3>
+                <h3 style="color: #1565C0; margin-top: 0;">${vorbelegung ? '🔄 Buchung wiederholen' : '➕ Neue Buchung'}</h3>
                 
                 <label class="label-style">Art:</label>
                 <select id="kb-art" class="input-style">
-                    <option value="Einnahme">Einnahme</option>
-                    <option value="Ausgabe">Ausgabe</option>
+                    <option value="Einnahme" ${artWert === 'Einnahme' ? 'selected' : ''}>Einnahme</option>
+                    <option value="Ausgabe" ${artWert === 'Ausgabe' ? 'selected' : ''}>Ausgabe</option>
                 </select>
 
                 <label class="label-style">Konto (z.B. 25, 26):</label>
-                <input type="number" id="kb-konto" list="konto-liste" placeholder="z.B. 25" class="input-style">
+                <input type="number" id="kb-konto" list="konto-liste" value="${kontoWert}" placeholder="z.B. 25" class="input-style">
                 <datalist id="konto-liste">
                     ${kontoListOptions}
                 </datalist>
 
                 <label class="label-style">Beschreibung:</label>
-                <input type="text" id="kb-beschreibung" list="vorschlaege-liste" placeholder="Tippen oder auswählen..." class="input-style">
+                <input type="text" id="kb-beschreibung" list="vorschlaege-liste" value="${beschreibungWert}" placeholder="Tippen oder auswählen..." class="input-style">
                 <datalist id="vorschlaege-liste">
                     ${datalistOptions}
                 </datalist>
 
                 <label class="label-style">Betrag (€):</label>
-                <input type="number" step="0.01" id="kb-betrag" placeholder="z.B. 25.00" class="input-style">
+                <input type="number" step="0.01" id="kb-betrag" value="${betragWert}" placeholder="z.B. 25.00" class="input-style">
 
                 <button class="btn-blue-action" onclick="speichereNeueBuchung()">Buchung speichern</button>
                 <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 8px; width: 100%;">Abbrechen</button>
@@ -532,8 +550,10 @@
             });
 
             inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">✏️ Buchung korrigieren</h3>
+                <h3 style="color: #1565C0; margin-top: 0;">✏️ Buchung bearbeiten</h3>
                 
+                <button class="btn-wiederholen" onclick="schliesseModal(); oeffneNeueBuchungModal(${JSON.stringify(b).replace(/"/g, '&quot;')})">🔄 Wiederholen (Nochmal buchen)</button>
+
                 <label class="label-style">Art:</label>
                 <select id="edit-kb-art" class="input-style">
                     <option value="Einnahme" ${b.art === 'Einnahme' ? 'selected' : ''}>Einnahme</option>
