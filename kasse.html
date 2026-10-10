@@ -177,12 +177,25 @@
             margin-top: 6px;
         }
 
+        .tabelle-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #1565C0;
+            color: white;
+            padding: 8px 10px;
+            border-radius: 6px 6px 0 0;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
         .buchungs-zeile {
             background: #F8F9FA;
             border: 1px solid #E0E0E0;
-            border-radius: 6px;
+            border-radius: 4px;
             padding: 8px 10px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -331,7 +344,7 @@
                     <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.11</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.13</div>
             `;
         }
 
@@ -363,15 +376,18 @@
                         editiereHinweis = `<span style="font-size: 10px; color: #1976D2; margin-left: 6px;">✏ antippen</span>`;
                     }
 
+                    let kontoAnzeige = b.konto ? `<span style="background: #E3F2FD; color: #1565C0; padding: 2px 5px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 6px;">Konto ${b.konto}</span>` : '<span style="color: #aaa; font-size: 11px; margin-right: 6px;">-</span>';
+
                     buchungenHtml += `
                         <div class="${zeilenKlasse}" ${klickAttribut}>
-                            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; flex: 1;">
                                 <span style="font-size: 10px;">${istEinnahme ? '🟢' : '🔴'}</span>
-                                <span style="color: #666; font-size: 11px; white-space: nowrap;">${kurzdatum}</span>
+                                <span style="color: #666; font-size: 11px; white-space: nowrap; width: 42px;">${kurzdatum}</span>
+                                <div style="min-width: 65px;">${kontoAnzeige}</div>
                                 <span style="color: #333; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${b.beschreibung || ''} ${editiereHinweis}</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
-                                <span style="font-weight: bold; color: ${istEinnahme ? '#2E7D32' : '#D32F2F'}; font-size: 13px;">
+                                <span style="font-weight: bold; color: ${istEinnahme ? '#2E7D32' : '#D32F2F'}; font-size: 13px; min-width: 65px; text-align: right;">
                                     ${istEinnahme ? '+' : '-'}${betrag.toFixed(2)} €
                                 </span>
                             </div>
@@ -397,7 +413,17 @@
 
                 ${topLeisteHtml}
 
-                <div style="max-height: 62vh; overflow-y: auto; padding-right: 2px;">
+                <div class="tabelle-header">
+                    <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
+                        <span style="width: 10px;"></span>
+                        <span style="width: 42px;">Datum</span>
+                        <span style="min-width: 65px;">Konto</span>
+                        <span style="flex: 1;">Beschreibung</span>
+                    </div>
+                    <div style="min-width: 65px; text-align: right;">Betrag</div>
+                </div>
+
+                <div style="max-height: 58vh; overflow-y: auto; padding-right: 2px;">
                     ${buchungenHtml}
                 </div>
             `;
@@ -417,6 +443,12 @@
                 datalistOptions += `<option value="${b}">`;
             });
 
+            let einzigartigeKonten = [...new Set(alleBuchungen.map(b => b.konto).filter(Boolean))];
+            let kontoListOptions = "";
+            einzigartigeKonten.forEach(k => {
+                kontoListOptions += `<option value="${k}">`;
+            });
+
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">➕ Neue Buchung</h3>
                 
@@ -425,6 +457,12 @@
                     <option value="Einnahme">Einnahme</option>
                     <option value="Ausgabe">Ausgabe</option>
                 </select>
+
+                <label class="label-style">Konto (z.B. 25, 26):</label>
+                <input type="text" id="kb-konto" list="konto-liste" placeholder="z.B. 25 oder Miete" class="input-style">
+                <datalist id="konto-liste">
+                    ${kontoListOptions}
+                </datalist>
 
                 <label class="label-style">Beschreibung:</label>
                 <input type="text" id="kb-beschreibung" list="vorschlaege-liste" placeholder="Tippen oder auswählen..." class="input-style">
@@ -444,6 +482,7 @@
 
         async function speichereNeueBuchung() {
             const art = document.getElementById('kb-art').value;
+            const konto = document.getElementById('kb-konto').value.trim();
             const beschreibung = document.getElementById('kb-beschreibung').value.trim();
             const betrag = parseFloat(document.getElementById('kb-betrag').value);
 
@@ -456,6 +495,7 @@
             const { error } = await _supabase.from('kassenbuch').insert([{
                 datum: heute,
                 art: art,
+                konto: konto,
                 beschreibung: beschreibung,
                 betrag: betrag
             }]);
@@ -485,6 +525,9 @@
                     <option value="Ausgabe" ${b.art === 'Ausgabe' ? 'selected' : ''}>Ausgabe</option>
                 </select>
 
+                <label class="label-style">Konto:</label>
+                <input type="text" id="edit-kb-konto" value="${b.konto || ''}" class="input-style">
+
                 <label class="label-style">Beschreibung:</label>
                 <input type="text" id="edit-kb-beschreibung" value="${b.beschreibung || ''}" class="input-style">
 
@@ -501,6 +544,7 @@
 
         async function speichereBearbeiteteBuchung(id) {
             const art = document.getElementById('edit-kb-art').value;
+            const konto = document.getElementById('edit-kb-konto').value.trim();
             const beschreibung = document.getElementById('edit-kb-beschreibung').value.trim();
             const betrag = parseFloat(document.getElementById('edit-kb-betrag').value);
 
@@ -511,6 +555,7 @@
 
             const { error } = await _supabase.from('kassenbuch').update({
                 art: art,
+                konto: konto,
                 beschreibung: beschreibung,
                 betrag: betrag
             }).eq('id', id);
@@ -539,7 +584,7 @@
             zeigeKassenbuchAnsicht();
         }
 
-        // --- 2. SUDE MODAL (Mit grünem Bezahlt-Button, rotem Lösch-Button für offene & kompakter Ansicht für bezahlte Sude) ---
+        // --- 2. SUDE MODAL ---
         function oeffneSudeModal() {
             const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
             const inhalt = document.getElementById('modal-inhalt');
@@ -556,7 +601,6 @@
                     let adminKastenHtml = "";
                     if (istKassenwart) {
                         if (!istBezahlt) {
-                            // Nur offene Sude bekommen die Verwaltungs-Buttons (Grün & Rot)
                             adminKastenHtml = `
                                 <div style="display: flex; gap: 8px; margin-top: 10px; border-top: 1px dashed #DDD; padding-top: 8px;">
                                     <button class="btn-admin-gruen" onclick="markiereSudAlsBezahlt('${s.id}')">✓ Bezahlt</button>
@@ -564,7 +608,6 @@
                                 </div>
                             `;
                         }
-                        // Bezahlte Sude bleiben hier komplett frei von Buttons -> Karte schrumpft schön zusammen!
                     } else if (!istBezahlt) {
                         adminKastenHtml = `<div style="font-size: 12px; color: #888; margin-top: 8px; font-style: italic;">Offen (Bestätigung durch Kassenwart ausstehend)</div>`;
                     }
@@ -627,7 +670,7 @@
         }
 
         function schliesseModal() {
-            document.getElementById('modal-overlay').style.display = 'none';
+            document.getElementById('modal-overlay'].style.display = 'none';
         }
     </script>
 </body>
