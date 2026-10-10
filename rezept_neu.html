@@ -293,8 +293,14 @@
                         <input type="text" id="hauptguss-milchsaeure" class="input-style" placeholder="z.B. 10 ml">
                     </div>
                 </div>
-                <label class="label-style">Salze / Aufbereitung:</label>
-                <input type="text" id="hauptguss-salze" class="input-style" placeholder="z.B. 4g CaCl2, 2g CaSO4">
+                <label class="label-style">Salz-Auswahl:</label>
+                <select id="hauptguss-salze" class="select-style">
+                    <option value="">-- Kein Salz / Normal --</option>
+                    <option value="Calciumchlorid (CaCl2)">Calciumchlorid (CaCl₂)</option>
+                    <option value="Calciumsulfat / Gips (CaSO4)">Calciumsulfat / Gips (CaSO₄)</option>
+                    <option value="Magnesiumsulfat / Bittersalz (MgSO4)">Magnesiumsulfat / Bittersalz (MgSO₄)</option>
+                    <option value="Kochsalz (NaCl)">Kochsalz (NaCl)</option>
+                </select>
             </div>
 
             <div style="background: white; padding: 8px; border-radius: 6px; border: 1px solid #E0E0E0;">
@@ -309,8 +315,14 @@
                         <input type="text" id="nachguss-milchsaeure" class="input-style" placeholder="z.B. 5 ml">
                     </div>
                 </div>
-                <label class="label-style">Salze / Aufbereitung:</label>
-                <input type="text" id="nachguss-salze" class="input-style" placeholder="z.B. 2g CaCl2">
+                <label class="label-style">Salz-Auswahl:</label>
+                <select id="nachguss-salze" class="select-style">
+                    <option value="">-- Kein Salz / Normal --</option>
+                    <option value="Calciumchlorid (CaCl2)">Calciumchlorid (CaCl₂)</option>
+                    <option value="Calciumsulfat / Gips (CaSO4)">Calciumsulfat / Gips (CaSO₄)</option>
+                    <option value="Magnesiumsulfat / Bittersalz (MgSO4)">Magnesiumsulfat / Bittersalz (MgSO₄)</option>
+                    <option value="Kochsalz (NaCl)">Kochsalz (NaCl)</option>
+                </select>
             </div>
         </div>
 
@@ -342,14 +354,8 @@
         <!-- 5. Würze kochen -->
         <div class="section-box">
             <div class="section-title">5. Würze kochen</div>
-            <div class="grid-2">
-                <div>
-                    <label class="label-style">Gesamte Kochzeit (Minuten):</label>
-                </div>
-                <div>
-                    <input type="number" id="kochzeit-gesamt" class="input-style" value="90" style="margin:0;">
-                </div>
-            </div>
+            <label class="label-style">Gesamte Kochzeit (Minuten):</label>
+            <input type="number" id="kochzeit-gesamt" class="input-style" value="90">
         </div>
 
         <!-- 6. Hopfung -->
@@ -556,12 +562,26 @@
         }
 
         function pruefeHefeAuswahl(selectElement) {
-            if (selectElement.value === 'NEU_ANLEGEN') {
+            const auswahlWert = selectElement.value;
+            const gaerTempInput = document.getElementById('gaer-temp');
+
+            if (auswahlWert === 'NEU_ANLEGEN') {
                 oeffneLagerSchnellErfassung('Hefe');
-            } else if (selectElement.value.toLowerCase().includes('untergärig') || selectElement.value.toLowerCase().includes('w-34/70')) {
-                document.getElementById('gaer-temp').value = '10-14 °C';
-            } else if (selectElement.value.toLowerCase().includes('obergärig') || selectElement.value.toLowerCase().includes('s-04') || selectElement.value.toLowerCase().includes('us-05')) {
-                document.getElementById('gaer-temp').value = '18-21 °C';
+                return;
+            }
+
+            // Finde die Hefe in unserer geladenen Liste oder setze intelligente Empfehlungen
+            const gefundeneHefe = lagerHefeListe.find(h => (h.bezeichnung || h.name) === auswahlWert);
+            
+            if (gefundeneHefe && gefundeneHefe.gaertemperatur) {
+                // Wenn im Lager eine Gärtemperatur hinterlegt ist, als ausgegrauten Platzhalter/Empfehlung setzen
+                gaerTempInput.placeholder = gefundeneHefe.gaertemperatur;
+            } else if (auswahlWert.toLowerCase().includes('untergärig') || auswahlWert.toLowerCase().includes('w-34/70')) {
+                gaerTempInput.placeholder = '10-14 °C';
+            } else if (auswahlWert.toLowerCase().includes('obergärig') || auswahlWert.toLowerCase().includes('s-04') || auswahlWert.toLowerCase().includes('us-05')) {
+                gaerTempInput.placeholder = '18-21 °C';
+            } else {
+                gaerTempInput.placeholder = 'z.B. 12-14 °C';
             }
         }
 
@@ -795,17 +815,19 @@
             const bewertung = parseInt(document.getElementById('rezept-bewertung').value) || 0;
             
             const hauptguss = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
-            const hauptgussSalze = document.getElementById('hauptguss-salze').value.trim();
+            const hauptgussSalze = document.getElementById('hauptguss-salze').value;
             const hauptgussMilchsaeure = document.getElementById('hauptguss-milchsaeure').value.trim();
 
             const nachguss = parseFloat(document.getElementById('nachguss-liter').value) || 0;
-            const nachgussSalze = document.getElementById('nachguss-salze').value.trim();
+            const nachgussSalze = document.getElementById('nachguss-salze').value;
             const nachgussMilchsaeure = document.getElementById('nachguss-milchsaeure').value.trim();
 
             const kochzeitGesamt = parseInt(document.getElementById('kochzeit-gesamt').value) || 90;
 
             const hefe = document.getElementById('hefe-name').value;
-            const gaerTemp = document.getElementById('gaer-temp').value.trim();
+            const gaerTempInput = document.getElementById('gaer-temp').value.trim();
+            const gaerTemp = gaerTempInput !== "" ? gaerTempInput : document.getElementById('gaer-temp').placeholder;
+            
             const notizen = document.getElementById('rezept-notizen').value.trim();
             const ersteller = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "Mitglied";
 
@@ -892,7 +914,7 @@
                 return;
             }
 
-            alert("Rezept erfolgreich im perfekten Layout gespeichert! 🍻");
+            alert("Rezept mit intelligenten Gärtemperatur-Vorschlägen und Salz-Auswahl gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
