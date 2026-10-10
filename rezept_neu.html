@@ -619,14 +619,36 @@
             });
 
             div.innerHTML = `
-                <select class="select-style rast-name" style="margin:0;">
+                <select class="select-style rast-name" style="margin:0;" onchange="aktualisiereRastTemperaturEmpfehlung(this)">
                     ${optionsHtml}
                 </select>
-                <input type="number" class="input-style rast-temp" placeholder="0" value="${temp ? temp : ''}" style="margin:0;">
-                <input type="number" class="input-style rast-dauer" placeholder="0" value="${dauer ? dauer : ''}" style="margin:0;">
+                <input type="number" class="input-style rast-temp" placeholder="Empfehlung" value="${temp ? temp : ''}" style="margin:0;">
+                <input type="number" class="input-style rast-dauer" placeholder="Min" value="${dauer ? dauer : ''}" style="margin:0;">
                 <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
+        }
+
+        function aktualisiereRastTemperaturEmpfehlung(selectElement) {
+            const rastArt = selectElement.value;
+            // Finde das dazugehörige Temperatur-Eingabefeld in derselben Tabellenzeile
+            const tempInput = selectElement.parentElement.querySelector('.rast-temp');
+            
+            const empfehlungen = {
+                'Einmaischen': '56',
+                'Gummirast': '48',
+                'Eiweißrast': '52',
+                'Kombirast': '66',
+                'Maltoserast': '62',
+                'Verzuckerungsrast': '72',
+                'Abmaischen': '78'
+            };
+
+            if (empfehlungen[rastArt]) {
+                tempInput.placeholder = empfehlungen[rastArt];
+            } else {
+                tempInput.placeholder = 'Empfehlung';
+            }
         }
 
         // Kochhopfen
@@ -857,10 +879,11 @@
             let rasten = [];
             document.querySelectorAll('#rast-container > div').forEach(row => {
                 const rName = row.querySelector('.rast-name').value;
-                const rTemp = parseFloat(row.querySelector('.rast-temp').value) || 0;
+                const tempInput = row.querySelector('.rast-temp').value.trim();
+                const rTemp = tempInput !== "" ? parseFloat(tempInput) : parseFloat(row.querySelector('.rast-temp').placeholder);
                 const rDauer = parseInt(row.querySelector('.rast-dauer').value) || 0;
                 if (rName) {
-                    rasten.push({ name: rName, temperatur_c: rTemp, dauer_min: rDauer });
+                    rasten.push({ name: rName, temperatur_c: isNaN(rTemp) ? 0 : rTemp, dauer_min: rDauer });
                 }
             });
 
@@ -923,7 +946,7 @@
                 return;
             }
 
-            alert("Rezept erfolgreich mit dynamischem Maischplan gespeichert! 🍻");
+            alert("Rezept mit intelligenten Rasten-Empfehlungen gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
