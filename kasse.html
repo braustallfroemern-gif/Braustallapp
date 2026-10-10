@@ -113,7 +113,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-top: 8px;
         }
-        /* SCHÖNE FARBIGE ADMIN-BUTTONS FÜR OFFENE SUDE */
         .btn-admin-gruen {
             background-color: #2E7D32;
             color: white;
@@ -140,7 +139,6 @@
             flex: 1;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        /* BEIDE OBEREN BUTTONS ABSOLUT SYMMETRISCH UND GLEICH HOCH */
         .btn-top-action {
             background-color: #1976D2;
             color: white;
@@ -344,7 +342,7 @@
                     <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.14</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.15</div>
             `;
         }
 
@@ -437,9 +435,19 @@
         function oeffneNeueBuchungModal() {
             const inhalt = document.getElementById('modal-inhalt');
 
-            let einigartigeBeschreibungen = [...new Set(alleBuchungen.map(b => b.beschreibung).filter(Boolean))];
+            // SMARTE FILTERUNG: Zählt, wie oft eine Beschreibung vorkommt. 
+            // Nur Beschreibungen, die MINDENSENS 2x verwendet wurden, landen im Pulldown!
+            let beschreibungsZaehler = {};
+            alleBuchungen.forEach(b => {
+                if (b.beschreibung) {
+                    let text = b.beschreibung.trim();
+                    beschreibungsZaehler[text] = (beschreibungsZaehler[text] || 0) + 1;
+                }
+            });
+            let haeufigeBeschreibungen = Object.keys(beschreibungsZaehler).filter(text => beschreibungsZaehler[text] >= 2);
+
             let datalistOptions = "";
-            einigartigeBeschreibungen.forEach(b => {
+            haeufigeBeschreibungen.forEach(b => {
                 datalistOptions += `<option value="${b}">`;
             });
 
