@@ -286,7 +286,7 @@
             <div id="malz-container"></div>
         </div>
 
-        <!-- 4. Maischplan (Rasten mit festen Spalten) -->
+        <!-- 4. Maischplan (Rasten mit festen Spalten & leeren Startzeilen) -->
         <div class="section-box">
             <div class="section-title">4. Maischplan (Rasten)</div>
             
@@ -310,7 +310,7 @@
             </div>
         </div>
 
-        <!-- 6. Hopfung & Whirlpool (Behalten wir bei für den nächsten Schritt) -->
+        <!-- 6. Hopfung & Whirlpool -->
         <div class="section-box">
             <div class="section-title">
                 <span>6. Hopfung & Whirlpool</span>
@@ -372,8 +372,10 @@
             
             fuegeMalzZeileHinzu();
             
-            // Standard-Rasten fest vorbelegen (Gummirast, Maltoserast, Verzuckerung, Abmaischen)
-            initialisiereRasten();
+            // 5 leere Rasten-Zeilen als neutraler Start
+            for (let i = 0; i < 5; i++) {
+                fuegeRastZeile();
+            }
 
             fuegeHopfenZeileHinzu();
         };
@@ -496,31 +498,14 @@
             }
         }
 
-        // Feste Rasten mit Dropdown und Spaltenüberschriften
-        function initialisiereRasten() {
-            const container = document.getElementById('rast-container');
-            container.innerHTML = '';
-            
-            const standardRasten = [
-                { name: 'Gummirast', temp: 35, dauer: 15 },
-                { name: 'Eiweißrast', temp: 52, dauer: 0 },
-                { name: 'Maltoserast', temp: 63, dauer: 35 },
-                { name: 'Verzuckerungsrast', temp: 72, dauer: 20 },
-                { name: 'Abmaischen', temp: 78, dauer: 1 }
-            ];
-
-            standardRasten.forEach(r => {
-                fuegeRastZeile(r.name, r.temp, r.dauer);
-            });
-        }
-
+        // Leere Rasten-Zeilen mit Dropdown und leeren Startwerten
         function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
             const container = document.getElementById('rast-container');
             const div = document.createElement('div');
             div.className = 'rast-row-grid';
 
             const rastOptionen = ['Gummirast', 'Eiweißrast', 'Maltoserast', 'Verzuckerungsrast', 'Abmaischen', 'Kombirast', 'Einschleimrast'];
-            let optionsHtml = '<option value="">-- Rast wählen --</option>';
+            let optionsHtml = '<option value="">-- bitte eingeben --</option>';
             rastOptionen.forEach(opt => {
                 optionsHtml += `<option value="${opt}" ${opt === aktiveRast ? 'selected' : ''}>${opt}</option>`;
             });
@@ -529,8 +514,8 @@
                 <select class="select-style rast-name" style="margin:0;">
                     ${optionsHtml}
                 </select>
-                <input type="number" class="input-style rast-temp" placeholder="°C" value="${temp > 0 ? temp : ''}" style="margin:0;">
-                <input type="number" class="input-style rast-dauer" placeholder="min" value="${dauer > 0 ? dauer : ''}" style="margin:0;">
+                <input type="number" class="input-style rast-temp" placeholder="0" value="${temp ? temp : ''}" style="margin:0;">
+                <input type="number" class="input-style rast-dauer" placeholder="0" value="${dauer ? dauer : ''}" style="margin:0;">
             `;
             container.appendChild(div);
         }
@@ -696,7 +681,6 @@
             const ebc = parseInt(document.getElementById('ebc-wert').value) || 0;
             const bewertung = parseInt(document.getElementById('rezept-bewertung').value) || 0;
             
-            // Getrennte Wasser- und Aufbereitungswerte
             const hauptguss = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
             const hauptgussSalze = document.getElementById('hauptguss-salze').value.trim();
             const hauptgussMilchsaeure = document.getElementById('hauptguss-milchsaeure').value.trim();
@@ -725,13 +709,15 @@
                 if (mName && mName !== 'NEU_ANLEGEN') schuettung.push({ name: mName, menge_kg: mMenge });
             });
 
-            // Rasten sammeln (aus den festen Zeilen)
+            // Rasten sammeln (nur Zeilen speichern, bei denen eine Rastart ausgewählt wurde)
             let rasten = [];
             document.querySelectorAll('#rast-container > div').forEach(row => {
                 const rName = row.querySelector('.rast-name').value;
                 const rTemp = parseFloat(row.querySelector('.rast-temp').value) || 0;
                 const rDauer = parseInt(row.querySelector('.rast-dauer').value) || 0;
-                if (rName) rasten.push({ name: rName, temperatur_c: rTemp, dauer_min: rDauer });
+                if (rName) {
+                    rasten.push({ name: rName, temperatur_c: rTemp, dauer_min: rDauer });
+                }
             });
 
             // Hopfung sammeln
@@ -741,7 +727,7 @@
                 const hMenge = parseFloat(row.querySelector('.hopfen-menge').value) || 0;
                 const hZeit = parseInt(row.querySelector('.hopfen-zeit').value) || 0;
                 const hArt = row.querySelector('.hopfen-art').value.trim();
-                const hAlpha = parseFloat(row.querySelector('.hopfen-alpha').value) & 0 || parseFloat(row.querySelector('.hopfen-alpha').value) || 0;
+                const hAlpha = parseFloat(row.querySelector('.hopfen-alpha').value) || 0;
                 if (hName && hName !== 'NEU_ANLEGEN') hopfung.push({ name: hName, menge_g: hMenge, kochzeit_min: hZeit, gabe_art: hArt, alpha_prozent: hAlpha });
             });
 
@@ -776,7 +762,7 @@
                 return;
             }
 
-            alert("Rezept mit getrennten Wasserwerten & Rasten erfolgreich gespeichert! 🍻");
+            alert("Rezept erfolgreich gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
