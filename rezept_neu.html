@@ -243,7 +243,7 @@
                 </div>
                 <div>
                     <label class="label-style">Stammwürze (°P):</label>
-                    <input type="number" step="0.1" id="stammwuerze" class="input-style" placeholder="z.B. 12.0">
+                    <input type="number" step="0.1" id="stammwuerze" class="input-style" placeholder="Empfohlen: -">
                     <div id="hinweis-stammwuerze" class="stil-hinweis">Zulässig: -</div>
                 </div>
             </div>
@@ -251,12 +251,12 @@
             <div class="grid-2">
                 <div>
                     <label class="label-style">Geplante IBU (Bittere):</label>
-                    <input type="number" id="ibu-wert" class="input-style" placeholder="z.B. 35">
+                    <input type="number" id="ibu-wert" class="input-style" placeholder="Empfohlen: -">
                     <div id="hinweis-ibu" class="stil-hinweis">Zulässig: -</div>
                 </div>
                 <div>
                     <label class="label-style">Geplante EBC (Farbe):</label>
-                    <input type="number" id="ebc-wert" class="input-style" placeholder="z.B. 12">
+                    <input type="number" id="ebc-wert" class="input-style" placeholder="Empfohlen: -">
                     <div id="hinweis-ebc" class="stil-hinweis">Zulässig: -</div>
                 </div>
             </div>
@@ -483,23 +483,28 @@
             const ausgewählterName = document.getElementById('bier-stil').value;
             const stil = alleBierstile.find(s => s.name === ausgewählterName);
 
+            const stammwuerzeInput = document.getElementById('stammwuerze');
+            const ibuInput = document.getElementById('ibu-wert');
+            const ebcInput = document.getElementById('ebc-wert');
+
             if (!stil) {
-                document.getElementById('stammwuerze').placeholder = 'z.B. 12.0';
+                stammwuerzeInput.placeholder = 'Empfohlen: -';
                 document.getElementById('hinweis-stammwuerze').innerText = 'Zulässig: -';
-                document.getElementById('ibu-wert').placeholder = 'z.B. 35';
+                ibuInput.placeholder = 'Empfohlen: -';
                 document.getElementById('hinweis-ibu').innerText = 'Zulässig: -';
-                document.getElementById('ebc-wert').placeholder = 'z.B. 12';
+                ebcInput.placeholder = 'Empfohlen: -';
                 document.getElementById('hinweis-ebc').innerText = 'Zulässig: -';
                 return;
             }
 
-            document.getElementById('stammwuerze').placeholder = `z.B. ${stil.stammwuerze_min} - ${stil.stammwuerze_max}`;
+            // Automatische Empfehlungen / Richtwerte als Platzhalter setzen
+            stammwuerzeInput.placeholder = `Empfohlen: ${stil.stammwuerze_min}-${stil.stammwuerze_max}`;
             document.getElementById('hinweis-stammwuerze').innerText = `Stil-Norm: ${stil.stammwuerze_min} bis ${stil.stammwuerze_max} °P`;
 
-            document.getElementById('ibu-wert').placeholder = `z.B. ${stil.ibu_min} - ${stil.ibu_max}`;
+            ibuInput.placeholder = `Empfohlen: ${stil.ibu_min}-${stil.ibu_max}`;
             document.getElementById('hinweis-ibu').innerText = `Stil-Norm: ${stil.ibu_min} bis ${stil.ibu_max} IBU`;
 
-            document.getElementById('ebc-wert').placeholder = `z.B. ${stil.ebc_min} - ${stil.ebc_max}`;
+            ebcInput.placeholder = `Empfohlen: ${stil.ebc_min}-${stil.ebc_max}`;
             document.getElementById('hinweis-ebc').innerText = `Stil-Norm: ${stil.ebc_min} bis ${stil.ebc_max} EBC`;
         }
 
@@ -570,11 +575,9 @@
                 return;
             }
 
-            // Finde die Hefe in unserer geladenen Liste oder setze intelligente Empfehlungen
             const gefundeneHefe = lagerHefeListe.find(h => (h.bezeichnung || h.name) === auswahlWert);
             
             if (gefundeneHefe && gefundeneHefe.gaertemperatur) {
-                // Wenn im Lager eine Gärtemperatur hinterlegt ist, als ausgegrauten Platzhalter/Empfehlung setzen
                 gaerTempInput.placeholder = gefundeneHefe.gaertemperatur;
             } else if (auswahlWert.toLowerCase().includes('untergärig') || auswahlWert.toLowerCase().includes('w-34/70')) {
                 gaerTempInput.placeholder = '10-14 °C';
@@ -809,9 +812,15 @@
             const name = document.getElementById('rezept-name').value.trim();
             const stil = document.getElementById('bier-stil').value;
             const liter = parseFloat(document.getElementById('ausschlag-liter').value) || 50;
-            const stammwuerze = parseFloat(document.getElementById('stammwuerze').value) || 0;
-            const ibu = parseInt(document.getElementById('ibu-wert').value) || 0;
-            const ebc = parseInt(document.getElementById('ebc-wert').value) || 0;
+            
+            const stammwuerzeInput = document.getElementById('stammwuerze').value.trim();
+            const ibuInput = document.getElementById('ibu-wert').value.trim();
+            const ebcInput = document.getElementById('ebc-wert').value.trim();
+
+            const stammwuerzeVal = stammwuerzeInput !== "" ? parseFloat(stammwuerzeInput) : parseFloat(document.getElementById('stammwuerze').placeholder.replace('Empfohlen: ', ''));
+            const ibuVal = ibuInput !== "" ? parseInt(ibuInput) : parseInt(document.getElementById('ibu-wert').placeholder.replace('Empfohlen: ', ''));
+            const ebcVal = ebcInput !== "" ? parseInt(ebcInput) : parseInt(document.getElementById('ebc-wert').placeholder.replace('Empfohlen: ', ''));
+
             const bewertung = parseInt(document.getElementById('rezept-bewertung').value) || 0;
             
             const hauptguss = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
@@ -885,9 +894,9 @@
                 name: name,
                 stil: stil,
                 liter: liter,
-                stammwuerze: stammwuerze,
-                ibu: ibu,
-                ebc: ebc,
+                stammwuerze: isNaN(stammwuerzeVal) ? 0 : stammwuerzeVal,
+                ibu: isNaN(ibuVal) ? 0 : ibuVal,
+                ebc: isNaN(ebcVal) ? 0 : ebcVal,
                 bewertung: bewertung,
                 hauptguss: hauptguss,
                 hauptguss_salze: hauptgussSalze,
@@ -914,7 +923,7 @@
                 return;
             }
 
-            alert("Rezept mit intelligenten Gärtemperatur-Vorschlägen und Salz-Auswahl gespeichert! 🍻");
+            alert("Rezept mit Stil-Empfehlungen erfolgreich gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
