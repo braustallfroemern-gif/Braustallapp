@@ -114,6 +114,25 @@
             margin-bottom: 6px;
         }
 
+        /* Tabellen-Layout für Rasten */
+        .rast-header-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 4px;
+            padding: 0 2px;
+        }
+        .rast-row-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 6px;
+            align-items: center;
+        }
+
         .btn-primary {
             background-color: #1976D2;
             color: white;
@@ -134,15 +153,6 @@
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-delete-row {
-            background-color: #FFEBEE;
-            color: #C62828;
-            border: 1px solid #FFCDD2;
-            padding: 6px 10px;
-            border-radius: 4px;
             font-weight: bold;
             cursor: pointer;
         }
@@ -230,28 +240,40 @@
             </div>
         </div>
 
-        <!-- 2. Wasser & Aufbereitung -->
+        <!-- 2. Wasser & Aufbereitung (Getrennt nach Hauptguss & Nachguss) -->
         <div class="section-box">
             <div class="section-title">2. Wasser & Aufbereitung</div>
-            <div class="grid-2">
-                <div>
-                    <label class="label-style">Hauptguss (L):</label>
-                    <input type="number" step="1" id="hauptguss-liter" class="input-style" placeholder="z.B. 40">
+            
+            <div style="background: white; padding: 8px; border-radius: 6px; border: 1px solid #E0E0E0; margin-bottom: 8px;">
+                <label class="label-style" style="color: #1565C0;">Hauptguss</label>
+                <div class="grid-2">
+                    <div>
+                        <label class="label-style">Menge (L):</label>
+                        <input type="number" step="1" id="hauptguss-liter" class="input-style" placeholder="z.B. 40">
+                    </div>
+                    <div>
+                        <label class="label-style">Milchsäure (ml):</label>
+                        <input type="text" id="hauptguss-milchsaeure" class="input-style" placeholder="z.B. 10 ml">
+                    </div>
                 </div>
-                <div>
-                    <label class="label-style">Nachguss (L):</label>
-                    <input type="number" step="1" id="nachguss-liter" class="input-style" placeholder="z.B. 35">
-                </div>
+                <label class="label-style">Salze / Aufbereitung:</label>
+                <input type="text" id="hauptguss-salze" class="input-style" placeholder="z.B. 4g CaCl2, 2g CaSO4">
             </div>
-            <div class="grid-2" style="margin-top: 6px;">
-                <div>
-                    <label class="label-style">Wasseraufbereitung (Salze):</label>
-                    <input type="text" id="wasseraufbereitung" class="input-style" placeholder="z.B. 4g CaCl2, 2g CaSO4">
+
+            <div style="background: white; padding: 8px; border-radius: 6px; border: 1px solid #E0E0E0;">
+                <label class="label-style" style="color: #1565C0;">Nachguss</label>
+                <div class="grid-2">
+                    <div>
+                        <label class="label-style">Menge (L):</label>
+                        <input type="number" step="1" id="nachguss-liter" class="input-style" placeholder="z.B. 35">
+                    </div>
+                    <div>
+                        <label class="label-style">Milchsäure (ml):</label>
+                        <input type="text" id="nachguss-milchsaeure" class="input-style" placeholder="z.B. 5 ml">
+                    </div>
                 </div>
-                <div>
-                    <label class="label-style">Milchsäure (ml):</label>
-                    <input type="text" id="milchsaeure" class="input-style" placeholder="z.B. 5 ml Hauptguss">
-                </div>
+                <label class="label-style">Salze / Aufbereitung:</label>
+                <input type="text" id="nachguss-salze" class="input-style" placeholder="z.B. 2g CaCl2">
             </div>
         </div>
 
@@ -264,11 +286,14 @@
             <div id="malz-container"></div>
         </div>
 
-        <!-- 4. Maischplan (Rasten) -->
+        <!-- 4. Maischplan (Rasten mit festen Spalten) -->
         <div class="section-box">
-            <div class="section-title">
-                <span>4. Maischplan (Rasten)</span>
-                <button class="btn-small" onclick="fuegeRastZeileHinzu()">+ Rast</button>
+            <div class="section-title">4. Maischplan (Rasten)</div>
+            
+            <div class="rast-header-grid">
+                <div>Rastart</div>
+                <div>°C</div>
+                <div>min</div>
             </div>
             <div id="rast-container"></div>
         </div>
@@ -285,7 +310,7 @@
             </div>
         </div>
 
-        <!-- 6. Hopfung & Whirlpool -->
+        <!-- 6. Hopfung & Whirlpool (Behalten wir bei für den nächsten Schritt) -->
         <div class="section-box">
             <div class="section-title">
                 <span>6. Hopfung & Whirlpool</span>
@@ -347,11 +372,8 @@
             
             fuegeMalzZeileHinzu();
             
-            // Standard-Rasten für den Start vorschlagen
-            fuegeRastZeileHinzu("Gummirast", 35, 15);
-            fuegeRastZeileHinzu("Maltoserast", 63, 35);
-            fuegeRastZeileHinzu("Verzuckerungsrast", 72, 20);
-            fuegeRastZeileHinzu("Abmaischen", 78, 1);
+            // Standard-Rasten fest vorbelegen (Gummirast, Maltoserast, Verzuckerung, Abmaischen)
+            initialisiereRasten();
 
             fuegeHopfenZeileHinzu();
         };
@@ -463,7 +485,7 @@
                     ${baueMalzOptionen(name)}
                 </select>
                 <input type="number" step="0.1" class="input-style malz-menge" placeholder="kg" value="${menge}" style="margin:0;">
-                <button class="btn-delete-row" onclick="this.parentElement.remove()">X</button>
+                <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
         }
@@ -474,15 +496,41 @@
             }
         }
 
-        function fuegeRastZeileHinzu(rastName = '', temperatur = '', dauer = '') {
+        // Feste Rasten mit Dropdown und Spaltenüberschriften
+        function initialisiereRasten() {
+            const container = document.getElementById('rast-container');
+            container.innerHTML = '';
+            
+            const standardRasten = [
+                { name: 'Gummirast', temp: 35, dauer: 15 },
+                { name: 'Eiweißrast', temp: 52, dauer: 0 },
+                { name: 'Maltoserast', temp: 63, dauer: 35 },
+                { name: 'Verzuckerungsrast', temp: 72, dauer: 20 },
+                { name: 'Abmaischen', temp: 78, dauer: 1 }
+            ];
+
+            standardRasten.forEach(r => {
+                fuegeRastZeile(r.name, r.temp, r.dauer);
+            });
+        }
+
+        function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
             const container = document.getElementById('rast-container');
             const div = document.createElement('div');
-            div.style.cssText = "display: flex; gap: 4px; margin-bottom: 6px; align-items: center;";
+            div.className = 'rast-row-grid';
+
+            const rastOptionen = ['Gummirast', 'Eiweißrast', 'Maltoserast', 'Verzuckerungsrast', 'Abmaischen', 'Kombirast', 'Einschleimrast'];
+            let optionsHtml = '<option value="">-- Rast wählen --</option>';
+            rastOptionen.forEach(opt => {
+                optionsHtml += `<option value="${opt}" ${opt === aktiveRast ? 'selected' : ''}>${opt}</option>`;
+            });
+
             div.innerHTML = `
-                <input type="text" class="input-style rast-name" placeholder="Rast-Name (z.B. Maltoserast)" value="${rastName}" style="margin:0; flex: 2;">
-                <input type="number" class="input-style rast-temp" placeholder="°C" value="${temperatur}" style="margin:0; flex: 1;">
-                <input type="number" class="input-style rast-dauer" placeholder="Min" value="${dauer}" style="margin:0; flex: 1;">
-                <button class="btn-delete-row" onclick="this.parentElement.remove()">X</button>
+                <select class="select-style rast-name" style="margin:0;">
+                    ${optionsHtml}
+                </select>
+                <input type="number" class="input-style rast-temp" placeholder="°C" value="${temp > 0 ? temp : ''}" style="margin:0;">
+                <input type="number" class="input-style rast-dauer" placeholder="min" value="${dauer > 0 ? dauer : ''}" style="margin:0;">
             `;
             container.appendChild(div);
         }
@@ -497,10 +545,10 @@
                         ${baueHopfenOptionen(name)}
                     </select>
                     <input type="number" step="1" class="input-style hopfen-menge" placeholder="g" value="${menge}" style="margin:0; flex: 1;">
-                    <button class="btn-delete-row" onclick="this.parentElement.parentElement.remove()">X</button>
+                    <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.parentElement.remove()">X</button>
                 </div>
                 <div style="display: flex; gap: 4px;">
-                    <input type="number" class="input-style hopfen-zeit" placeholder="Min vor Ende (z.B. 60)" value="${kochzeit}" style="margin:0; font-size:12px; flex: 1;">
+                    <input type="number" class="input-style hopfen-zeit" placeholder="min vor Ende" value="${kochzeit}" style="margin:0; font-size:12px; flex: 1;">
                     <input type="text" class="input-style hopfen-art" placeholder="Gabe / Temp (z.B. Whirlpool 80°C)" value="${artTemp}" style="margin:0; font-size:12px; flex: 2;">
                     <input type="number" step="0.1" class="input-style hopfen-alpha" placeholder="Alpha %" value="${alpha}" style="margin:0; font-size:12px; flex: 1;">
                 </div>
@@ -648,10 +696,15 @@
             const ebc = parseInt(document.getElementById('ebc-wert').value) || 0;
             const bewertung = parseInt(document.getElementById('rezept-bewertung').value) || 0;
             
+            // Getrennte Wasser- und Aufbereitungswerte
             const hauptguss = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
+            const hauptgussSalze = document.getElementById('hauptguss-salze').value.trim();
+            const hauptgussMilchsaeure = document.getElementById('hauptguss-milchsaeure').value.trim();
+
             const nachguss = parseFloat(document.getElementById('nachguss-liter').value) || 0;
-            const wasseraufbereitung = document.getElementById('wasseraufbereitung').value.trim();
-            const milchsaeure = document.getElementById('milchsaeure').value.trim();
+            const nachgussSalze = document.getElementById('nachguss-salze').value.trim();
+            const nachgussMilchsaeure = document.getElementById('nachguss-milchsaeure').value.trim();
+
             const kochzeitGesamt = parseInt(document.getElementById('kochzeit-gesamt').value) || 90;
 
             const hefe = document.getElementById('hefe-name').value;
@@ -672,10 +725,10 @@
                 if (mName && mName !== 'NEU_ANLEGEN') schuettung.push({ name: mName, menge_kg: mMenge });
             });
 
-            // Rasten sammeln
+            // Rasten sammeln (aus den festen Zeilen)
             let rasten = [];
             document.querySelectorAll('#rast-container > div').forEach(row => {
-                const rName = row.querySelector('.rast-name').value.trim();
+                const rName = row.querySelector('.rast-name').value;
                 const rTemp = parseFloat(row.querySelector('.rast-temp').value) || 0;
                 const rDauer = parseInt(row.querySelector('.rast-dauer').value) || 0;
                 if (rName) rasten.push({ name: rName, temperatur_c: rTemp, dauer_min: rDauer });
@@ -688,7 +741,7 @@
                 const hMenge = parseFloat(row.querySelector('.hopfen-menge').value) || 0;
                 const hZeit = parseInt(row.querySelector('.hopfen-zeit').value) || 0;
                 const hArt = row.querySelector('.hopfen-art').value.trim();
-                const hAlpha = parseFloat(row.querySelector('.hopfen-alpha').value) || 0;
+                const hAlpha = parseFloat(row.querySelector('.hopfen-alpha').value) & 0 || parseFloat(row.querySelector('.hopfen-alpha').value) || 0;
                 if (hName && hName !== 'NEU_ANLEGEN') hopfung.push({ name: hName, menge_g: hMenge, kochzeit_min: hZeit, gabe_art: hArt, alpha_prozent: hAlpha });
             });
 
@@ -701,9 +754,11 @@
                 ebc: ebc,
                 bewertung: bewertung,
                 hauptguss: hauptguss,
+                hauptguss_salze: hauptgussSalze,
+                hauptguss_milchsaeure: hauptgussMilchsaeure,
                 nachguss: nachguss,
-                wasseraufbereitung: wasseraufbereitung,
-                milchsaeure: milchsaeure,
+                nachguss_salze: nachgussSalze,
+                nachguss_milchsaeure: nachgussMilchsaeure,
                 kochzeit_gesamt: kochzeitGesamt,
                 schuettung: schuettung,
                 rasten: rasten,
@@ -721,7 +776,7 @@
                 return;
             }
 
-            alert("Komplettes Rezept erfolgreich in der Datenbank gespeichert! 🍻");
+            alert("Rezept mit getrennten Wasserwerten & Rasten erfolgreich gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
