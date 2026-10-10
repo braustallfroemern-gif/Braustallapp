@@ -334,7 +334,7 @@
             </div>
             <div class="grid-malz-head table-head-label">
                 <div>Malzsorte</div>
-                <div class="shifted-right">Gramm</div>
+                <div class="shifted-right">Kilogramm</div>
                 <div></div>
             </div>
             <div id="malz-container"></div>
@@ -447,7 +447,7 @@
         let lagerMalzListe = [];
         let lagerHopfenListe = [];
         let lagerHefeListe = [];
-        let aktuellesRezeptId = null; // Speichert ID, falls im Bearbeiten-Modus
+        let aktuellesRezeptId = null;
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -458,7 +458,6 @@
             await ladeBierstile();
             await ladeLagerRohstoffe();
             
-            // Prüfen, ob ein Rezept zum Bearbeiten übergeben wurde
             const bearbeitenDatenStr = sessionStorage.getItem('rezeptBearbeitenDaten');
             if (bearbeitenDatenStr) {
                 sessionStorage.removeItem('rezeptBearbeitenDaten');
@@ -710,14 +709,8 @@
             container.appendChild(div);
         }
 
-        function pruefeHopfenAuswahl(selectElement) {
-            if (selectElement.value === 'NEU_ANLEGEN') {
-                oeffneLagerSchnellErfassung('Hopfen');
-            }
-        }
-
         function fuelleRezeptFormular(r) {
-            aktuellesRezeptId = r.id; // Speichert die ID für das spätere Update
+            aktuellesRezeptId = r.id;
 
             document.querySelector('.page-title').innerText = `✏️ Rezept bearbeiten: ${r.name}`;
 
@@ -1034,11 +1027,9 @@
 
             let error;
             if (aktuellesRezeptId) {
-                // Bestehendes Rezept aktualisieren (UPDATE)
                 const res = await _supabase.from('rezepte').update(rezeptDaten).eq('id', aktuellesRezeptId);
                 error = res.error;
             } else {
-                // Neues Rezept einfügen (INSERT)
                 const res = await _supabase.from('rezepte').insert([rezeptDaten]);
                 error = res.error;
             }
