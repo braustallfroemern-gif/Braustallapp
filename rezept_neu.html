@@ -385,7 +385,7 @@
             <div class="grid-hopfen-4-head table-head-label">
                 <div>Hopfensorte</div>
                 <div class="shifted-right">Gramm</div>
-                <div class="shifted-right">Grad Celsius</div>
+                <div class="shifted-right">Würzetemp. (°C)</div>
                 <div></div>
             </div>
             <div id="whirlpool-container"></div>
@@ -838,7 +838,7 @@
             const stil = document.getElementById('bier-stil').value;
             
             const literInput = document.getElementById('ausschlag-liter').value.trim();
-            const liter = literInput !== "" ? parseFloat(literInput) : 50; // Fallback falls leer
+            const liter = literInput !== "" ? parseFloat(literInput) : 50;
             
             const stammwuerzeInput = document.getElementById('stammwuerze').value.trim();
             const ibuInput = document.getElementById('ibu-wert').value.trim();
@@ -880,7 +880,7 @@
                 if (mName && mName !== 'NEU_ANLEGEN') schuettung.push({ name: mName, menge_kg: mMenge });
             });
 
-            // Rasten sammeln (mit Fallback auf Platzhalter)
+            // Rasten sammeln
             let rasten = [];
             document.querySelectorAll('#rast-container > div').forEach(row => {
                 const rName = row.querySelector('.rast-name').value;
@@ -959,7 +959,7 @@
                 return;
             }
 
-            alert("Rezept mit intelligenten Rasten und Standard-Minuten erfolgreich gespeichert! 🍻");
+            alert("Rezept mit angepasster Whirlpool-Beschriftung erfolgreich gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
