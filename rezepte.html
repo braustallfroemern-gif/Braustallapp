@@ -223,7 +223,7 @@
                     </button>
 
                     <button class="btn-menu assistant" onclick="oeffneAssistentAnsicht()">
-                        <span style="font-size: 22px;">🧙‍♂️️</span>
+                        <span style="font-size: 22px;">🧙‍♂️</span>
                         <div>
                             <div>Neues Rezept entwickeln</div>
                             <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Geführter Braumeister-Assistent mit Brauwissen</small>
@@ -231,7 +231,7 @@
                     </button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Rezepte Version 1.4</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Rezepte Version 1.5</div>
             `;
         }
 
@@ -270,12 +270,12 @@
             `;
 
             rezepte.forEach(r => {
-                const sterne = r.bewertung ? '⭐'.repeat(Math.round(r.bewertung)) + ` (${r.bewertung})` : 'Noch nicht bewertet';
+                const sterne = r.bewertung ? '⭐'.repeat(Math.round(r.bewertung)) + ` (${r.bewertung})` : 'Noch nicht gebraut';
                 html += `
                     <div class="rezept-card">
                         <div class="rezept-header">
                             <span class="rezept-name">${escapeHtml(r.name)}</span>
-                            <span style="font-size: 13px; color: #F57F17;">${sterne}</span>
+                            <span style="font-size: 12px; color: #F57F17;">${sterne}</span>
                         </div>
                         <div class="rezept-stil">Stil: <b>${escapeHtml(r.stil || 'Unbekannt')}</b></div>
                         <div class="rezept-meta">
@@ -285,7 +285,7 @@
                             <div>Basis: <b>${r.liter || 50} L</b></div>
                         </div>
                         <div class="rezept-actions">
-                            <button class="btn-card btn-details" onclick='zeigRezeptDetails(${JSON.stringify(r)})'>👁️</button>
+                            <button class="btn-card btn-details" onclick='zeigRezeptDetails(${JSON.stringify(r)})'>👁️ Ansehen</button>
                             <button class="btn-card btn-bearbeiten" onclick='bearbeiteRezept(${JSON.stringify(r)})'>✏️ Bearbeiten</button>
                             <button class="btn-card btn-loeschen" onclick="loescheRezept('${r.id}', '${escapeHtml(r.name)}')">🗑️ Löschen</button>
                         </div>
@@ -297,8 +297,9 @@
         }
 
         function zeigRezeptDetails(rezept) {
+            // 1. Schüttung
             let schuettungHtml = '';
-            if (rezept.schuettung && rezept.schuettung.length > 0) {
+            if (rezept.schuettung && Array.isArray(rezept.schuettung) && rezept.schuettung.length > 0) {
                 rezept.schuettung.forEach(m => {
                     schuettungHtml += `<li><b>${m.menge_kg} kg</b> ${escapeHtml(m.name)}</li>`;
                 });
@@ -306,31 +307,87 @@
                 schuettungHtml = '<li>Keine Malzangaben hinterlegt.</li>';
             }
 
-            let hopfenHtml = '';
-            if (rezept.hopfung && rezept.hopfung.length > 0) {
-                rezept.hopfung.forEach(h => {
-                    hopfenHtml += `<li><b>${h.menge_g} g</b> ${escapeHtml(h.name)} <small style="color:#666;">(${h.kochzeit_min} Min, ${h.alpha_prozent}% Alpha)</small></li>`;
+            // 2. Rasten
+            let rastenHtml = '';
+            if (rezept.rasten && Array.isArray(rezept.rasten) && rezept.rasten.length > 0) {
+                rezept.rasten.forEach(r => {
+                    rastenHtml += `<li><b>${escapeHtml(r.name)}:</b> ${r.temperatur_c} °C, ${r.dauer_min} Min.</li>`;
                 });
             } else {
-                hopfenHtml = '<li>Keine Hopfenangaben hinterlegt.</li>';
+                rastenHtml = '<li>Keine Rasten hinterlegt.</li>';
+            }
+
+            // 3. Kochhopfen / Kochgaben
+            let hopfenHtml = '';
+            if (rezept.hopfung && Array.isArray(rezept.hopfung) && rezept.hopfung.length > 0) {
+                rezept.hopfung.forEach(h => {
+                    hopfenHtml += `<li><b>${h.menge_g} g</b> ${escapeHtml(h.name)} <small style="color:#666;">(${h.kochzeit_min} Min. kochen)</small></li>`;
+                });
+            } else {
+                hopfenHtml = '<li>Keine Kochgaben hinterlegt.</li>';
+            }
+
+            // 4. Whirlpool-Hopfung
+            let wpHtml = '';
+            if (rezept.whirlpool_hopfung && Array.isArray(rezept.whirlpool_hopfung) && rezept.whirlpool_hopfung.length > 0) {
+                rezept.whirlpool_hopfung.forEach(w => {
+                    wpHtml += `<li><b>${w.menge_g} g</b> ${escapeHtml(w.name)} bei ${w.temperatur_c} °C</li>`;
+                });
+            } else {
+                wpHtml = '<li>Keine Whirlpool-Hopfung.</li>';
+            }
+
+            // 5. Kalthopfung
+            let kaltHtml = '';
+            if (rezept.kalthopfung && Array.isArray(rezept.kalthopfung) && rezept.kalthopfung.length > 0) {
+                rezept.kalthopfung.forEach(k => {
+                    kaltHtml += `<li><b>${k.menge_g} g</b> ${escapeHtml(k.name)}</li>`;
+                });
+            } else {
+                kaltHtml = '<li>Keine Kalthopfung (Stopfen).</li>';
             }
 
             const inhalt = document.getElementById('modal-inhalt');
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">📜 ${escapeHtml(rezept.name)}</h3>
                 <div style="background: #E3F2FD; padding: 8px; border-radius: 6px; font-size: 13px; margin-bottom: 10px;">
-                    Stil: <b>${escapeHtml(rezept.stil)}</b> | Basis: <b>${rezept.liter || 50} Liter</b><br>
-                    Stammwürze: <b>${rezept.stammwuerze} °P</b> | IBU: <b>${rezept.ibu}</b> | EBC: <b>${rezept.ebc}</b>
+                    Stil: <b>${escapeHtml(rezept.stil || '-')}</b> | Ausschlag: <b>${rezept.liter || 50} Liter</b><br>
+                    Stammwürze: <b>${rezept.stammwuerze || '-'} °P</b> | IBU: <b>${rezept.ibu || '-'}</b> | EBC: <b>${rezept.ebc || '-'}</b>
                 </div>
 
-                <div style="font-size: 13px; font-weight: bold; color: #333; margin-top: 8px;">Schüttung (Malz):</div>
-                <ul style="font-size: 13px; padding-left: 20px; margin: 4px 0;">${schuettungHtml}</ul>
+                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">💧 Wasser & Aufbereitung</div>
+                <div style="font-size: 12px; margin-left: 5px; margin-bottom: 6px;">
+                    • Hauptguss: <b>${rezept.hauptguss || 0} L</b> (${rezept.hauptguss_salze || 'Keine Salze'}, ${rezept.hauptguss_milchsaeure || '0 ml'} MS)<br>
+                    • Nachguss: <b>${rezept.nachguss || 0} L</b> (${rezept.nachguss_salze || 'Keine Salze'}, ${rezept.nachguss_milchsaeure || '0 ml'} MS)
+                </div>
 
-                <div style="font-size: 13px; font-weight: bold; color: #333; margin-top: 10px;">Hopfung:</div>
-                <ul style="font-size: 13px; padding-left: 20px; margin: 4px 0;">${hopfenHtml}</ul>
+                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🌾 Schüttung (Malz)</div>
+                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${schuettungHtml}</ul>
 
-                <div style="font-size: 13px; margin-top: 10px;"><b>Hefe:</b> ${escapeHtml(rezept.hefe || 'Keine Angabe')} (${escapeHtml(rezept.gaer_temp || '-')})</div>
-                ${rezept.notizen ? `<div style="font-size: 13px; margin-top: 6px;"><b>Notizen:</b> ${escapeHtml(rezept.notizen)}</div>` : ''}
+                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🌡️ Maischplan</div>
+                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${rastenHtml}</ul>
+
+                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🔥 Würze kochen (${rezept.kochzeit_gesamt || 90} Min.)</div>
+                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${hopfenHtml}</ul>
+
+                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🌀 Whirlpool-Hopfung</div>
+                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${wpHtml}</ul>
+
+                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">❄️ Kalthopfung (Stopfen)</div>
+                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${kaltHtml}</ul>
+
+                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🧪 Hefe & Gärung</div>
+                <div style="font-size: 12px; margin-left: 5px; margin-bottom: 6px;">
+                    • Hefe: <b>${escapeHtml(rezept.hefe || 'Keine Angabe')}</b><br>
+                    • Gärtemperatur: <b>${escapeHtml(rezept.gaer_temp || '-')}</b>
+                </div>
+
+                ${rezept.notizen ? `
+                    <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">📝 Notizen</div>
+                    <div style="font-size: 12px; background: #F8F9FA; padding: 6px; border-radius: 4px; margin-top: 2px;">${escapeHtml(rezept.notizen)}</div>
+                ` : ''}
+
+                <div style="font-size: 11px; color: #777; text-align: right; margin-top: 12px;">Erstellt von: ${escapeHtml(rezept.ersteller || 'Mitglied')}</div>
                 
                 <button class="btn-menu" style="background-color: #546E7A; justify-content: center; margin-top: 15px;" onclick="schliesseModal()">Schließen</button>
             `;
@@ -338,7 +395,6 @@
         }
 
         function bearbeiteRezept(rezept) {
-            // Wir speichern das zu bearbeitende Rezept kurz im sessionStorage und leiten auf rezept_neu.html weiter
             sessionStorage.setItem('rezeptBearbeitenId', rezept.id);
             sessionStorage.setItem('rezeptBearbeitenDaten', JSON.stringify(rezept));
             window.location.href = 'rezept_neu.html';
@@ -378,7 +434,7 @@
 
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
     </script>
 </body>
