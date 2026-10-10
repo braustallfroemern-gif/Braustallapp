@@ -239,7 +239,7 @@
             <div class="grid-2">
                 <div>
                     <label class="label-style">Ausschlagmenge (L):</label>
-                    <input type="number" id="ausschlag-liter" class="input-style" value="50">
+                    <input type="number" id="ausschlag-liter" class="input-style" placeholder="Bitte eingeben">
                 </div>
                 <div>
                     <label class="label-style">Stammwürze (°P):</label>
@@ -635,7 +635,6 @@
             const tempInput = row.querySelector('.rast-temp');
             const dauerInput = row.querySelector('.rast-dauer');
             
-            // Empfohlene Temperatur und Dauer für die jeweilige Rast
             const empfehlungen = {
                 'Einmaischen':       { temp: '56', dauer: '5'  },
                 'Gummirast':         { temp: '48', dauer: '15' },
@@ -837,7 +836,9 @@
         async function speichereRezeptInDatenbank() {
             const name = document.getElementById('rezept-name').value.trim();
             const stil = document.getElementById('bier-stil').value;
-            const liter = parseFloat(document.getElementById('ausschlag-liter').value) || 50;
+            
+            const literInput = document.getElementById('ausschlag-liter').value.trim();
+            const liter = literInput !== "" ? parseFloat(literInput) : 50; // Fallback falls leer
             
             const stammwuerzeInput = document.getElementById('stammwuerze').value.trim();
             const ibuInput = document.getElementById('ibu-wert').value.trim();
@@ -879,7 +880,7 @@
                 if (mName && mName !== 'NEU_ANLEGEN') schuettung.push({ name: mName, menge_kg: mMenge });
             });
 
-            // Rasten sammeln (mit Fallback auf Platzhalter, wenn Feld leer bleibt)
+            // Rasten sammeln (mit Fallback auf Platzhalter)
             let rasten = [];
             document.querySelectorAll('#rast-container > div').forEach(row => {
                 const rName = row.querySelector('.rast-name').value;
