@@ -619,35 +619,39 @@
             });
 
             div.innerHTML = `
-                <select class="select-style rast-name" style="margin:0;" onchange="aktualisiereRastTemperaturEmpfehlung(this)">
+                <select class="select-style rast-name" style="margin:0;" onchange="aktualisiereRastEmpfehlungen(this)">
                     ${optionsHtml}
                 </select>
-                <input type="number" class="input-style rast-temp" placeholder="Empfehlung" value="${temp ? temp : ''}" style="margin:0;">
+                <input type="number" class="input-style rast-temp" placeholder="°C" value="${temp ? temp : ''}" style="margin:0;">
                 <input type="number" class="input-style rast-dauer" placeholder="Min" value="${dauer ? dauer : ''}" style="margin:0;">
                 <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
         }
 
-        function aktualisiereRastTemperaturEmpfehlung(selectElement) {
+        function aktualisiereRastEmpfehlungen(selectElement) {
             const rastArt = selectElement.value;
-            // Finde das dazugehörige Temperatur-Eingabefeld in derselben Tabellenzeile
-            const tempInput = selectElement.parentElement.querySelector('.rast-temp');
+            const row = selectElement.parentElement;
+            const tempInput = row.querySelector('.rast-temp');
+            const dauerInput = row.querySelector('.rast-dauer');
             
+            // Empfohlene Temperatur und Dauer für die jeweilige Rast
             const empfehlungen = {
-                'Einmaischen': '56',
-                'Gummirast': '48',
-                'Eiweißrast': '52',
-                'Kombirast': '66',
-                'Maltoserast': '62',
-                'Verzuckerungsrast': '72',
-                'Abmaischen': '78'
+                'Einmaischen':       { temp: '56', dauer: '5'  },
+                'Gummirast':         { temp: '48', dauer: '15' },
+                'Eiweißrast':        { temp: '52', dauer: '15' },
+                'Kombirast':         { temp: '66', dauer: '60' },
+                'Maltoserast':       { temp: '62', dauer: '30' },
+                'Verzuckerungsrast': { temp: '72', dauer: '20' },
+                'Abmaischen':        { temp: '78', dauer: '5'  }
             };
 
             if (empfehlungen[rastArt]) {
-                tempInput.placeholder = empfehlungen[rastArt];
+                tempInput.placeholder = empfehlungen[rastArt].temp;
+                dauerInput.placeholder = empfehlungen[rastArt].dauer;
             } else {
-                tempInput.placeholder = 'Empfehlung';
+                tempInput.placeholder = '°C';
+                dauerInput.placeholder = 'Min';
             }
         }
 
@@ -875,15 +879,23 @@
                 if (mName && mName !== 'NEU_ANLEGEN') schuettung.push({ name: mName, menge_kg: mMenge });
             });
 
-            // Rasten sammeln
+            // Rasten sammeln (mit Fallback auf Platzhalter, wenn Feld leer bleibt)
             let rasten = [];
             document.querySelectorAll('#rast-container > div').forEach(row => {
                 const rName = row.querySelector('.rast-name').value;
+                
                 const tempInput = row.querySelector('.rast-temp').value.trim();
                 const rTemp = tempInput !== "" ? parseFloat(tempInput) : parseFloat(row.querySelector('.rast-temp').placeholder);
-                const rDauer = parseInt(row.querySelector('.rast-dauer').value) || 0;
+                
+                const dauerInput = row.querySelector('.rast-dauer').value.trim();
+                const rDauer = dauerInput !== "" ? parseInt(dauerInput) : parseInt(row.querySelector('.rast-dauer').placeholder);
+
                 if (rName) {
-                    rasten.push({ name: rName, temperatur_c: isNaN(rTemp) ? 0 : rTemp, dauer_min: rDauer });
+                    rasten.push({ 
+                        name: rName, 
+                        temperatur_c: isNaN(rTemp) ? 0 : rTemp, 
+                        dauer_min: isNaN(rDauer) ? 0 : rDauer 
+                    });
                 }
             });
 
@@ -946,7 +958,7 @@
                 return;
             }
 
-            alert("Rezept mit intelligenten Rasten-Empfehlungen gespeichert! 🍻");
+            alert("Rezept mit intelligenten Rasten und Standard-Minuten erfolgreich gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
