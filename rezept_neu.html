@@ -108,7 +108,7 @@
         }
 
         /* ------------------------------------------------ */
-        /* PERFEKT AUSGERICHTETE GRID-LAYOUTS (TECHNISCH SAUBER) */
+        /* PERFEKT AUSGERICHTETE GRID-LAYOUTS (OPTIMiert)   */
         /* ------------------------------------------------ */
 
         /* Malz: Sorte (2fr) | kg (1fr) | X (auto) */
@@ -152,6 +152,11 @@
             font-weight: bold;
             color: #555;
             padding: 0 2px;
+        }
+
+        /* Leichter Versatz nach rechts für die Einheiten-Spalten */
+        .shifted-right {
+            padding-left: 6px;
         }
 
         .btn-primary {
@@ -322,7 +327,7 @@
             </div>
             <div class="grid-malz-head table-head-label">
                 <div>Malzsorte</div>
-                <div>g (kg)</div>
+                <div class="shifted-right">Gramm</div>
                 <div></div>
             </div>
             <div id="malz-container"></div>
@@ -333,8 +338,8 @@
             <div class="section-title">4. Maischplan (Rasten)</div>
             <div class="grid-rast-head table-head-label">
                 <div>Rastart</div>
-                <div>°C</div>
-                <div>min</div>
+                <div class="shifted-right">Grad Celsius</div>
+                <div class="shifted-right">Minuten</div>
             </div>
             <div id="rast-container"></div>
         </div>
@@ -359,8 +364,8 @@
             </div>
             <div class="grid-hopfen-4-head table-head-label">
                 <div>Hopfensorte</div>
-                <div>g</div>
-                <div>min</div>
+                <div class="shifted-right">Gramm</div>
+                <div class="shifted-right">Minuten</div>
                 <div></div>
             </div>
             <div id="kochhopfen-container"></div>
@@ -373,8 +378,8 @@
             </div>
             <div class="grid-hopfen-4-head table-head-label">
                 <div>Hopfensorte</div>
-                <div>g</div>
-                <div>°C</div>
+                <div class="shifted-right">Gramm</div>
+                <div class="shifted-right">Grad Celsius</div>
                 <div></div>
             </div>
             <div id="whirlpool-container"></div>
@@ -387,7 +392,7 @@
             </div>
             <div class="grid-hopfen-3-head table-head-label">
                 <div>Hopfensorte</div>
-                <div>g</div>
+                <div class="shifted-right">Gramm</div>
                 <div></div>
             </div>
             <div id="kalthopfen-container"></div>
@@ -417,7 +422,7 @@
         <button class="btn-primary" onclick="speichereRezeptInDatenbank()">💾 Rezept in Datenbank speichern</button>
     </div>
 
-    <!-- Modal für Rohstoff-Schnell-Erfassung -->
+    <!-- Modal für Lager-Schnell-Erfassung -->
     <div id="modal-overlay">
         <div id="modal-inhalt">
             <h3 id="modal-titel" style="color: #1565C0; margin-top: 0;">Neuen Rohstoff anlegen</h3>
