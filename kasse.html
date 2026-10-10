@@ -459,7 +459,7 @@
                 </select>
 
                 <label class="label-style">Konto (z.B. 25, 26):</label>
-                <input type="text" id="kb-konto" list="konto-liste" placeholder="z.B. 25 oder Miete" class="input-style">
+                <input type="number" id="kb-konto" list="konto-liste" placeholder="z.B. 25" class="input-style">
                 <datalist id="konto-liste">
                     ${kontoListOptions}
                 </datalist>
@@ -482,7 +482,8 @@
 
         async function speichereNeueBuchung() {
             const art = document.getElementById('kb-art').value;
-            const konto = document.getElementById('kb-konto').value.trim();
+            const kontoVal = document.getElementById('kb-konto').value.trim();
+            const konto = kontoVal !== "" ? parseInt(kontoVal, 10) : null;
             const beschreibung = document.getElementById('kb-beschreibung').value.trim();
             const betrag = parseFloat(document.getElementById('kb-betrag').value);
 
@@ -516,6 +517,12 @@
 
             const inhalt = document.getElementById('modal-inhalt');
 
+            let einzigartigeKonten = [...new Set(alleBuchungen.map(item => item.konto).filter(Boolean))];
+            let kontoListOptions = "";
+            einzigartigeKonten.forEach(k => {
+                kontoListOptions += `<option value="${k}">`;
+            });
+
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">✏️ Buchung korrigieren</h3>
                 
@@ -526,7 +533,10 @@
                 </select>
 
                 <label class="label-style">Konto:</label>
-                <input type="text" id="edit-kb-konto" value="${b.konto || ''}" class="input-style">
+                <input type="number" id="edit-kb-konto" list="edit-konto-liste" value="${b.konto || ''}" class="input-style">
+                <datalist id="edit-konto-liste">
+                    ${kontoListOptions}
+                </datalist>
 
                 <label class="label-style">Beschreibung:</label>
                 <input type="text" id="edit-kb-beschreibung" value="${b.beschreibung || ''}" class="input-style">
@@ -544,7 +554,8 @@
 
         async function speichereBearbeiteteBuchung(id) {
             const art = document.getElementById('edit-kb-art').value;
-            const konto = document.getElementById('edit-kb-konto').value.trim();
+            const kontoVal = document.getElementById('edit-kb-konto').value.trim();
+            const konto = kontoVal !== "" ? parseInt(kontoVal, 10) : null;
             const beschreibung = document.getElementById('edit-kb-beschreibung').value.trim();
             const betrag = parseFloat(document.getElementById('edit-kb-betrag').value);
 
