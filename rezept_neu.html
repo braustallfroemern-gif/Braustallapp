@@ -339,7 +339,7 @@
             <div id="rast-container"></div>
         </div>
 
-        <!-- 5. Würze kochen (Kompakt nebeneinander) -->
+        <!-- 5. Würze kochen -->
         <div class="section-box">
             <div class="section-title">5. Würze kochen</div>
             <div class="grid-2">
@@ -352,7 +352,7 @@
             </div>
         </div>
 
-        <!-- 6. Hopfung (Kochgaben mit Irismoos, Whirlpool, Kalthopfung) -->
+        <!-- 6. Hopfung -->
         <div class="section-box">
             <div class="section-title">
                 <span>Kochgaben (Hopfenkochen & Klärmittel)</span>
@@ -394,25 +394,27 @@
             <div id="kalthopfen-container"></div>
         </div>
 
-        <!-- 7. Hefe & Gärführung -->
+        <!-- 7. Hefe & Gärtemperatur -->
         <div class="section-box">
-            <div class="section-title">7. Hefe & Gärführung</div>
-            
-            <label class="label-style">Hefestrain:</label>
-            <select id="hefe-name" class="select-style" onchange="pruefeHefeAuswahl(this)">
-                <!-- Wird dynamisch geladen -->
-            </select>
-
+            <div class="section-title">7. Hefe & Gärtemperatur</div>
             <div class="grid-2">
+                <div>
+                    <label class="label-style">Hefe:</label>
+                    <select id="hefe-name" class="select-style" onchange="pruefeHefeAuswahl(this)">
+                        <!-- Wird dynamisch geladen -->
+                    </select>
+                </div>
                 <div>
                     <label class="label-style">Gärtemperatur (°C):</label>
                     <input type="text" id="gaer-temp" class="input-style" placeholder="z.B. 12-14 °C">
                 </div>
-                <div>
-                    <label class="label-style">Notizen / Tipps:</label>
-                    <input type="text" id="rezept-notizen" class="input-style" placeholder="z.B. Stopfen bei 80% Restextrakt">
-                </div>
             </div>
+        </div>
+
+        <!-- 8. Notizen & Tipps -->
+        <div class="section-box">
+            <div class="section-title">8. Notizen & Tipps</div>
+            <textarea id="rezept-notizen" class="input-style" rows="3" placeholder="z.B. Stopfen bei 80% Restextrakt, Besonderheiten beim Brautag..."></textarea>
         </div>
 
         <button class="btn-primary" onclick="speichereRezeptInDatenbank()">💾 Rezept in Datenbank speichern</button>
@@ -451,8 +453,7 @@
                 fuegeRastZeile();
             }
 
-            // Standardmäßig Kochgabe mit Irismoos vorbelegen
-            fuegeKochhopfenZeileHinzu("Irismoos", 10, 10);
+            fuegeKochhopfenZeileHinzu();
         };
 
         async function ladeBierstile() {
@@ -524,7 +525,7 @@
         }
 
         function baueHopfenOptionen(aktuellerWert = '', mitIrismoos = false) {
-            let html = `<option value="">-- Hopfen wählen --</option>`;
+            let html = `<option value="">-- Bitte wählen --</option>`;
             if (mitIrismoos) {
                 html += `<option value="Irismoos" ${aktuellerWert === 'Irismoos' ? 'selected' : ''} style="font-weight: bold; color: #1565C0;">✨ Irismoos (Klärmittel)</option>`;
             }
@@ -891,7 +892,7 @@
                 return;
             }
 
-            alert("Rezept erfolgreich im kompakten Layout gespeichert! 🍻");
+            alert("Rezept erfolgreich im perfekten Layout gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
