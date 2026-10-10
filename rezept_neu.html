@@ -114,10 +114,10 @@
             margin-bottom: 6px;
         }
 
-        /* Tabellen-Layout für Rasten */
-        .rast-header-grid {
+        /* Tabellen-Layout für Rasten & Hopfen mit Überschriften */
+        .table-header-grid-3 {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
+            grid-template-columns: 2fr 1fr auto;
             gap: 6px;
             font-size: 11px;
             font-weight: bold;
@@ -125,12 +125,15 @@
             margin-bottom: 4px;
             padding: 0 2px;
         }
-        .rast-row-grid {
+        .table-header-grid-4 {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
+            grid-template-columns: 2fr 1fr 1fr auto;
             gap: 6px;
-            margin-bottom: 6px;
-            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 4px;
+            padding: 0 2px;
         }
 
         .btn-primary {
@@ -283,6 +286,11 @@
                 <span>3. Schüttung (Malz aus Lager)</span>
                 <button class="btn-small" onclick="fuegeMalzZeileHinzu()">+ Malz</button>
             </div>
+            <div class="table-header-grid-3" style="margin-bottom: 2px;">
+                <div>Malzsorte</div>
+                <div>Menge (kg)</div>
+                <div></div>
+            </div>
             <div id="malz-container"></div>
         </div>
 
@@ -290,54 +298,71 @@
         <div class="section-box">
             <div class="section-title">4. Maischplan (Rasten)</div>
             
-            <div class="rast-header-grid">
+            <div class="table-header-grid-3">
                 <div>Rastart</div>
-                <div>°C</div>
-                <div>min</div>
+                <div>Temperatur (°C)</div>
+                <div>Dauer (min)</div>
             </div>
             <div id="rast-container"></div>
         </div>
 
-        <!-- 5. Würzebereitung & Kochen -->
+        <!-- 5. Würze kochen -->
         <div class="section-box">
-            <div class="section-title">5. Würzebereitung & Kochen</div>
+            <div class="section-title">5. Würze kochen</div>
             <div class="grid-2">
                 <div>
-                    <label class="label-style">Gesamte Kochzeit (Min):</label>
+                    <label class="label-style">Gesamte Kochzeit (min):</label>
                     <input type="number" id="kochzeit-gesamt" class="input-style" value="90">
                 </div>
                 <div></div>
             </div>
         </div>
 
-        <!-- 6. Hopfung (Aufgeteilt in Kochgaben, Whirlpool & Kalthopfung) -->
+        <!-- 6. Hopfung mit klaren Überschriften -->
         <div class="section-box">
             <div class="section-title">
-                <span>6. Hopfung (Kochgaben)</span>
-                <button class="btn-small" onclick="fuegeKochhopfenZeileHinzu()">+ Kochhopfen</button>
+                <span>Kochgaben (Hopfenkochen)</span>
+                <button class="btn-small" onclick="fuegeKochhopfenZeileHinzu()">+ Hopfen</button>
+            </div>
+            <div class="table-header-grid-4">
+                <div>Hopfensorte</div>
+                <div>Menge (g)</div>
+                <div>Kochzeit (min)</div>
+                <div></div>
             </div>
             <div id="kochhopfen-container"></div>
         </div>
 
         <div class="section-box">
             <div class="section-title">
-                <span>7. Whirlpool-Hopfung</span>
-                <button class="btn-small" onclick="fuegeWhirlpoolHopfenZeileHinzu()">+ Whirlpool-Hopfen</button>
+                <span>Whirlpool-Hopfung</span>
+                <button class="btn-small" onclick="fuegeWhirlpoolHopfenZeileHinzu()">+ Hopfen</button>
+            </div>
+            <div class="table-header-grid-4">
+                <div>Hopfensorte</div>
+                <div>Menge (g)</div>
+                <div>Temperatur (°C)</div>
+                <div></div>
             </div>
             <div id="whirlpool-container"></div>
         </div>
 
         <div class="section-box">
             <div class="section-title">
-                <span>8. Kalthopfung (Stopfen)</span>
-                <button class="btn-small" onclick="fuegeKalthopfenZeileHinzu()">+ Kalthopfen</button>
+                <span>Kalthopfung (Stopfen)</span>
+                <button class="btn-small" onclick="fuegeKalthopfenZeileHinzu()">+ Hopfen</button>
+            </div>
+            <div class="table-header-grid-3">
+                <div>Hopfensorte</div>
+                <div>Menge (g)</div>
+                <div></div>
             </div>
             <div id="kalthopfen-container"></div>
         </div>
 
-        <!-- 9. Hefe & Gärführung -->
+        <!-- 7. Hefe & Gärführung -->
         <div class="section-box">
-            <div class="section-title">9. Hefe & Gärführung</div>
+            <div class="section-title">7. Hefe & Gärführung</div>
             
             <label class="label-style">Hefestrain:</label>
             <select id="hefe-name" class="select-style" onchange="pruefeHefeAuswahl(this)">
@@ -359,7 +384,7 @@
         <button class="btn-primary" onclick="speichereRezeptInDatenbank()">💾 Rezept in Datenbank speichern</button>
     </div>
 
-    <!-- Modal für Lager-Schnell-Erfassung -->
+    <!-- Modal für Rohstoff-Schnell-Erfassung -->
     <div id="modal-overlay">
         <div id="modal-inhalt">
             <h3 id="modal-titel" style="color: #1565C0; margin-top: 0;">Neuen Rohstoff anlegen</h3>
@@ -496,12 +521,13 @@
         function fuegeMalzZeileHinzu(name = '', menge = '') {
             const container = document.getElementById('malz-container');
             const div = document.createElement('div');
-            div.className = 'grid-3';
+            div.className = 'table-header-grid-3';
+            div.style.marginBottom = '6px';
             div.innerHTML = `
                 <select class="select-style malz-select" style="margin:0;" onchange="pruefeMalzAuswahl(this)">
                     ${baueMalzOptionen(name)}
                 </select>
-                <input type="number" step="0.1" class="input-style malz-menge" placeholder="kg" value="${menge}" style="margin:0;">
+                <input type="number" step="0.1" class="input-style malz-menge" placeholder="0.0" value="${menge}" style="margin:0;">
                 <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
@@ -516,10 +542,11 @@
         function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
             const container = document.getElementById('rast-container');
             const div = document.createElement('div');
-            div.className = 'rast-row-grid';
+            div.className = 'table-header-grid-3';
+            div.style.marginBottom = '6px';
 
             const rastOptionen = ['Einmaischen', 'Gummirast', 'Eiweißrast', 'Kombirast', 'Maltoserast', 'Verzuckerungsrast', 'Abmaischen'];
-            let optionsHtml = '<option value="">-- bitte eingeben --</option>';
+            let optionsHtml = '<option value="">-- bitte wählen --</option>';
             rastOptionen.forEach(opt => {
                 optionsHtml += `<option value="${opt}" ${opt === aktiveRast ? 'selected' : ''}>${opt}</option>`;
             });
@@ -534,48 +561,51 @@
             container.appendChild(div);
         }
 
-        // 1. Kochhopfen-Zeilen (Hopfen, g, min vor Ende)
+        // Kochhopfen
         function fuegeKochhopfenZeileHinzu(name = '', menge = '', zeit = '') {
             const container = document.getElementById('kochhopfen-container');
             const div = document.createElement('div');
-            div.style.cssText = "display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 6px; align-items: center; margin-bottom: 6px;";
+            div.className = 'table-header-grid-4';
+            div.style.marginBottom = '6px';
             div.innerHTML = `
                 <select class="select-style kochhopfen-select" style="margin:0;" onchange="pruefeHopfenAuswahl(this)">
                     ${baueHopfenOptionen(name)}
                 </select>
-                <input type="number" step="1" class="input-style kochhopfen-menge" placeholder="g" value="${menge}" style="margin:0;">
-                <input type="number" class="input-style kochhopfen-zeit" placeholder="min" value="${zeit}" style="margin:0;">
+                <input type="number" step="1" class="input-style kochhopfen-menge" placeholder="0" value="${menge}" style="margin:0;">
+                <input type="number" class="input-style kochhopfen-zeit" placeholder="0" value="${zeit}" style="margin:0;">
                 <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
         }
 
-        // 2. Whirlpool-Hopfen-Zeilen (Hopfen, g, Temperatur in °C)
+        // Whirlpool-Hopfen
         function fuegeWhirlpoolHopfenZeileHinzu(name = '', menge = '', temp = '') {
             const container = document.getElementById('whirlpool-container');
             const div = document.createElement('div');
-            div.style.cssText = "display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 6px; align-items: center; margin-bottom: 6px;";
+            div.className = 'table-header-grid-4';
+            div.style.marginBottom = '6px';
             div.innerHTML = `
                 <select class="select-style wp-select" style="margin:0;" onchange="pruefeHopfenAuswahl(this)">
                     ${baueHopfenOptionen(name)}
                 </select>
-                <input type="number" step="1" class="input-style wp-menge" placeholder="g" value="${menge}" style="margin:0;">
-                <input type="number" class="input-style wp-temp" placeholder="°C" value="${temp}" style="margin:0;">
+                <input type="number" step="1" class="input-style wp-menge" placeholder="0" value="${menge}" style="margin:0;">
+                <input type="number" class="input-style wp-temp" placeholder="0" value="${temp}" style="margin:0;">
                 <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
         }
 
-        // 3. Kalthopfen-Zeilen (Hopfen, g)
+        // Kalthopfen
         function fuegeKalthopfenZeileHinzu(name = '', menge = '') {
             const container = document.getElementById('kalthopfen-container');
             const div = document.createElement('div');
-            div.style.cssText = "display: grid; grid-template-columns: 2fr 1fr auto; gap: 6px; align-items: center; margin-bottom: 6px;";
+            div.className = 'table-header-grid-3';
+            div.style.marginBottom = '6px';
             div.innerHTML = `
                 <select class="select-style kalt-select" style="margin:0;" onchange="pruefeHopfenAuswahl(this)">
                     ${baueHopfenOptionen(name)}
                 </select>
-                <input type="number" step="1" class="input-style kalt-menge" placeholder="g" value="${menge}" style="margin:0;">
+                <input type="number" step="1" class="input-style kalt-menge" placeholder="0" value="${menge}" style="margin:0;">
                 <button class="btn-small" style="background-color: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; font-weight:bold;" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
@@ -803,7 +833,7 @@
                 kochzeit_gesamt: kochzeitGesamt,
                 schuettung: schuettung,
                 rasten: rasten,
-                hopfung: kochhopfen, // Abwärtskompatibilität
+                hopfung: kochhopfen,
                 whirlpool_hopfung: whirlpoolHopfen,
                 kalthopfung: kalthopfen,
                 hefe: hefe,
@@ -819,7 +849,7 @@
                 return;
             }
 
-            alert("Rezept mit sauber getrennter Hopfung erfolgreich gespeichert! 🍻");
+            alert("Rezept perfekt und übersichtlich gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
