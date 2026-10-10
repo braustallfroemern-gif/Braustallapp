@@ -447,6 +447,7 @@
         let lagerMalzListe = [];
         let lagerHopfenListe = [];
         let lagerHefeListe = [];
+        let aktuellesRezeptId = null; // Speichert ID, falls im Bearbeiten-Modus
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -457,9 +458,17 @@
             await ladeBierstile();
             await ladeLagerRohstoffe();
             
-            fuegeMalzZeileHinzu();
-            fuegeRastZeile(); // Start mit einer leeren Rast-Zeile
-            fuegeKochhopfenZeileHinzu();
+            // Prüfen, ob ein Rezept zum Bearbeiten übergeben wurde
+            const bearbeitenDatenStr = sessionStorage.getItem('rezeptBearbeitenDaten');
+            if (bearbeitenDatenStr) {
+                sessionStorage.removeItem('rezeptBearbeitenDaten');
+                const rezept = JSON.parse(bearbeitenDatenStr);
+                fuelleRezeptFormular(rezept);
+            } else {
+                fuegeMalzZeileHinzu();
+                fuegeRastZeile();
+                fuegeKochhopfenZeileHinzu();
+            }
         };
 
         async function ladeBierstile() {
@@ -622,8 +631,8 @@
                 <select class="select-style rast-name" style="margin:0;" onchange="aktualisiereRastEmpfehlungen(this)">
                     ${optionsHtml}
                 </select>
-                <input type="number" class="input-style rast-temp" placeholder="°C" value="${temp ? temp : ''}" style="margin:0;">
-                <input type="number" class="input-style rast-dauer" placeholder="Min" value="${dauer ? dauer : ''}" style="margin:0;">
+                <input type="number" class="input-style rast-temp" placeholder="°C" value="${temp !== '' ? temp : ''}" style="margin:0;">
+                <input type="number" class="input-style rast-dauer" placeholder="Min" value="${dauer !== '' ? dauer : ''}" style="margin:0;">
                 <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
@@ -705,6 +714,77 @@
             if (selectElement.value === 'NEU_ANLEGEN') {
                 oeffneLagerSchnellErfassung('Hopfen');
             }
+        }
+
+        function fuelleRezeptFormular(r) {
+            aktuellesRezeptId = r.id; // Speichert die ID für das spätere Update
+
+            document.querySelector('.page-title').innerText = `✏️ Rezept bearbeiten: ${r.name}`;
+
+            document.getElementById('rezept-name').value = r.name || '';
+            document.getElementById('bier-stil').value = r.stil || '';
+            aktualisiereStilHinweise();
+            
+            document.getElementById('ausschlag-liter').value = r.liter || '';
+            document.getElementById('stammwuerze').value = r.stammwuerze || '';
+            document.getElementById('ibu-wert').value = r.ibu || '';
+            document.getElementById('ebc-wert').value = r.ebc || '';
+            document.getElementById('rezept-bewertung').value = r.bewertung || 0;
+
+            document.getElementById('hauptguss-liter').value = r.hauptguss || '';
+            document.getElementById('hauptguss-milchsaeure').value = r.hauptguss_milchsaeure || '';
+            document.getElementById('hauptguss-salze').value = r.hauptguss_salze || '';
+            
+            document.getElementById('nachguss-liter').value = r.nachguss || '';
+            document.getElementById('nachguss-milchsaeure').value = r.nachguss_milchsaeure || '';
+            document.getElementById('nachguss-salze').value = r.nachguss_salze || '';
+
+            document.getElementById('kochzeit-gesamt').value = r.kochzeit_gesamt || 90;
+
+            // Schüttung
+            const malzContainer = document.getElementById('malz-container');
+            malzContainer.innerHTML = '';
+            if (r.schuettung && Array.isArray(r.schuettung) && r.schuettung.length > 0) {
+                r.schuettung.forEach(m => fuegeMalzZeileHinzu(m.name, m.menge_kg));
+            } else {
+                fuegeMalzZeileHinzu();
+            }
+
+            // Rasten
+            const rastContainer = document.getElementById('rast-container');
+            rastContainer.innerHTML = '';
+            if (r.rasten && Array.isArray(r.rasten) && r.rasten.length > 0) {
+                r.rasten.forEach(rast => fuegeRastZeile(rast.name, rast.temperatur_c, rast.dauer_min));
+            } else {
+                fuegeRastZeile();
+            }
+
+            // Kochhopfen
+            const kochhopfenContainer = document.getElementById('kochhopfen-container');
+            kochhopfenContainer.innerHTML = '';
+            if (r.hopfung && Array.isArray(r.hopfung) && r.hopfung.length > 0) {
+                r.hopfung.forEach(h => fuegeKochhopfenZeileHinzu(h.name, h.menge_g, h.kochzeit_min));
+            } else {
+                fuegeKochhopfenZeileHinzu();
+            }
+
+            // Whirlpool
+            const wpContainer = document.getElementById('whirlpool-container');
+            wpContainer.innerHTML = '';
+            if (r.whirlpool_hopfung && Array.isArray(r.whirlpool_hopfung) && r.whirlpool_hopfung.length > 0) {
+                r.whirlpool_hopfung.forEach(w => fuegeWhirlpoolHopfenZeileHinzu(w.name, w.menge_g, w.temperatur_c));
+            }
+
+            // Kalthopfen
+            const kaltContainer = document.getElementById('kalthopfen-container');
+            kaltContainer.innerHTML = '';
+            if (r.kalthopfung && Array.isArray(r.kalthopfung) && r.kalthopfung.length > 0) {
+                r.kalthopfung.forEach(k => fuegeKalthopfenZeileHinzu(k.name, k.menge_g));
+            }
+
+            document.getElementById('hefe-name').value = r.hefe || '';
+            document.getElementById('gaer-temp').value = r.gaer_temp || '';
+            document.getElementById('rezept-notizen').value = r.notizen || '';
         }
 
         function oeffneLagerSchnellErfassung(kategorie) {
@@ -952,14 +1032,23 @@
                 ersteller: ersteller
             };
 
-            const { error } = await _supabase.from('rezepte').insert([rezeptDaten]);
+            let error;
+            if (aktuellesRezeptId) {
+                // Bestehendes Rezept aktualisieren (UPDATE)
+                const res = await _supabase.from('rezepte').update(rezeptDaten).eq('id', aktuellesRezeptId);
+                error = res.error;
+            } else {
+                // Neues Rezept einfügen (INSERT)
+                const res = await _supabase.from('rezepte').insert([rezeptDaten]);
+                error = res.error;
+            }
 
             if (error) {
                 alert("Fehler beim Speichern: " + error.message);
                 return;
             }
 
-            alert("Rezept mit angepasster Whirlpool-Beschriftung erfolgreich gespeichert! 🍻");
+            alert("Rezept erfolgreich gespeichert! 🍻");
             location.href = 'rezepte.html';
         }
     </script>
