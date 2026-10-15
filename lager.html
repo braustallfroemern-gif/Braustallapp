@@ -117,7 +117,7 @@
             margin-top: 6px;
         }
 
-        /* FILTER-BUTTONS: GLEICHMÄSSIG VERTEILT */
+        /* FILTER-BUTTONS */
         .filter-container {
             display: flex;
             gap: 5px;
@@ -270,8 +270,7 @@
 
                 <div id="rohstoff-liste"></div>
 
-                <!-- Versions-Prüfung ganz unten -->
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.9</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.91</div>
             `;
             
             baueRohstoffListe(); 
@@ -396,7 +395,7 @@
 
                 <!-- Bereich für Bestand buchen -->
                 <div id="buchungs-bereich">
-                    <p id="aktueller-bestand-anzeige" style="font-size: 13px; color: #333; margin: 5px 0 10px 0; font-weight: bold;"></p>
+                    <p id="aktueller-bestand-anzeige" style="font-size: 13px; color: #333; margin: 5px 0 10px 0; background: #E3F2FD; padding: 8px; border-radius: 6px;"></p>
                     
                     <label class="label-style">Buchungs-Art:</label>
                     <select id="v-aktion" class="input-style">
@@ -488,8 +487,9 @@
             passendeRohstoffe.forEach(r => {
                 const opt = document.createElement('option');
                 opt.value = r.id;
-                let preisText = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? ` | Preis: ${Number(r.preis).toFixed(2)} €/${r.einheit || ''}` : ` | Kein Preis`;
-                opt.text = `${r.bezeichnung} | Bestand: ${r.bestand} ${r.einheit || ''}${preisText}`;
+                let preisText = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? ` | ${Number(r.preis).toFixed(2)} €/${r.einheit || ''}` : ` | Kein Preis`;
+                let landText = r.land ? ` | ${r.land}` : '';
+                opt.text = `${r.bezeichnung} | Bestand: ${r.bestand} ${r.einheit || ''}${landText}${preisText}`;
                 dropdown.appendChild(opt);
             });
 
@@ -567,8 +567,15 @@
                     let einheit = r.einheit || '';
                     let preisAnzeige = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? Number(r.preis).toFixed(2) + ' €/' + einheit : 'Kein Preis';
                     
+                    let extraInfos = "";
+                    if (r.land) extraInfos += ` | 🌍 ${r.land}`;
+                    if (r.lieferant) extraInfos += ` | 🛒 ${r.lieferant}`;
+                    if (r.lagerort) extraInfos += ` | 📍 ${r.lagerort}`;
+
                     const bestandAnzeige = document.getElementById('aktueller-bestand-anzeige');
-                    if (bestandAnzeige) bestandAnzeige.innerText = `Ausgewählt: ${r.bezeichnung} | Bestand: ${r.bestand} ${einheit} (${preisAnzeige})`;
+                    if (bestandAnzeige) {
+                        bestandAnzeige.innerHTML = `<strong>Ausgewählt:</strong> ${r.bezeichnung}<br><strong>Bestand:</strong> ${r.bestand} ${einheit} (${preisAnzeige})${extraInfos}`;
+                    }
                     
                     const mengenLabel = document.getElementById('mengen-label');
                     if (mengenLabel) mengenLabel.innerText = `Menge buchen (in ${einheit}):`;
