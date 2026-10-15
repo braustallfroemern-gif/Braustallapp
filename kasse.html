@@ -188,12 +188,12 @@
 
         .input-style {
             width: 100%;
-            padding: 12px;
-            margin: 6px 0 12px 0;
+            padding: 10px;
+            margin: 4px 0 10px 0;
             border: 1px solid #90CAF9;
             border-radius: 8px;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 15px;
         }
         .label-style {
             display: block;
@@ -201,7 +201,7 @@
             font-size: 13px;
             font-weight: bold;
             color: #1565C0;
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .tabelle-header {
@@ -314,8 +314,8 @@
         
         // Standard-Fallbacks
         let wasserEnergiePreis = 0.12; 
-        let standardPreisHopfen = 0.05; 
         let standardPreisMalz = 2.00;   
+        let standardPreisHopfen = 0.05; 
         let standardPreisHefe = 0.10;   
 
         window.onload = async function() {
@@ -351,8 +351,8 @@
             if (!error && data) {
                 data.forEach(item => {
                     if (item.schluessel === 'wasser_energie_preis') wasserEnergiePreis = parseFloat(item.wert) || 0.12;
-                    if (item.schluessel === 'standard_preis_hopfen') standardPreisHopfen = parseFloat(item.wert) || 0.05;
                     if (item.schluessel === 'standard_preis_malz') standardPreisMalz = parseFloat(item.wert) || 2.00;
+                    if (item.schluessel === 'standard_preis_hopfen') standardPreisHopfen = parseFloat(item.wert) || 0.05;
                     if (item.schluessel === 'standard_preis_hefe') standardPreisHefe = parseFloat(item.wert) || 0.10;
                 });
             }
@@ -399,7 +399,7 @@
                     ${einstellungenBtnHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.20</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.21</div>
             `;
         }
 
@@ -408,31 +408,31 @@
             const inhalt = document.getElementById('modal-inhalt');
 
             inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">⚙️ Kassen-Einstellungen</h3>
-                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Hier legst du die pauschalen Kostenfaktoren fest. Beim Speichern werden alle Rohstoffpreise im Lager auf diese Werte gesetzt.</p>
+                <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 8px;">⚙️ Kassen-Einstellungen</h3>
+                <p style="font-size: 12px; color: #555; margin-bottom: 12px;">Beim Speichern werden die eingegebenen Preise automatisch auf alle Malze, Hopfen und Hefen im Lager angewendet.</p>
 
-                <label class="label-style">💧 Wasser & Energie pro Liter Brauwasser (€/L):</label>
-                <input type="number" step="0.001" id="cfg-wasser-preis" value="${wasserEnergiePreis.toFixed(3)}" placeholder="z. B. 0.12" class="input-style">
-                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 12px;">
-                    💡 Wasser, Abwasser & Energie zum Aufheizen (z. B. 0.12 €/L).
+                <!-- 1. WASSER & ENERGIE -->
+                <div style="background: #F0F4F8; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #1976D2;">
+                    <label class="label-style" style="margin-top:0;">💧 Wasser & Energie (€ / Liter):</label>
+                    <input type="number" step="0.001" id="cfg-wasser-preis" value="${wasserEnergiePreis.toFixed(3)}" placeholder="0.120" class="input-style">
                 </div>
 
-                <label class="label-style">🌿 Hopfen Pauschalpreis pro Gramm (€/g):</label>
-                <input type="number" step="0.001" id="cfg-hopfen-preis" value="${standardPreisHopfen.toFixed(3)}" placeholder="z. B. 0.05" class="input-style">
-                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 12px;">
-                    💡 Setzt automatisch alle Hopfen im Lager auf diesen Grammpreis.
+                <!-- 2. MALZ -->
+                <div style="background: #FFF3E0; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #E65100;">
+                    <label class="label-style" style="margin-top:0; color: #E65100;">🌾 Malz Pauschalpreis (€ / kg):</label>
+                    <input type="number" step="0.01" id="cfg-malz-preis" value="${standardPreisMalz.toFixed(2)}" placeholder="2.00" class="input-style">
                 </div>
 
-                <label class="label-style">🌾 Malz Pauschalpreis pro kg (€/kg):</label>
-                <input type="number" step="0.01" id="cfg-malz-preis" value="${standardPreisMalz.toFixed(2)}" placeholder="z. B. 2.00" class="input-style">
-                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 12px;">
-                    💡 Setzt automatisch alle Malze im Lager auf diesen Kilopreis.
+                <!-- 3. HOPFEN -->
+                <div style="background: #E8F5E9; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #2E7D32;">
+                    <label class="label-style" style="margin-top:0; color: #2E7D32;">🌿 Hopfen Pauschalpreis (€ / g):</label>
+                    <input type="number" step="0.001" id="cfg-hopfen-preis" value="${standardPreisHopfen.toFixed(3)}" placeholder="0.050" class="input-style">
                 </div>
 
-                <label class="label-style">🧬 Hefe Pauschalpreis pro Gramm (€/g):</label>
-                <input type="number" step="0.001" id="cfg-hefe-preis" value="${standardPreisHefe.toFixed(3)}" placeholder="z. B. 0.10" class="input-style">
-                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 15px;">
-                    💡 Setzt automatisch alle Hefe-Einträge im Lager auf diesen Grammpreis.
+                <!-- 4. HEFE -->
+                <div style="background: #F3E5F5; padding: 8px 10px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #7B1FA2;">
+                    <label class="label-style" style="margin-top:0; color: #7B1FA2;">🧬 Hefe Pauschalpreis (€ / g):</label>
+                    <input type="number" step="0.001" id="cfg-hefe-preis" value="${standardPreisHefe.toFixed(3)}" placeholder="0.100" class="input-style">
                 </div>
 
                 <button class="btn-blue-action" onclick="speichereEinstellungen()">Einstellungen speichern</button>
@@ -444,19 +444,19 @@
 
         async function speichereEinstellungen() {
             const wasserInput = parseFloat(document.getElementById('cfg-wasser-preis').value);
-            const hopfenInput = parseFloat(document.getElementById('cfg-hopfen-preis').value);
             const malzInput = parseFloat(document.getElementById('cfg-malz-preis').value);
+            const hopfenInput = parseFloat(document.getElementById('cfg-hopfen-preis').value);
             const hefeInput = parseFloat(document.getElementById('cfg-hefe-preis').value);
 
-            if (isNaN(wasserInput) || wasserInput < 0 || isNaN(hopfenInput) || hopfenInput < 0 || isNaN(malzInput) || malzInput < 0 || isNaN(hefeInput) || hefeInput < 0) {
-                alert("Bitte gültige Preise eingeben.");
+            if (isNaN(wasserInput) || wasserInput < 0 || isNaN(malzInput) || malzInput < 0 || isNaN(hopfenInput) || hopfenInput < 0 || isNaN(hefeInput) || hefeInput < 0) {
+                alert("Bitte gültige Preise für alle 4 Felder eingeben.");
                 return;
             }
 
             const eintraege = [
                 { schluessel: 'wasser_energie_preis', wert: String(wasserInput) },
-                { schluessel: 'standard_preis_hopfen', wert: String(hopfenInput) },
                 { schluessel: 'standard_preis_malz', wert: String(malzInput) },
+                { schluessel: 'standard_preis_hopfen', wert: String(hopfenInput) },
                 { schluessel: 'standard_preis_hefe', wert: String(hefeInput) }
             ];
 
@@ -502,11 +502,11 @@
             }
 
             wasserEnergiePreis = wasserInput;
-            standardPreisHopfen = hopfenInput;
             standardPreisMalz = malzInput;
+            standardPreisHopfen = hopfenInput;
             standardPreisHefe = hefeInput;
 
-            alert("✓ Einstellungen gespeichert und alle Malz-, Hopfen- & Hefepreise im Lager wurden aktualisiert!");
+            alert("✓ Einstellungen gespeichert und alle Preise (Wasser, Malz, Hopfen, Hefe) im Lager wurden aktualisiert!");
             schliesseModal();
         }
 
