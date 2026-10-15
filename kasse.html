@@ -88,6 +88,20 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
         }
+        .btn-settings-action {
+            background-color: #37474F;
+            color: white;
+            border: none;
+            padding: 16px;
+            margin: 10px 0;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
         .btn-blue-action {
             background-color: #1976D2;
             color: white;
@@ -126,7 +140,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-top: 4px;
         }
-        /* SCHÖNE FARBIGE ADMIN-BUTTONS FÜR OFFENE SUDE */
+
         .btn-admin-gruen {
             background-color: #2E7D32;
             color: white;
@@ -153,7 +167,7 @@
             flex: 1;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        /* OBERE AKTIONSLISTE */
+
         .btn-top-action {
             background-color: #1976D2;
             color: white;
@@ -297,6 +311,7 @@
         let alleSude = [];
         let alleBuchungen = [];
         let kassenbuchEditModus = false;
+        let wasserEnergiePreis = 0.12; // Standard-Fallback in €/Liter
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -305,6 +320,7 @@
                 return;
             }
             await ladeDatenAusDatenbank();
+            await ladeEinstellungenAusDatenbank();
             zeigeKassenZentrale();
         };
 
@@ -322,6 +338,18 @@
 
             const { data: buchData } = await _supabase.from('kassenbuch').select('*').order('id', { ascending: false });
             if (buchData) alleBuchungen = buchData;
+        }
+
+        async function ladeEinstellungenAusDatenbank() {
+            const { data, error } = await _supabase
+                .from('einstellungen')
+                .select('*')
+                .eq('schluessel', 'wasser_energie_preis')
+                .maybeSingle();
+            
+            if (!error && data && data.wert !== undefined) {
+                wasserEnergiePreis = parseFloat(data.wert) || 0.12;
+            }
         }
 
         function berechneKassenstand() {
@@ -342,6 +370,13 @@
             const app = document.getElementById('app');
             const kassenstand = berechneKassenstand();
 
+            const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
+
+            let einstellungenBtnHtml = "";
+            if (istKassenwart) {
+                einstellungenBtnHtml = `<button class="btn-settings-action" onclick="oeffneEinstellungenModal()">⚙️ Einstellungen</button>`;
+            }
+
             app.innerHTML = `
                 <button class="btn-back-corner" onclick="location.href='index.html'">🔙 Zurück</button>
 
@@ -352,13 +387,57 @@
                     <div style="font-size: 24px; font-weight: bold; color: #1B5E20; margin-top: 4px;">${kassenstand.toFixed(2)} €</div>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
                     <button class="btn-primary" onclick="zeigeKassenbuchAnsicht()">📖 Kassenbuch</button>
                     <button class="btn-secondary-action" onclick="oeffneSudeModal()">🍺 Sude & offene Posten</button>
+                    ${einstellungenBtnHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.16</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.17</div>
             `;
+        }
+
+        // --- EINSTELLUNGEN MODAL (NUR KASSENWART) ---
+        function oeffneEinstellungenModal() {
+            const inhalt = document.getElementById('modal-inhalt');
+
+            inhalt.innerHTML = `
+                <h3 style="color: #1565C0; margin-top: 0;">⚙️ Kassen-Einstellungen</h3>
+                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Hier legst du die variablen Kostenfaktoren fest, die automatisch in die Sud-Kostenberechnung (Brautag) einfließen.</p>
+
+                <label class="label-style">Wasser & Energie pro Liter Brauwasser (€/L):</label>
+                <input type="number" step="0.001" id="cfg-wasser-preis" value="${wasserEnergiePreis.toFixed(3)}" placeholder="z. B. 0.12" class="input-style">
+                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 15px;">
+                    💡 Enthalten: Wasser, Abwasser, Gas/Strom zum Aufheizen & Kochen. (z. B. 0.12 = 12 Cent / Liter Gesamtwasser).
+                </div>
+
+                <button class="btn-blue-action" onclick="speichereEinstellungen()">Einstellungen speichern</button>
+                <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 8px; width: 100%;">Abbrechen</button>
+            `;
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        async function speichereEinstellungen() {
+            const preisInput = parseFloat(document.getElementById('cfg-wasser-preis').value);
+
+            if (isNaN(preisInput) || preisInput < 0) {
+                alert("Bitte einen gültigen Preis pro Liter eingeben.");
+                return;
+            }
+
+            const { error } = await _supabase.from('einstellungen').upsert([
+                { schluessel: 'wasser_energie_preis', wert: String(preisInput) }
+            ], { onConflict: 'schluessel' });
+
+            if (error) {
+                alert("Fehler beim Speichern der Einstellungen: " + error.message);
+                return;
+            }
+
+            wasserEnergiePreis = preisInput;
+            alert("✓ Einstellungen erfolgreich gespeichert!");
+            schliesseModal();
         }
 
         // --- 1. KASSENBUCH KOMPAKT-VOLLANSICHT ---
