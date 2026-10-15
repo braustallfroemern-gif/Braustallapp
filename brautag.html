@@ -65,7 +65,7 @@
             color: white;
             border: none;
             padding: 16px;
-            margin: 10px 0;
+            margin: 10px 0 4px 0;
             width: 100%;
             border-radius: 8px;
             font-size: 16px;
@@ -79,7 +79,7 @@
             color: white;
             border: none;
             padding: 16px;
-            margin: 10px 0;
+            margin: 10px 0 4px 0;
             width: 100%;
             border-radius: 8px;
             font-size: 16px;
@@ -239,14 +239,21 @@
 
                 <h2 class="page-title">🍲 Brautag & Sude</h2>
                 
-                <div style="margin: 40px 0; text-align: center;">
+                <div style="margin: 30px 0; text-align: center;">
                     <p style="color: #555; font-size: 14px; margin-bottom: 25px;">Wähle, wie du diesen Brautag starten möchtest:</p>
                     
                     <button class="btn-primary" onclick="oeffneFreiesBrauenModal()">🍺 Freies Brauen (Manuell)</button>
+                    <small style="display: block; color: #555; font-size: 12px; margin-bottom: 25px; line-height: 1.4; padding: 0 10px;">
+                        💡 Hier gibst du die verbrauchten Zutaten manuell ein, damit das Lager immer aktuell bleibt.
+                    </small>
+
                     <button class="btn-secondary-action" onclick="alert('Die Rezeptdatenbank folgt im nächsten Schritt!')">📖 Brauen aus Rezeptdatenbank</button>
+                    <small style="display: block; color: #888; font-size: 12px; margin-bottom: 10px; line-height: 1.4; padding: 0 10px;">
+                        (In Kürze: Automatische Abbuchung aus gespeicherten Rezepten)
+                    </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.4</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.5</div>
             `;
         }
 
