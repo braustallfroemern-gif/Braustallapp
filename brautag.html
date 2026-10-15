@@ -198,6 +198,8 @@
         let alleSudeCount = 0;
         let aktuellerFilterModal = 'Malz';
         let rezeptZutaten = [];
+        let wasserEnergiePreis = 0.12; // Standard-Fallback in €/Liter
+        let sudWasserMenge = 0; // In Litern für den aktuellen Sud
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -217,6 +219,17 @@
             if (!error && count !== null) {
                 alleSudeCount = count;
             }
+
+            // Wasser- & Energiepreis aus den Einstellungen laden
+            const { data: cfgData } = await _supabase
+                .from('einstellungen')
+                .select('*')
+                .eq('schluessel', 'wasser_energie_preis')
+                .maybeSingle();
+
+            if (cfgData && cfgData.wert !== undefined) {
+                wasserEnergiePreis = parseFloat(cfgData.wert) || 0.12;
+            }
         }
 
         function zeigeBrautagStartseite() {
@@ -233,12 +246,13 @@
                     <button class="btn-secondary-action" onclick="alert('Die Rezeptdatenbank folgt im nächsten Schritt!')">📖 Brauen aus Rezeptdatenbank</button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.3</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 1.4</div>
             `;
         }
 
         async function oeffneFreiesBrauenModal() {
             rezeptZutaten = [];
+            sudWasserMenge = 0;
             const { count } = await _supabase.from('sude').select('*', { count: 'exact', head: true });
             if (count !== null) {
                 alleSudeCount = count;
@@ -251,7 +265,7 @@
         function erzeugeModalInhalt() {
             const inhalt = document.getElementById('modal-inhalt');
             const naechsteSudNummer = alleSudeCount + 1;
-            const voreingestellterNamePrefix = `Sud ${naechsteSudNummer} - `;
+            const voreingestellterNamePrefix = `Sud ${naechsteSudNummer}`;
 
             const gefiltert = alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktuellerFilterModal.toLowerCase());
 
@@ -266,7 +280,9 @@
                 });
             }
 
-            let gesamtKosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
+            let rohstoffKosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
+            let wasserKosten = sudWasserMenge * wasserEnergiePreis;
+            let gesamtKosten = rohstoffKosten + wasserKosten;
 
             let zutatenTabelleHtml = "";
             if (rezeptZutaten.length === 0) {
@@ -291,7 +307,10 @@
                 <input type="text" id="sud-name" class="input-style" value="${voreingestellterNamePrefix}" placeholder="z.B. Bockbier 18°P">
                 <small style="color: #666; display: block; margin-top: -8px; margin-bottom: 10px;">(Die Nummer wird automatisch fortlaufend vergeben)</small>
 
-                <label class="label-style">2. Kategorie wählen:</label>
+                <label class="label-style">2. Brauwasser Gesamt (Liter):</label>
+                <input type="number" step="1" id="sud-wasser" class="input-style" value="${sudWasserMenge > 0 ? sudWasserMenge : ''}" placeholder="z.B. 50" oninput="aktualisiereWasserMenge(this.value)">
+
+                <label class="label-style">3. Zutat-Kategorie wählen:</label>
                 <div class="filter-container">
                     <button class="filter-btn ${aktuellerFilterModal === 'Malz' ? 'aktiv' : ''}" onclick="setzeModalFilter('Malz')">Malz</button>
                     <button class="filter-btn ${aktuellerFilterModal === 'Hopfen' ? 'aktiv' : ''}" onclick="setzeModalFilter('Hopfen')">Hopfen</button>
@@ -299,7 +318,7 @@
                     <button class="filter-btn ${aktuellerFilterModal === 'Sonstiges' ? 'aktiv' : ''}" onclick="setzeModalFilter('Sonstiges')">Sonstiges</button>
                 </div>
 
-                <label class="label-style">3. Zutat auswählen:</label>
+                <label class="label-style">4. Zutat auswählen:</label>
                 <select id="z-auswahl" class="input-style" onchange="schlageEinheitVor()">
                     ${dropdownOptionen}
                 </select>
@@ -332,8 +351,20 @@
                     </tbody>
                 </table>
 
-                <div style="text-align: right; font-size: 15px; font-weight: bold; color: #1565C0; margin-bottom: 15px;">
-                    Rohstoffkosten gesamt: ${gesamtKosten.toFixed(2)} €
+                <!-- KOSTEN-AUFSTELLUNG -->
+                <div style="background-color: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 8px; padding: 10px; margin: 15px 0;">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #555; margin-bottom: 4px;">
+                        <span>🌾 Rohstoffkosten:</span>
+                        <span id="anzeige-rohstoff-kosten">${rohstoffKosten.toFixed(2)} €</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #555; margin-bottom: 4px;">
+                        <span id="anzeige-wasser-text">💧 Wasser & Energie (${sudWasserMenge} L × ${wasserEnergiePreis.toFixed(2)} €/L):</span>
+                        <span id="anzeige-wasser-kosten">${wasserKosten.toFixed(2)} €</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; color: #1565C0; border-top: 1px solid #DDD; padding-top: 6px; margin-top: 6px;">
+                        <span>Gesamtkosten Sud:</span>
+                        <span id="anzeige-gesamt-kosten">${gesamtKosten.toFixed(2)} €</span>
+                    </div>
                 </div>
 
                 <button class="btn-primary" onclick="schliesseSudAbUndBuche()">🚀 Sud brauen & Lager abbuchen</button>
@@ -341,6 +372,27 @@
             `;
 
             schlageEinheitVor();
+        }
+
+        function aktualisiereWasserMenge(val) {
+            sudWasserMenge = parseFloat(val) || 0;
+            aktualisiereKostenAnzeige();
+        }
+
+        function aktualisiereKostenAnzeige() {
+            let rohstoffKosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
+            let wasserKosten = sudWasserMenge * wasserEnergiePreis;
+            let gesamtKosten = rohstoffKosten + wasserKosten;
+
+            const elRohstoff = document.getElementById('anzeige-rohstoff-kosten');
+            const elWasserText = document.getElementById('anzeige-wasser-text');
+            const elWasserKosten = document.getElementById('anzeige-wasser-kosten');
+            const elGesamt = document.getElementById('anzeige-gesamt-kosten');
+
+            if (elRohstoff) elRohstoff.innerText = rohstoffKosten.toFixed(2) + " €";
+            if (elWasserText) elWasserText.innerText = `💧 Wasser & Energie (${sudWasserMenge} L × ${wasserEnergiePreis.toFixed(2)} €/L):`;
+            if (elWasserKosten) elWasserKosten.innerText = wasserKosten.toFixed(2) + " €";
+            if (elGesamt) elGesamt.innerText = gesamtKosten.toFixed(2) + " €";
         }
 
         function setzeModalFilter(kategorie) {
@@ -417,8 +469,10 @@
             const sudNameInput = document.getElementById('sud-name').value.trim();
             const sudName = sudNameInput !== "" ? sudNameInput : `Sud ${alleSudeCount + 1}`;
 
-            let gesamtkosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
-            
+            let rohstoffKosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
+            let wasserKosten = sudWasserMenge * wasserEnergiePreis;
+            let gesamtkosten = rohstoffKosten + wasserKosten;
+
             let kategorienSummen = {};
             rezeptZutaten.forEach(z => {
                 let kat = z.kategorie || 'Sonstiges';
@@ -432,6 +486,11 @@
                 let info = kategorienSummen[kat];
                 zutatenZusammenfassungParts.push(`${kat}: ${info.menge.toFixed(1)} ${info.einheit} (${info.kosten.toFixed(2)} €)`);
             }
+
+            if (sudWasserMenge > 0) {
+                zutatenZusammenfassungParts.push(`Wasser/Energie: ${sudWasserMenge} L (${wasserKosten.toFixed(2)} €)`);
+            }
+
             let zutatenZusammenfassung = zutatenZusammenfassungParts.join(' | ');
 
             const brauerName = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || 'Mitglied';
@@ -473,7 +532,7 @@
                 return;
             }
 
-            // Nur eine einzige, saubere Erfolgsmeldung
+            // Erfolgsmeldung
             alert(`🍻 ${sudName} erfolgreich gebraut! Die Lagerbestände wurden aktualisiert und der Sud wurde in der Kasse hinterlegt.`);
             schliesseModal();
             await ladeDatenAusDatenbank();
