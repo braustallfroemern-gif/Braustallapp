@@ -316,6 +316,7 @@
         let wasserEnergiePreis = 0.12; 
         let standardPreisHopfen = 0.05; 
         let standardPreisMalz = 2.00;   
+        let standardPreisHefe = 0.10;   
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -352,6 +353,7 @@
                     if (item.schluessel === 'wasser_energie_preis') wasserEnergiePreis = parseFloat(item.wert) || 0.12;
                     if (item.schluessel === 'standard_preis_hopfen') standardPreisHopfen = parseFloat(item.wert) || 0.05;
                     if (item.schluessel === 'standard_preis_malz') standardPreisMalz = parseFloat(item.wert) || 2.00;
+                    if (item.schluessel === 'standard_preis_hefe') standardPreisHefe = parseFloat(item.wert) || 0.10;
                 });
             }
         }
@@ -397,7 +399,7 @@
                     ${einstellungenBtnHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.19</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.20</div>
             `;
         }
 
@@ -407,7 +409,7 @@
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">⚙️ Kassen-Einstellungen</h3>
-                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Hier legst du die pauschalen Kostenfaktoren fest. Beim Speichern werden alle Malz- und Hopfenpreise im Lager auf diesen Wert gesetzt.</p>
+                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Hier legst du die pauschalen Kostenfaktoren fest. Beim Speichern werden alle Rohstoffpreise im Lager auf diese Werte gesetzt.</p>
 
                 <label class="label-style">💧 Wasser & Energie pro Liter Brauwasser (€/L):</label>
                 <input type="number" step="0.001" id="cfg-wasser-preis" value="${wasserEnergiePreis.toFixed(3)}" placeholder="z. B. 0.12" class="input-style">
@@ -423,8 +425,14 @@
 
                 <label class="label-style">🌾 Malz Pauschalpreis pro kg (€/kg):</label>
                 <input type="number" step="0.01" id="cfg-malz-preis" value="${standardPreisMalz.toFixed(2)}" placeholder="z. B. 2.00" class="input-style">
-                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 15px;">
+                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 12px;">
                     💡 Setzt automatisch alle Malze im Lager auf diesen Kilopreis.
+                </div>
+
+                <label class="label-style">🧬 Hefe Pauschalpreis pro Gramm (€/g):</label>
+                <input type="number" step="0.001" id="cfg-hefe-preis" value="${standardPreisHefe.toFixed(3)}" placeholder="z. B. 0.10" class="input-style">
+                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 15px;">
+                    💡 Setzt automatisch alle Hefe-Einträge im Lager auf diesen Grammpreis.
                 </div>
 
                 <button class="btn-blue-action" onclick="speichereEinstellungen()">Einstellungen speichern</button>
@@ -438,8 +446,9 @@
             const wasserInput = parseFloat(document.getElementById('cfg-wasser-preis').value);
             const hopfenInput = parseFloat(document.getElementById('cfg-hopfen-preis').value);
             const malzInput = parseFloat(document.getElementById('cfg-malz-preis').value);
+            const hefeInput = parseFloat(document.getElementById('cfg-hefe-preis').value);
 
-            if (isNaN(wasserInput) || wasserInput < 0 || isNaN(hopfenInput) || hopfenInput < 0 || isNaN(malzInput) || malzInput < 0) {
+            if (isNaN(wasserInput) || wasserInput < 0 || isNaN(hopfenInput) || hopfenInput < 0 || isNaN(malzInput) || malzInput < 0 || isNaN(hefeInput) || hefeInput < 0) {
                 alert("Bitte gültige Preise eingeben.");
                 return;
             }
@@ -447,7 +456,8 @@
             const eintraege = [
                 { schluessel: 'wasser_energie_preis', wert: String(wasserInput) },
                 { schluessel: 'standard_preis_hopfen', wert: String(hopfenInput) },
-                { schluessel: 'standard_preis_malz', wert: String(malzInput) }
+                { schluessel: 'standard_preis_malz', wert: String(malzInput) },
+                { schluessel: 'standard_preis_hefe', wert: String(hefeInput) }
             ];
 
             // 1. In Tabelle 'einstellungen' speichern
@@ -458,33 +468,45 @@
                 return;
             }
 
-            // 2. Alle Malz-Preise im Lager direkt in Supabase auf den neuen Wert aktualisieren
+            // 2. Alle Malz-Preise im Lager aktualisieren
             const { error: malzError } = await _supabase
                 .from('lager')
                 .update({ preis: malzInput })
                 .ilike('kategorie', 'malz');
 
             if (malzError) {
-                alert("Einstellungen gespeichert, aber Fehler beim Aktualisieren der Malzpreise im Lager: " + malzError.message);
+                alert("Einstellungen gespeichert, aber Fehler beim Aktualisieren der Malzpreise: " + malzError.message);
                 return;
             }
 
-            // 3. Alle Hopfen-Preise im Lager direkt in Supabase auf den neuen Wert aktualisieren
+            // 3. Alle Hopfen-Preise im Lager aktualisieren
             const { error: hopfenError } = await _supabase
                 .from('lager')
                 .update({ preis: hopfenInput })
                 .ilike('kategorie', 'hopfen');
 
             if (hopfenError) {
-                alert("Einstellungen gespeichert, aber Fehler beim Aktualisieren der Hopfenpreise im Lager: " + hopfenError.message);
+                alert("Einstellungen gespeichert, aber Fehler beim Aktualisieren der Hopfenpreise: " + hopfenError.message);
+                return;
+            }
+
+            // 4. Alle Hefe-Preise im Lager aktualisieren
+            const { error: hefeError } = await _supabase
+                .from('lager')
+                .update({ preis: hefeInput })
+                .ilike('kategorie', 'hefe');
+
+            if (hefeError) {
+                alert("Einstellungen gespeichert, aber Fehler beim Aktualisieren der Hefepreise: " + hefeError.message);
                 return;
             }
 
             wasserEnergiePreis = wasserInput;
             standardPreisHopfen = hopfenInput;
             standardPreisMalz = malzInput;
+            standardPreisHefe = hefeInput;
 
-            alert("✓ Einstellungen gespeichert und alle Malz- & Hopfenpreise im Lager wurden aktualisiert!");
+            alert("✓ Einstellungen gespeichert und alle Malz-, Hopfen- & Hefepreise im Lager wurden aktualisiert!");
             schliesseModal();
         }
 
