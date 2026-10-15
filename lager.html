@@ -143,14 +143,14 @@
             border-color: #1565C0;
         }
 
-        /* LAGER-KARTEN */
+        /* LAGER-KARTEN STRUCTURE */
         .lager-karte {
             background-color: #F8F9FA;
             border: 1px solid #E0E0E0;
             border-left: 5px solid #1976D2;
             border-radius: 8px;
             padding: 12px;
-            margin: 8px 0;
+            margin: 10px 0;
             text-align: left;
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -164,6 +164,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 6px;
         }
         .karte-titel {
             font-size: 16px;
@@ -171,20 +172,29 @@
             color: #1565C0;
         }
         .karte-bestand {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: bold;
             background-color: #E3F2FD;
             color: #1565C0;
             padding: 3px 8px;
             border-radius: 6px;
         }
-        .karte-details {
+        .karte-zeile {
+            font-size: 13px;
+            color: #333;
+            margin-top: 3px;
+            line-height: 1.3;
+        }
+        .karte-meta-zeile {
             font-size: 12px;
             color: #555;
-            margin-top: 6px;
+            margin-top: 8px;
+            padding-top: 6px;
+            border-top: 1px solid #E0E0E0;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 6px;
+            align-items: center;
         }
 
         /* MODAL */
@@ -270,7 +280,7 @@
 
                 <div id="rohstoff-liste"></div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.91</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 30px;">Version 2.92</div>
             `;
             
             baueRohstoffListe(); 
@@ -310,51 +320,57 @@
                 karte.className = `lager-karte ${katKlasse}`;
                 karte.onclick = () => oeffneVerwaltenModalMitAuswahl(String(r.id));
 
-                let zusatzInfos = "";
                 let katLower = r.kategorie ? r.kategorie.toLowerCase() : '';
-                
-                if (katLower === 'malz') {
-                    if (r.farbe_ebc) zusatzInfos += `<span>🎨 ${r.farbe_ebc} EBC</span>`;
-                    if (r.max_gabe_prozent) zusatzInfos += `<span>📊 Max. ${r.max_gabe_prozent}%</span>`;
-                } else if (katLower === 'hopfen') {
-                    if (r.alpha_saeure) zusatzInfos += `<span>🌿 Alpha: ${r.alpha_saeure}%</span>`;
-                    if (r.land) zusatzInfos += `<span>🌍 ${r.land}</span>`;
-                    if (r.lieferant) zusatzInfos += `<span>🛒 ${r.lieferant}</span>`;
+                let zeilenHtml = "";
+
+                // 1. Spezifische Kennzahlen (Alpha / EBC / Hefe)
+                if (katLower === 'hopfen') {
+                    if (r.alpha_saeure) zeilenHtml += `<div class="karte-zeile">🌿 <strong>Alpha:</strong> ${r.alpha_saeure}%</div>`;
+                } else if (katLower === 'malz') {
+                    let malzInfo = [];
+                    if (r.farbe_ebc) malzInfo.push(`🎨 ${r.farbe_ebc} EBC`);
+                    if (r.max_gabe_prozent) malzInfo.push(`📊 Max. ${r.max_gabe_prozent}%`);
+                    if (malzInfo.length > 0) zeilenHtml += `<div class="karte-zeile">${malzInfo.join(' | ')}</div>`;
                 } else if (katLower === 'hefe') {
-                    if (r.gaerart) zusatzInfos += `<span>🧬 ${r.gaerart}</span>`;
-                    if (r.gaertemperatur) zusatzInfos += `<span>🌡️ ${r.gaertemperatur}</span>`;
-                    if (r.vergaerungsgrad) zusatzInfos += `<span>📈 EVG: ${r.vergaerungsgrad}</span>`;
+                    let hefeInfo = [];
+                    if (r.gaerart) hefeInfo.push(`🧬 ${r.gaerart}`);
+                    if (r.gaertemperatur) hefeInfo.push(`🌡️ ${r.gaertemperatur}`);
+                    if (r.vergaerungsgrad) hefeInfo.push(`📈 EVG: ${r.vergaerungsgrad}`);
+                    if (hefeInfo.length > 0) zeilenHtml += `<div class="karte-zeile">${hefeInfo.join(' | ')}</div>`;
                 }
 
-                if (r.lagerort) {
-                    zusatzInfos += `<span>📍 ${r.lagerort}</span>`;
-                }
-
+                // 2. Geschmack / Aromatik
                 if (r.aromatik) {
-                    zusatzInfos += `<span>👃 ${r.aromatik}</span>`;
+                    zeilenHtml += `<div class="karte-zeile">👃 <strong>Aromatik:</strong> ${r.aromatik}</div>`;
                 } else if (r.notiz && katLower !== 'sonstiges') {
-                    zusatzInfos += `<span>📝 ${r.notiz}</span>`;
+                    zeilenHtml += `<div class="karte-zeile">📝 <strong>Notiz:</strong> ${r.notiz}</div>`;
                 }
 
+                // 3. Alternativen
                 if (r.alternativen) {
-                    zusatzInfos += `<span>🔄 Alt: ${r.alternativen}</span>`;
+                    zeilenHtml += `<div class="karte-zeile">🔄 <strong>Alt:</strong> ${r.alternativen}</div>`;
                 }
 
+                // 4. Untere Zeile: Preis, Land, Lieferant, Lagerort
+                let metaArray = [];
                 if (r.preis !== null && r.preis !== undefined && r.preis !== "") {
-                    zusatzInfos += `<span>💶 ${Number(r.preis).toFixed(2)} € / ${r.einheit || 'ME'}</span>`;
+                    metaArray.push(`💶 ${Number(r.preis).toFixed(2)} €/${r.einheit || 'ME'}`);
                 } else {
-                    zusatzInfos += `<span style="color: #888;">💶 Kein Preis</span>`;
+                    metaArray.push(`<span style="color: #888;">💶 Kein Preis</span>`);
                 }
+
+                if (r.land) metaArray.push(`🌍 ${r.land}`);
+                if (r.lieferant) metaArray.push(`🛒 ${r.lieferant}`);
+                if (r.lagerort) metaArray.push(`📍 ${r.lagerort}`);
+
+                zeilenHtml += `<div class="karte-meta-zeile">${metaArray.join(' <span style="color:#ccc;">|</span> ')}</div>`;
 
                 karte.innerHTML = `
                     <div class="karte-header">
                         <span class="karte-titel">${r.bezeichnung}</span>
                         <span class="karte-bestand">${r.bestand} ${r.einheit || ''}</span>
                     </div>
-                    <div class="karte-details">
-                        <span style="color: #1976D2; font-weight: bold;">[${r.kategorie}]</span>
-                        ${zusatzInfos}
-                    </div>
+                    ${zeilenHtml}
                 `;
                 container.appendChild(karte);
             });
