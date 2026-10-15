@@ -397,7 +397,7 @@
                     ${einstellungenBtnHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.18</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.19</div>
             `;
         }
 
@@ -407,7 +407,7 @@
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">⚙️ Kassen-Einstellungen</h3>
-                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Hier legst du die pauschalen Kostenfaktoren fest, die automatisch in die Berechnungen einfließen.</p>
+                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Hier legst du die pauschalen Kostenfaktoren fest. Beim Speichern werden alle Malz- und Hopfenpreise im Lager auf diesen Wert gesetzt.</p>
 
                 <label class="label-style">💧 Wasser & Energie pro Liter Brauwasser (€/L):</label>
                 <input type="number" step="0.001" id="cfg-wasser-preis" value="${wasserEnergiePreis.toFixed(3)}" placeholder="z. B. 0.12" class="input-style">
@@ -418,13 +418,13 @@
                 <label class="label-style">🌿 Hopfen Pauschalpreis pro Gramm (€/g):</label>
                 <input type="number" step="0.001" id="cfg-hopfen-preis" value="${standardPreisHopfen.toFixed(3)}" placeholder="z. B. 0.05" class="input-style">
                 <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 12px;">
-                    💡 Standard-Fallback falls kein Preis im Lager eingetragen ist (z. B. 0.050 € = 5 Cent/g).
+                    💡 Setzt automatisch alle Hopfen im Lager auf diesen Grammpreis.
                 </div>
 
                 <label class="label-style">🌾 Malz Pauschalpreis pro kg (€/kg):</label>
                 <input type="number" step="0.01" id="cfg-malz-preis" value="${standardPreisMalz.toFixed(2)}" placeholder="z. B. 2.00" class="input-style">
                 <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 15px;">
-                    💡 Standard-Fallback falls kein Preis im Lager eingetragen ist (z. B. 2.00 €/kg).
+                    💡 Setzt automatisch alle Malze im Lager auf diesen Kilopreis.
                 </div>
 
                 <button class="btn-blue-action" onclick="speichereEinstellungen()">Einstellungen speichern</button>
@@ -450,10 +450,33 @@
                 { schluessel: 'standard_preis_malz', wert: String(malzInput) }
             ];
 
-            const { error } = await _supabase.from('einstellungen').upsert(eintraege, { onConflict: 'schluessel' });
+            // 1. In Tabelle 'einstellungen' speichern
+            const { error: cfgError } = await _supabase.from('einstellungen').upsert(eintraege, { onConflict: 'schluessel' });
 
-            if (error) {
-                alert("Fehler beim Speichern der Einstellungen: " + error.message);
+            if (cfgError) {
+                alert("Fehler beim Speichern der Einstellungen: " + cfgError.message);
+                return;
+            }
+
+            // 2. Alle Malz-Preise im Lager direkt in Supabase auf den neuen Wert aktualisieren
+            const { error: malzError } = await _supabase
+                .from('lager')
+                .update({ preis: malzInput })
+                .ilike('kategorie', 'malz');
+
+            if (malzError) {
+                alert("Einstellungen gespeichert, aber Fehler beim Aktualisieren der Malzpreise im Lager: " + malzError.message);
+                return;
+            }
+
+            // 3. Alle Hopfen-Preise im Lager direkt in Supabase auf den neuen Wert aktualisieren
+            const { error: hopfenError } = await _supabase
+                .from('lager')
+                .update({ preis: hopfenInput })
+                .ilike('kategorie', 'hopfen');
+
+            if (hopfenError) {
+                alert("Einstellungen gespeichert, aber Fehler beim Aktualisieren der Hopfenpreise im Lager: " + hopfenError.message);
                 return;
             }
 
@@ -461,7 +484,7 @@
             standardPreisHopfen = hopfenInput;
             standardPreisMalz = malzInput;
 
-            alert("✓ Einstellungen erfolgreich gespeichert!");
+            alert("✓ Einstellungen gespeichert und alle Malz- & Hopfenpreise im Lager wurden aktualisiert!");
             schliesseModal();
         }
 
