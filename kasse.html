@@ -311,7 +311,11 @@
         let alleSude = [];
         let alleBuchungen = [];
         let kassenbuchEditModus = false;
-        let wasserEnergiePreis = 0.12; // Standard-Fallback in €/Liter
+        
+        // Standard-Fallbacks
+        let wasserEnergiePreis = 0.12; 
+        let standardPreisHopfen = 0.05; 
+        let standardPreisMalz = 2.00;   
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -341,14 +345,14 @@
         }
 
         async function ladeEinstellungenAusDatenbank() {
-            const { data, error } = await _supabase
-                .from('einstellungen')
-                .select('*')
-                .eq('schluessel', 'wasser_energie_preis')
-                .maybeSingle();
+            const { data, error } = await _supabase.from('einstellungen').select('*');
             
-            if (!error && data && data.wert !== undefined) {
-                wasserEnergiePreis = parseFloat(data.wert) || 0.12;
+            if (!error && data) {
+                data.forEach(item => {
+                    if (item.schluessel === 'wasser_energie_preis') wasserEnergiePreis = parseFloat(item.wert) || 0.12;
+                    if (item.schluessel === 'standard_preis_hopfen') standardPreisHopfen = parseFloat(item.wert) || 0.05;
+                    if (item.schluessel === 'standard_preis_malz') standardPreisMalz = parseFloat(item.wert) || 2.00;
+                });
             }
         }
 
@@ -393,7 +397,7 @@
                     ${einstellungenBtnHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.17</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Kasse Version 2.18</div>
             `;
         }
 
@@ -403,12 +407,24 @@
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">⚙️ Kassen-Einstellungen</h3>
-                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Hier legst du die variablen Kostenfaktoren fest, die automatisch in die Sud-Kostenberechnung (Brautag) einfließen.</p>
+                <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Hier legst du die pauschalen Kostenfaktoren fest, die automatisch in die Berechnungen einfließen.</p>
 
-                <label class="label-style">Wasser & Energie pro Liter Brauwasser (€/L):</label>
+                <label class="label-style">💧 Wasser & Energie pro Liter Brauwasser (€/L):</label>
                 <input type="number" step="0.001" id="cfg-wasser-preis" value="${wasserEnergiePreis.toFixed(3)}" placeholder="z. B. 0.12" class="input-style">
+                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 12px;">
+                    💡 Wasser, Abwasser & Energie zum Aufheizen (z. B. 0.12 €/L).
+                </div>
+
+                <label class="label-style">🌿 Hopfen Pauschalpreis pro Gramm (€/g):</label>
+                <input type="number" step="0.001" id="cfg-hopfen-preis" value="${standardPreisHopfen.toFixed(3)}" placeholder="z. B. 0.05" class="input-style">
+                <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 12px;">
+                    💡 Standard-Fallback falls kein Preis im Lager eingetragen ist (z. B. 0.050 € = 5 Cent/g).
+                </div>
+
+                <label class="label-style">🌾 Malz Pauschalpreis pro kg (€/kg):</label>
+                <input type="number" step="0.01" id="cfg-malz-preis" value="${standardPreisMalz.toFixed(2)}" placeholder="z. B. 2.00" class="input-style">
                 <div style="font-size: 11px; color: #777; margin-top: -8px; margin-bottom: 15px;">
-                    💡 Enthalten: Wasser, Abwasser, Gas/Strom zum Aufheizen & Kochen. (z. B. 0.12 = 12 Cent / Liter Gesamtwasser).
+                    💡 Standard-Fallback falls kein Preis im Lager eingetragen ist (z. B. 2.00 €/kg).
                 </div>
 
                 <button class="btn-blue-action" onclick="speichereEinstellungen()">Einstellungen speichern</button>
@@ -419,23 +435,32 @@
         }
 
         async function speichereEinstellungen() {
-            const preisInput = parseFloat(document.getElementById('cfg-wasser-preis').value);
+            const wasserInput = parseFloat(document.getElementById('cfg-wasser-preis').value);
+            const hopfenInput = parseFloat(document.getElementById('cfg-hopfen-preis').value);
+            const malzInput = parseFloat(document.getElementById('cfg-malz-preis').value);
 
-            if (isNaN(preisInput) || preisInput < 0) {
-                alert("Bitte einen gültigen Preis pro Liter eingeben.");
+            if (isNaN(wasserInput) || wasserInput < 0 || isNaN(hopfenInput) || hopfenInput < 0 || isNaN(malzInput) || malzInput < 0) {
+                alert("Bitte gültige Preise eingeben.");
                 return;
             }
 
-            const { error } = await _supabase.from('einstellungen').upsert([
-                { schluessel: 'wasser_energie_preis', wert: String(preisInput) }
-            ], { onConflict: 'schluessel' });
+            const eintraege = [
+                { schluessel: 'wasser_energie_preis', wert: String(wasserInput) },
+                { schluessel: 'standard_preis_hopfen', wert: String(hopfenInput) },
+                { schluessel: 'standard_preis_malz', wert: String(malzInput) }
+            ];
+
+            const { error } = await _supabase.from('einstellungen').upsert(eintraege, { onConflict: 'schluessel' });
 
             if (error) {
                 alert("Fehler beim Speichern der Einstellungen: " + error.message);
                 return;
             }
 
-            wasserEnergiePreis = preisInput;
+            wasserEnergiePreis = wasserInput;
+            standardPreisHopfen = hopfenInput;
+            standardPreisMalz = malzInput;
+
             alert("✓ Einstellungen erfolgreich gespeichert!");
             schliesseModal();
         }
