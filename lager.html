@@ -127,6 +127,7 @@
             border-color: #1565C0;
         }
 
+        /* KARTE-FARBEN NACH KATEGORIE */
         .lager-karte {
             background-color: #F8F9FA;
             border: 1px solid #D0D7DE;
@@ -138,12 +139,16 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.04);
             transition: background-color 0.15s ease;
         }
+        .lager-karte.malz { border-left-color: #E65100; background-color: #FFF8E1; }
+        .lager-karte.hopfen { border-left-color: #2E7D32; background-color: #F1F8E9; }
+        .lager-karte.hefe { border-left-color: #7B1FA2; background-color: #F3E5F5; }
+        .lager-karte.sonstiges { border-left-color: #546E7A; background-color: #ECEFF1; }
+
         .lager-karte.editierbar {
             cursor: pointer;
-            border-left-color: #1565C0;
         }
         .lager-karte.editierbar:active {
-            background-color: #E3F2FD;
+            opacity: 0.85;
         }
 
         .karte-header {
@@ -152,23 +157,30 @@
             align-items: center;
             font-weight: bold;
             font-size: 15px;
-            color: #1565C0;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
+        .karte-header.malz { color: #E65100; }
+        .karte-header.hopfen { color: #2E7D32; }
+        .karte-header.hefe { color: #7B1FA2; }
+        .karte-header.sonstiges { color: #37474F; }
+
         .karte-details {
             font-size: 13px;
-            color: #444;
+            color: #333;
             line-height: 1.4;
         }
 
+        /* BADGES NACH KATEGORIE */
         .kat-badge {
             padding: 3px 8px;
             border-radius: 6px;
             font-size: 11px;
             font-weight: bold;
-            background-color: #E3F2FD;
-            color: #1565C0;
         }
+        .kat-badge.malz { background-color: #FFE0B2; color: #E65100; }
+        .kat-badge.hopfen { background-color: #C8E6C9; color: #2E7D32; }
+        .kat-badge.hefe { background-color: #E1BEE7; color: #7B1FA2; }
+        .kat-badge.sonstiges { background-color: #CFD8DC; color: #37474F; }
 
         .input-style {
             width: 100%;
@@ -251,13 +263,13 @@
             const app = document.getElementById('app');
             const istAdmin = hatKassenwartRechte();
 
-            // 1. Kassenwart-Button "Lager verwalten" oben nur rendern, wenn Berechtigung vorliegt
+            // 1. Kassenwart-Button "Lager verwalten" nur anzeigen wenn berechtigt
             let verwaltenBtnHtml = "";
             if (istAdmin) {
                 verwaltenBtnHtml = `<button class="btn-primary" onclick="oeffneRohstoffModal()">📦 Neuer Rohstoff / Lager verwalten</button>`;
             }
 
-            // 2. Rohstoff-Karten filtern
+            // 2. Rohstoffe filtern
             let gefilterteRohstoffe = alleRohstoffe;
             if (aktuelleKategorieFilter !== 'Alle') {
                 gefilterteRohstoffe = alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktuelleKategorieFilter.toLowerCase());
@@ -269,30 +281,35 @@
                 kartenHtml = `<p style="color: #666; font-size: 14px; text-align: center; margin: 30px 0;">Keine Rohstoffe in dieser Kategorie vorhanden.</p>`;
             } else {
                 gefilterteRohstoffe.forEach(r => {
+                    let katLower = (r.kategorie || 'sonstiges').toLowerCase();
                     let klickAttribut = "";
-                    let zeilenKlasse = "lager-karte";
+                    let zeilenKlasse = `lager-karte ${katLower}`;
                     let hinweisEdit = "";
 
-                    // Nur Kassenwart darf per Klick die Karte öffnen/bearbeiten
+                    // Nur Kassenwart darf per Klick die Karte bearbeiten
                     if (istAdmin) {
                         zeilenKlasse += " editierbar";
                         klickAttribut = `onclick="oeffneRohstoffModal('${r.id}')"`;
-                        hinweisEdit = `<span style="font-size: 11px; color: #1976D2; font-weight: normal; margin-left: 6px;">✏️ Bearbeiten</span>`;
+                        hinweisEdit = `<span style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-left: 6px;">✏️ Bearbeiten</span>`;
                     }
 
                     let preisText = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? `${Number(r.preis).toFixed(2)} € / ${r.einheit}` : 'Kein Preis';
-                    let ortText = r.lagerort ? `📍 Ort: ${r.lagerort}` : '📍 Ort: nicht angegeben';
+                    let ortText = r.lagerort ? `📍 Ort: ${r.lagerort}` : '';
+                    
+                    // Aromatik / Beschreibung Feld auslesen
+                    let aromatikText = (r.aromatik || r.beschreibung) ? `🍃 Aromatik: ${r.aromatik || r.beschreibung}` : '';
 
                     kartenHtml += `
                         <div class="${zeilenKlasse}" ${klickAttribut}>
-                            <div class="karte-header">
+                            <div class="karte-header ${katLower}">
                                 <span>${r.bezeichnung || 'Rohstoff'} ${hinweisEdit}</span>
-                                <span class="kat-badge">${r.kategorie || 'Sonstiges'}</span>
+                                <span class="kat-badge ${katLower}">${r.kategorie || 'Sonstiges'}</span>
                             </div>
                             <div class="karte-details">
                                 <div><b>Bestand:</b> ${r.bestand || 0} ${r.einheit || ''}</div>
                                 <div><b>Preis:</b> ${preisText}</div>
-                                <div style="color: #666; margin-top: 2px;">${ortText}</div>
+                                ${ortText ? `<div style="color: #555; margin-top: 2px;">${ortText}</div>` : ''}
+                                ${aromatikText ? `<div style="color: #2E7D32; font-style: italic; margin-top: 4px; font-size: 12px;">${aromatikText}</div>` : ''}
                             </div>
                         </div>
                     `;
@@ -318,7 +335,7 @@
                     ${kartenHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 2.94</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 2.95</div>
             `;
         }
 
@@ -329,7 +346,7 @@
 
         // --- MODAL ZUM ANLEGEN / BEARBEITEN (NUR KASSENWART) ---
         function oeffneRohstoffModal(id = null) {
-            if (!hatKassenwartRechte()) return; // Sicherheits-Check
+            if (!hatKassenwartRechte()) return;
 
             const inhalt = document.getElementById('modal-inhalt');
             let r = null;
@@ -342,8 +359,8 @@
             const bestandWert = r ? (r.bestand || '') : '';
             const einheitWert = r ? (r.einheit || 'kg') : 'kg';
             const preisWert = r ? (r.preis !== null && r.preis !== undefined ? r.preis : '') : '';
+            const aromatikWert = r ? (r.aromatik || r.beschreibung || '') : '';
             
-            // Hopfen erhält als Standard-Lagerort 'Gefrierschrank-Fach '
             let ortWert = r ? (r.lagerort || '') : '';
             if (!r && kategorieWert.toLowerCase() === 'hopfen' && ortWert === '') {
                 ortWert = 'Gefrierschrank-Fach ';
@@ -361,7 +378,7 @@
                 </select>
 
                 <label class="label-style">Bezeichnung:</label>
-                <input type="text" id="m-bezeichnung" value="${bezeichnungWert}" placeholder="z. B. Pilsner Malz" class="input-style">
+                <input type="text" id="m-bezeichnung" value="${bezeichnungWert}" placeholder="z. B. Amarillo" class="input-style">
 
                 <div style="display: flex; gap: 10px;">
                     <div style="flex: 2;">
@@ -382,10 +399,13 @@
                 </div>
 
                 <label class="label-style">Preis pro Einheit (€):</label>
-                <input type="number" step="0.001" id="m-preis" value="${preisWert}" placeholder="z. B. 2.00 (optional)" class="input-style">
+                <input type="number" step="0.001" id="m-preis" value="${preisWert}" placeholder="z. B. 0.05 (optional)" class="input-style">
 
                 <label class="label-style">Lagerort / Fach:</label>
                 <input type="text" id="m-lagerort" value="${ortWert}" placeholder="z. B. Gefrierschrank-Fach 1" class="input-style">
+
+                <label class="label-style">Aromatik / Beschreibung:</label>
+                <input type="text" id="m-aromatik" value="${aromatikWert}" placeholder="z. B. Zitrus, Grapefruit, blumig" class="input-style">
 
                 <button class="btn-primary" onclick="speichereRohstoff('${r ? r.id : ''}')" style="margin-top: 10px;">${r ? 'Änderungen speichern' : 'Rohstoff anlegen'}</button>
                 ${r ? `<button class="btn-danger-modal" onclick="loescheRohstoff('${r.id}')">🗑️ Rohstoff löschen</button>` : ''}
@@ -420,6 +440,7 @@
             const einheit = document.getElementById('m-einheit').value;
             const preisVal = document.getElementById('m-preis').value;
             const lagerort = document.getElementById('m-lagerort').value.trim();
+            const aromatik = document.getElementById('m-aromatik').value.trim();
 
             if (bezeichnung === "") {
                 alert("Bitte gib eine Bezeichnung ein.");
@@ -435,7 +456,8 @@
                 bestand: bestand,
                 einheit: einheit,
                 preis: preis,
-                lagerort: lagerort
+                lagerort: lagerort,
+                aromatik: aromatik
             };
 
             let err = null;
