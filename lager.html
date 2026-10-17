@@ -98,7 +98,7 @@
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 6px;
+            margin-top: 10px;
         }
 
         .filter-container {
@@ -295,8 +295,6 @@
 
                     let preisText = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? `${Number(r.preis).toFixed(2)} € / ${r.einheit}` : 'Kein Preis';
                     let ortText = r.lagerort ? `📍 Ort: ${r.lagerort}` : '';
-                    
-                    // Aromatik / Beschreibung Feld auslesen
                     let aromatikText = (r.aromatik || r.beschreibung) ? `🍃 Aromatik: ${r.aromatik || r.beschreibung}` : '';
 
                     kartenHtml += `
@@ -335,7 +333,7 @@
                     ${kartenHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 2.95</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 2.96</div>
             `;
         }
 
@@ -408,11 +406,35 @@
                 <input type="text" id="m-aromatik" value="${aromatikWert}" placeholder="z. B. Zitrus, Grapefruit, blumig" class="input-style">
 
                 <button class="btn-primary" onclick="speichereRohstoff('${r ? r.id : ''}')" style="margin-top: 10px;">${r ? 'Änderungen speichern' : 'Rohstoff anlegen'}</button>
-                ${r ? `<button class="btn-danger-modal" onclick="loescheRohstoff('${r.id}')">🗑️ Rohstoff löschen</button>` : ''}
+                ${r ? `<button class="btn-danger-modal" onclick="zeigLoeschWarnungModal('${r.id}')">🗑️ Rohstoff löschen...</button>` : ''}
                 <button class="btn-secondary-action" onclick="schliesseModal()">Abbrechen</button>
             `;
 
             document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        // --- EXTREM DEUTLICHER LÖSCH-WARNSCHIRM ---
+        function zeigLoeschWarnungModal(id) {
+            const r = alleRohstoffe.find(item => String(item.id) === String(id));
+            if (!r) return;
+
+            const inhalt = document.getElementById('modal-inhalt');
+
+            inhalt.innerHTML = `
+                <div style="background-color: #FFEBEE; border: 2px solid #D32F2F; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center;">
+                    <span style="font-size: 32px; display: block; margin-bottom: 5px;">⚠️</span>
+                    <h3 style="color: #C62828; margin: 0 0 10px 0; font-size: 18px;">ACHTUNG: ROHSTOFF LÖSCHEN</h3>
+                    <p style="font-size: 14px; color: #333; line-height: 1.4; margin: 0 0 10px 0;">
+                        Möchtest du den Rohstoff<br>
+                        <strong style="font-size: 16px; color: #C62828;">"${r.bezeichnung}"</strong><br>
+                        wirklich unwiderruflich aus dem Lager löschen?
+                    </p>
+                    <small style="color: #777; display: block;">Dieser Schritt kann nicht rückgängig gemacht werden!</small>
+                </div>
+
+                <button class="btn-danger-modal" style="padding: 16px; font-size: 16px; margin-top: 0;" onclick="loescheRohstoff('${r.id}')">🔥 JA, UNWIDERRUFLICH LÖSCHEN</button>
+                <button class="btn-primary" style="background-color: #2E7D32; padding: 14px; margin-top: 10px;" onclick="oeffneRohstoffModal('${r.id}')">🛡️ Abbrechen (Sicher zurück)</button>
+            `;
         }
 
         function passEinheitAn(kat) {
@@ -481,8 +503,6 @@
 
         async function loescheRohstoff(id) {
             if (!hatKassenwartRechte()) return;
-
-            if (!confirm("Möchtest du diesen Rohstoff wirklich unwiderruflich aus dem Lager löschen?")) return;
 
             const { error } = await _supabase.from('lager').delete().eq('id', id);
             if (error) {
