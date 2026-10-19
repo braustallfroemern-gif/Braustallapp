@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Braustall Mitgliederverzeichnis</title>
+    
+    <!-- Mobil-Icons & Manifest -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Supabase Bibliothek -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #E3F2FD;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        #app {
+            background-color: white;
+            padding: 20px 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            box-sizing: border-box;
+            position: relative;
+            min-height: 90vh;
+        }
+        html, body {
+            overscroll-behavior-y: none; 
+        }
+
+        .btn-back-corner {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background-color: #455A64;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .page-title {
+            color: #1565C0;
+            margin-top: 35px;
+            margin-bottom: 10px;
+            font-size: 22px;
+            text-align: center;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 11px;
+            margin-bottom: 15px;
+            border: 1px solid #90CAF9;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        .mitglied-karte {
+            background-color: #F8F9FA;
+            border: 1px solid #CFD8DC;
+            border-left: 5px solid #1976D2;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            text-align: left;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+
+        .mitglied-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1565C0;
+            margin-bottom: 6px;
+        }
+
+        .kontakt-zeile {
+            font-size: 14px;
+            color: #333;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .kontakt-link {
+            color: #1976D2;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .kontakt-link:active {
+            text-decoration: underline;
+        }
+
+        .btn-secondary {
+            background-color: #455A64;
+            color: white;
+            border: none;
+            padding: 12px;
+            margin-top: 15px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">Lade Mitglieder...</div>
+
+    <script>
+        const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let alleMitglieder = [];
+
+        window.onload = async function() {
+            const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
+            if (!angemeldet) {
+                window.location.href = 'index.html';
+                return;
+            }
+            await ladeMitglieder();
+            zeigeMitgliederAnsicht();
+        };
+
+        async function ladeMitglieder() {
+            const { data, error } = await _supabase
+                .from('mitglieder')
+                .select('*')
+                .order('vorname', { ascending: true });
+
+            if (!error && data) {
+                alleMitglieder = data;
+            }
+        }
+
+        function zeigeMitgliederAnsicht(suchBegriff = '') {
+            const app = document.getElementById('app');
+
+            let gefiltert = alleMitglieder;
+            if (suchBegriff.trim() !== '') {
+                const term = suchBegriff.toLowerCase();
+                gefiltert = alleMitglieder.filter(m => {
+                    const name = `${m.vorname || ''} ${m.nachname || ''}`.toLowerCase();
+                    const ort = (m.ort || '').toLowerCase();
+                    return name.includes(term) || ort.includes(term);
+                });
+            }
+
+            let kartenHtml = '';
+            if (gefiltert.length === 0) {
+                kartenHtml = `<p style="color: #666; font-size: 14px; text-align: center; margin: 30px 0;">Keine Mitglieder gefunden.</p>`;
+            } else {
+                gefiltert.forEach(m => {
+                    const telefon = m.telefon || m.telefonnummer || '';
+                    const email = m.email || '';
+                    const ort = (m.plz || m.ort) ? `${m.plz || ''} ${m.ort || ''}`.trim() : '';
+
+                    kartenHtml += `
+                        <div class="mitglied-karte">
+                            <div class="mitglied-name">👤 ${m.vorname || ''} ${m.nachname || ''}</div>
+                            
+                            ${telefon ? `
+                                <div class="kontakt-zeile">
+                                    📞 <a href="tel:${telefon.replace(/\s+/g, '')}" class="kontakt-link">${telefon}</a>
+                                </div>
+                            ` : '<div class="kontakt-zeile" style="color: #999; font-size: 12px;">📞 Keine Telefonnummer hinterlegt</div>'}
+
+                            ${email ? `
+                                <div class="kontakt-zeile">
+                                    ✉️ <a href="mailto:${email}" class="kontakt-link">${email}</a>
+                                </div>
+                            ` : ''}
+
+                            ${ort ? `
+                                <div class="kontakt-zeile" style="color: #666; font-size: 13px; margin-top: 6px;">
+                                    📍 ${ort}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            app.innerHTML = `
+                <button class="btn-back-corner" onclick="geheZumDashboard()">🔙 Zurück</button>
+
+                <h2 class="page-title">👥 Mitgliederverzeichnis</h2>
+                <p style="font-size: 13px; color: #555; margin-bottom: 12px; text-align: center;">Tippe auf eine Telefonnummer oder E-Mail, um direkt Kontakt aufzunehmen.</p>
+
+                <input type="text" class="search-input" id="such-feld" placeholder="🔍 Name oder Ort suchen..." value="${suchBegriff}" oninput="zeigeMitgliederAnsicht(this.value)">
+
+                <div style="max-height: 60vh; overflow-y: auto; padding-right: 2px;">
+                    ${kartenHtml}
+                </div>
+
+                <button class="btn-secondary" onclick="geheZumDashboard()">🔙 Zurück zum Dashboard</button>
+            `;
+
+            // Fokus im Suchfeld behalten, falls der Nutzer tippt
+            if (suchBegriff) {
+                const input = document.getElementById('such-feld');
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(input.value.length, input.value.length);
+                }
+            }
+        }
+
+        function geheZumDashboard() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
