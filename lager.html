@@ -167,7 +167,7 @@
         .karte-details {
             font-size: 13px;
             color: #333;
-            line-height: 1.4;
+            line-height: 1.45;
         }
 
         /* BADGES NACH KATEGORIE */
@@ -295,7 +295,13 @@
 
                     let preisText = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? `${Number(r.preis).toFixed(2)} € / ${r.einheit}` : 'Kein Preis';
                     let ortText = r.lagerort ? `📍 Ort: ${r.lagerort}` : '';
+                    let hopfenTypText = (katLower === 'hopfen' && r.hopfen_typ) ? `🌿 Hopfenart: ${r.hopfen_typ}` : '';
+                    
+                    let schuettungWert = (r.max_schuettung !== null && r.max_schuettung !== undefined && r.max_schuettung !== "") ? r.max_schuettung : r.schuettung;
+                    let schuettungText = (schuettungWert !== null && schuettungWert !== undefined && schuettungWert !== "") ? `🌾 Max. Schüttung: ${schuettungWert}%` : '';
+                    
                     let aromatikText = (r.aromatik || r.beschreibung) ? `🍃 Aromatik: ${r.aromatik || r.beschreibung}` : '';
+                    let alternativenText = r.alternativen ? `🔄 Alternativen: ${r.alternativen}` : '';
 
                     kartenHtml += `
                         <div class="${zeilenKlasse}" ${klickAttribut}>
@@ -307,7 +313,10 @@
                                 <div><b>Bestand:</b> ${r.bestand || 0} ${r.einheit || ''}</div>
                                 <div><b>Preis:</b> ${preisText}</div>
                                 ${ortText ? `<div style="color: #555; margin-top: 2px;">${ortText}</div>` : ''}
+                                ${hopfenTypText ? `<div style="color: #2E7D32; font-weight: bold; margin-top: 2px;">${hopfenTypText}</div>` : ''}
+                                ${schuettungText ? `<div style="color: #D35400; font-weight: bold; margin-top: 2px;">${schuettungText}</div>` : ''}
                                 ${aromatikText ? `<div style="color: #2E7D32; font-style: italic; margin-top: 4px; font-size: 12px;">${aromatikText}</div>` : ''}
+                                ${alternativenText ? `<div style="color: #455A64; margin-top: 3px; font-size: 12px;">${alternativenText}</div>` : ''}
                             </div>
                         </div>
                     `;
@@ -333,7 +342,7 @@
                     ${kartenHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 2.96</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 2.99</div>
             `;
         }
 
@@ -358,11 +367,16 @@
             const einheitWert = r ? (r.einheit || 'kg') : 'kg';
             const preisWert = r ? (r.preis !== null && r.preis !== undefined ? r.preis : '') : '';
             const aromatikWert = r ? (r.aromatik || r.beschreibung || '') : '';
+            const schuettungWert = r ? (r.max_schuettung || r.schuettung || '') : '';
+            const alternativenWert = r ? (r.alternativen || '') : '';
+            const hopfenTypWert = r ? (r.hopfen_typ || '') : '';
             
             let ortWert = r ? (r.lagerort || '') : '';
             if (!r && kategorieWert.toLowerCase() === 'hopfen' && ortWert === '') {
                 ortWert = 'Gefrierschrank-Fach ';
             }
+
+            const istHopfen = (kategorieWert.toLowerCase() === 'hopfen');
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">${r ? '✏️ Rohstoff bearbeiten' : '➕ Neuer Rohstoff'}</h3>
@@ -375,8 +389,22 @@
                     <option value="Sonstiges" ${kategorieWert === 'Sonstiges' ? 'selected' : ''}>Sonstiges</option>
                 </select>
 
-                <label class="label-style">Bezeichnung:</label>
-                <input type="text" id="m-bezeichnung" value="${bezeichnungWert}" placeholder="z. B. Amarillo" class="input-style">
+                <!-- BEZEICHNUNG UND HOPFENART NEBENEINANDER -->
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 2;">
+                        <label class="label-style">Bezeichnung:</label>
+                        <input type="text" id="m-bezeichnung" value="${bezeichnungWert}" placeholder="z. B. Amarillo / Pilsner Malz" class="input-style">
+                    </div>
+                    <div id="bereich-hopfenart" style="flex: 1; display: ${istHopfen ? 'block' : 'none'};">
+                        <label class="label-style">Hopfenart:</label>
+                        <select id="m-hopfentyp" class="input-style">
+                            <option value="">- wählen -</option>
+                            <option value="Aromahopfen" ${hopfenTypWert === 'Aromahopfen' ? 'selected' : ''}>Aromahopfen</option>
+                            <option value="Bitterhopfen" ${hopfenTypWert === 'Bitterhopfen' ? 'selected' : ''}>Bitterhopfen</option>
+                            <option value="Universalhopfen" ${hopfenTypWert === 'Universalhopfen' ? 'selected' : ''}>Universalhopfen</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div style="display: flex; gap: 10px;">
                     <div style="flex: 2;">
@@ -404,6 +432,12 @@
 
                 <label class="label-style">Aromatik / Beschreibung:</label>
                 <input type="text" id="m-aromatik" value="${aromatikWert}" placeholder="z. B. Zitrus, Grapefruit, blumig" class="input-style">
+
+                <label class="label-style">🌾 Maximale Schüttung (%):</label>
+                <input type="number" step="1" id="m-schuettung" value="${schuettungWert}" placeholder="z. B. 80" class="input-style">
+
+                <label class="label-style">🔄 Alternativen:</label>
+                <input type="text" id="m-alternativen" value="${alternativenWert}" placeholder="z. B. Wiener Malz, Cascade" class="input-style">
 
                 <button class="btn-primary" onclick="speichereRohstoff('${r ? r.id : ''}')" style="margin-top: 10px;">${r ? 'Änderungen speichern' : 'Rohstoff anlegen'}</button>
                 ${r ? `<button class="btn-danger-modal" onclick="zeigLoeschWarnungModal('${r.id}')">🗑️ Rohstoff löschen...</button>` : ''}
@@ -440,16 +474,22 @@
         function passEinheitAn(kat) {
             const einheitSelect = document.getElementById('m-einheit');
             const ortInput = document.getElementById('m-lagerort');
-            if (!einheitSelect) return;
+            const hopfenArtBereich = document.getElementById('bereich-hopfenart');
 
-            if (kat === 'Malz') {
-                einheitSelect.value = 'kg';
-            } else if (kat === 'Hopfen' || kat === 'Hefe') {
-                einheitSelect.value = 'g';
+            if (einheitSelect) {
+                if (kat === 'Malz') {
+                    einheitSelect.value = 'kg';
+                } else if (kat === 'Hopfen' || kat === 'Hefe') {
+                    einheitSelect.value = 'g';
+                }
             }
 
             if (kat === 'Hopfen' && ortInput && ortInput.value === '') {
                 ortInput.value = 'Gefrierschrank-Fach ';
+            }
+
+            if (hopfenArtBereich) {
+                hopfenArtBereich.style.display = (kat === 'Hopfen') ? 'block' : 'none';
             }
         }
 
@@ -463,6 +503,9 @@
             const preisVal = document.getElementById('m-preis').value;
             const lagerort = document.getElementById('m-lagerort').value.trim();
             const aromatik = document.getElementById('m-aromatik').value.trim();
+            const schuettungVal = document.getElementById('m-schuettung') ? document.getElementById('m-schuettung').value : '';
+            const alternativen = document.getElementById('m-alternativen') ? document.getElementById('m-alternativen').value.trim() : '';
+            const hopfenTyp = document.getElementById('m-hopfentyp') ? document.getElementById('m-hopfentyp').value : '';
 
             if (bezeichnung === "") {
                 alert("Bitte gib eine Bezeichnung ein.");
@@ -471,6 +514,7 @@
 
             const bestand = bestandVal !== "" ? parseFloat(bestandVal) : 0;
             const preis = preisVal !== "" ? parseFloat(preisVal) : null;
+            const maxSchuettung = schuettungVal !== "" ? parseFloat(schuettungVal) : null;
 
             const datensatz = {
                 kategorie: kategorie,
@@ -479,7 +523,10 @@
                 einheit: einheit,
                 preis: preis,
                 lagerort: lagerort,
-                aromatik: aromatik
+                aromatik: aromatik,
+                max_schuettung: maxSchuettung,
+                alternativen: alternativen,
+                hopfen_typ: hopfenTyp
             };
 
             let err = null;
