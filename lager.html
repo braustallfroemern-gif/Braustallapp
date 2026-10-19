@@ -298,8 +298,8 @@
                     let hopfenTypText = (katLower === 'hopfen' && r.hopfen_typ) ? `🌿 Hopfenart: ${r.hopfen_typ}` : '';
                     let alphaText = (katLower === 'hopfen' && r.alphasaeure !== null && r.alphasaeure !== undefined && r.alphasaeure !== "") ? `🧪 Alphasäure: ${r.alphasaeure}%` : '';
                     
-                    let schuettungWert = (katLower === 'malz') ? ((r.max_schuettung !== null && r.max_schuettung !== undefined && r.max_schuettung !== "") ? r.max_schuettung : r.schuettung) : null;
-                    let schuettungText = (schuettungWert !== null && schuettungWert !== undefined && schuettungWert !== "") ? `🌾 Max. Schüttung: ${schuettungWert}%` : '';
+                    let schuettungWert = (r.max_schuettung !== null && r.max_schuettung !== undefined && r.max_schuettung !== "") ? r.max_schuettung : r.schuettung;
+                    let schuettungText = (katLower === 'malz' && schuettungWert !== null && schuettungWert !== undefined && schuettungWert !== "") ? `🌾 Max. Schüttung: ${schuettungWert}%` : '';
                     
                     let aromatikText = (r.aromatik || r.beschreibung) ? `🍃 Aromatik: ${r.aromatik || r.beschreibung}` : '';
                     let alternativenText = r.alternativen ? `🔄 Alternativen: ${r.alternativen}` : '';
@@ -344,7 +344,7 @@
                     ${kartenHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 3.00</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 3.01</div>
             `;
         }
 
