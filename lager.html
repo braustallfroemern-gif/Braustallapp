@@ -296,8 +296,9 @@
                     let preisText = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? `${Number(r.preis).toFixed(2)} € / ${r.einheit}` : 'Kein Preis';
                     let ortText = r.lagerort ? `📍 Ort: ${r.lagerort}` : '';
                     let hopfenTypText = (katLower === 'hopfen' && r.hopfen_typ) ? `🌿 Hopfenart: ${r.hopfen_typ}` : '';
+                    let alphaText = (katLower === 'hopfen' && r.alphasaeure !== null && r.alphasaeure !== undefined && r.alphasaeure !== "") ? `🧪 Alphasäure: ${r.alphasaeure}%` : '';
                     
-                    let schuettungWert = (r.max_schuettung !== null && r.max_schuettung !== undefined && r.max_schuettung !== "") ? r.max_schuettung : r.schuettung;
+                    let schuettungWert = (katLower === 'malz') ? ((r.max_schuettung !== null && r.max_schuettung !== undefined && r.max_schuettung !== "") ? r.max_schuettung : r.schuettung) : null;
                     let schuettungText = (schuettungWert !== null && schuettungWert !== undefined && schuettungWert !== "") ? `🌾 Max. Schüttung: ${schuettungWert}%` : '';
                     
                     let aromatikText = (r.aromatik || r.beschreibung) ? `🍃 Aromatik: ${r.aromatik || r.beschreibung}` : '';
@@ -314,6 +315,7 @@
                                 <div><b>Preis:</b> ${preisText}</div>
                                 ${ortText ? `<div style="color: #555; margin-top: 2px;">${ortText}</div>` : ''}
                                 ${hopfenTypText ? `<div style="color: #2E7D32; font-weight: bold; margin-top: 2px;">${hopfenTypText}</div>` : ''}
+                                ${alphaText ? `<div style="color: #1B5E20; font-weight: 500; margin-top: 2px;">${alphaText}</div>` : ''}
                                 ${schuettungText ? `<div style="color: #D35400; font-weight: bold; margin-top: 2px;">${schuettungText}</div>` : ''}
                                 ${aromatikText ? `<div style="color: #2E7D32; font-style: italic; margin-top: 4px; font-size: 12px;">${aromatikText}</div>` : ''}
                                 ${alternativenText ? `<div style="color: #455A64; margin-top: 3px; font-size: 12px;">${alternativenText}</div>` : ''}
@@ -342,7 +344,7 @@
                     ${kartenHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 2.99</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 3.00</div>
             `;
         }
 
@@ -362,6 +364,8 @@
             }
 
             const kategorieWert = r ? (r.kategorie || 'Malz') : (aktuelleKategorieFilter !== 'Alle' ? aktuelleKategorieFilter : 'Malz');
+            const katLower = kategorieWert.toLowerCase();
+
             const bezeichnungWert = r ? (r.bezeichnung || '') : '';
             const bestandWert = r ? (r.bestand || '') : '';
             const einheitWert = r ? (r.einheit || 'kg') : 'kg';
@@ -370,13 +374,15 @@
             const schuettungWert = r ? (r.max_schuettung || r.schuettung || '') : '';
             const alternativenWert = r ? (r.alternativen || '') : '';
             const hopfenTypWert = r ? (r.hopfen_typ || '') : '';
+            const alphaWert = r ? (r.alphasaeure !== null && r.alphasaeure !== undefined ? r.alphasaeure : '') : '';
             
             let ortWert = r ? (r.lagerort || '') : '';
-            if (!r && kategorieWert.toLowerCase() === 'hopfen' && ortWert === '') {
+            if (!r && katLower === 'hopfen' && ortWert === '') {
                 ortWert = 'Gefrierschrank-Fach ';
             }
 
-            const istHopfen = (kategorieWert.toLowerCase() === 'hopfen');
+            const istHopfen = (katLower === 'hopfen');
+            const istMalz = (katLower === 'malz');
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">${r ? '✏️ Rohstoff bearbeiten' : '➕ Neuer Rohstoff'}</h3>
@@ -433,8 +439,16 @@
                 <label class="label-style">Aromatik / Beschreibung:</label>
                 <input type="text" id="m-aromatik" value="${aromatikWert}" placeholder="z. B. Zitrus, Grapefruit, blumig" class="input-style">
 
-                <label class="label-style">🌾 Maximale Schüttung (%):</label>
-                <input type="number" step="1" id="m-schuettung" value="${schuettungWert}" placeholder="z. B. 80" class="input-style">
+                <!-- KATEGORIE-SPEZIFISCHE FELDER -->
+                <div id="bereich-alpha" style="display: ${istHopfen ? 'block' : 'none'};">
+                    <label class="label-style">🧪 Alphasäure (%):</label>
+                    <input type="number" step="0.1" id="m-alpha" value="${alphaWert}" placeholder="z. B. 9.5" class="input-style">
+                </div>
+
+                <div id="bereich-schuettung" style="display: ${istMalz ? 'block' : 'none'};">
+                    <label class="label-style">🌾 Maximale Schüttung (%):</label>
+                    <input type="number" step="1" id="m-schuettung" value="${schuettungWert}" placeholder="z. B. 80" class="input-style">
+                </div>
 
                 <label class="label-style">🔄 Alternativen:</label>
                 <input type="text" id="m-alternativen" value="${alternativenWert}" placeholder="z. B. Wiener Malz, Cascade" class="input-style">
@@ -475,37 +489,45 @@
             const einheitSelect = document.getElementById('m-einheit');
             const ortInput = document.getElementById('m-lagerort');
             const hopfenArtBereich = document.getElementById('bereich-hopfenart');
+            const alphaBereich = document.getElementById('bereich-alpha');
+            const schuettungBereich = document.getElementById('bereich-schuettung');
+
+            const katLower = kat.toLowerCase();
 
             if (einheitSelect) {
-                if (kat === 'Malz') {
+                if (katLower === 'malz') {
                     einheitSelect.value = 'kg';
-                } else if (kat === 'Hopfen' || kat === 'Hefe') {
+                } else if (katLower === 'hopfen' || katLower === 'hefe') {
                     einheitSelect.value = 'g';
                 }
             }
 
-            if (kat === 'Hopfen' && ortInput && ortInput.value === '') {
+            if (katLower === 'hopfen' && ortInput && ortInput.value === '') {
                 ortInput.value = 'Gefrierschrank-Fach ';
             }
 
-            if (hopfenArtBereich) {
-                hopfenArtBereich.style.display = (kat === 'Hopfen') ? 'block' : 'none';
-            }
+            if (hopfenArtBereich) hopfenArtBereich.style.display = (katLower === 'hopfen') ? 'block' : 'none';
+            if (alphaBereich) alphaBereich.style.display = (katLower === 'hopfen') ? 'block' : 'none';
+            if (schuettungBereich) schuettungBereich.style.display = (katLower === 'malz') ? 'block' : 'none';
         }
 
         async function speichereRohstoff(id) {
             if (!hatKassenwartRechte()) return;
 
             const kategorie = document.getElementById('m-kategorie').value;
+            const katLower = kategorie.toLowerCase();
+
             const bezeichnung = document.getElementById('m-bezeichnung').value.trim();
             const bestandVal = document.getElementById('m-bestand').value;
             const einheit = document.getElementById('m-einheit').value;
             const preisVal = document.getElementById('m-preis').value;
             const lagerort = document.getElementById('m-lagerort').value.trim();
             const aromatik = document.getElementById('m-aromatik').value.trim();
+            
             const schuettungVal = document.getElementById('m-schuettung') ? document.getElementById('m-schuettung').value : '';
             const alternativen = document.getElementById('m-alternativen') ? document.getElementById('m-alternativen').value.trim() : '';
             const hopfenTyp = document.getElementById('m-hopfentyp') ? document.getElementById('m-hopfentyp').value : '';
+            const alphaVal = document.getElementById('m-alpha') ? document.getElementById('m-alpha').value : '';
 
             if (bezeichnung === "") {
                 alert("Bitte gib eine Bezeichnung ein.");
@@ -514,7 +536,8 @@
 
             const bestand = bestandVal !== "" ? parseFloat(bestandVal) : 0;
             const preis = preisVal !== "" ? parseFloat(preisVal) : null;
-            const maxSchuettung = schuettungVal !== "" ? parseFloat(schuettungVal) : null;
+            const maxSchuettung = (katLower === 'malz' && schuettungVal !== "") ? parseFloat(schuettungVal) : null;
+            const alphasaeure = (katLower === 'hopfen' && alphaVal !== "") ? parseFloat(alphaVal) : null;
 
             const datensatz = {
                 kategorie: kategorie,
@@ -526,7 +549,8 @@
                 aromatik: aromatik,
                 max_schuettung: maxSchuettung,
                 alternativen: alternativen,
-                hopfen_typ: hopfenTyp
+                hopfen_typ: hopfenTyp,
+                alphasaeure: alphasaeure
             };
 
             let err = null;
