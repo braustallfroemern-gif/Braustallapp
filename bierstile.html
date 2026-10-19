@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Braustall Bierstile</title>
+    
+    <!-- Mobil-Icons & Manifest -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Supabase Bibliothek -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #E3F2FD;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        #app {
+            background-color: white;
+            padding: 20px 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            box-sizing: border-box;
+            position: relative;
+            min-height: 90vh;
+        }
+        html, body {
+            overscroll-behavior-y: none; 
+        }
+
+        .btn-back-corner {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background-color: #455A64;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .page-title {
+            color: #1565C0;
+            margin-top: 35px;
+            margin-bottom: 12px;
+            font-size: 22px;
+            text-align: center;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 11px;
+            margin-bottom: 10px;
+            border: 1px solid #90CAF9;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        .filter-container {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+        .filter-btn {
+            flex: 1;
+            background-color: #E3F2FD;
+            color: #1976D2;
+            border: 1px solid #90CAF9;
+            padding: 8px 4px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+        .filter-btn.aktiv {
+            background-color: #1976D2;
+            color: white;
+            border-color: #1565C0;
+        }
+
+        .stil-karte {
+            background-color: #F8F9FA;
+            border: 1px solid #CFD8DC;
+            border-left: 5px solid #1976D2;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            text-align: left;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+        .stil-karte.obergaerig {
+            border-left-color: #E65100;
+        }
+
+        .karte-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .stil-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1565C0;
+        }
+
+        .gaer-badge {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background-color: #E3F2FD;
+            color: #1565C0;
+        }
+        .gaer-badge.obergaerig {
+            background-color: #FFE0B2;
+            color: #E65100;
+        }
+
+        .kennzahlen-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            background-color: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            border-radius: 6px;
+            padding: 6px;
+            font-size: 12px;
+            text-align: center;
+            color: #444;
+            margin-bottom: 10px;
+        }
+
+        .btn-info {
+            background-color: #0288D1;
+            color: white;
+            border: none;
+            padding: 8px;
+            width: 100%;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn-secondary {
+            background-color: #455A64;
+            color: white;
+            border: none;
+            padding: 12px;
+            margin-top: 15px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* MODAL POPUP */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #modal-inhalt {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 92%;
+            max-width: 420px;
+            text-align: left;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">Lade Bierstile...</div>
+
+    <div id="modal-overlay">
+        <div id="modal-inhalt"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let alleBierstile = [];
+        let aktuellerGaerFilter = 'Alle';
+        let aktuellerSuchBegriff = '';
+
+        window.onload = async function() {
+            const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
+            if (!angemeldet) {
+                window.location.href = 'index.html';
+                return;
+            }
+            await ladeBierstile();
+            renovereAnsicht();
+        };
+
+        async function ladeBierstile() {
+            const { data, error } = await _supabase
+                .from('bierstile')
+                .select('*')
+                .order('name', { ascending: true });
+
+            if (!error && data) {
+                alleBierstile = data;
+            }
+        }
+
+        function renovereAnsicht() {
+            const app = document.getElementById('app');
+
+            // Filtern nach Suche und Gärart
+            let gefiltert = alleBierstile;
+
+            if (aktuellerGaerFilter !== 'Alle') {
+                gefiltert = gefiltert.filter(s => {
+                    const g = (s.gaerart || '').toLowerCase();
+                    if (aktuellerGaerFilter === 'Untergärig') return g.includes('untergärig') || g.includes('untergaerig');
+                    if (aktuellerGaerFilter === 'Obergärig') return g.includes('obergärig') || g.includes('obergaerig');
+                    return true;
+                });
+            }
+
+            if (aktuellerSuchBegriff.trim() !== '') {
+                const term = aktuellerSuchBegriff.toLowerCase();
+                gefiltert = gefiltert.filter(s => (s.name || '').toLowerCase().includes(term));
+            }
+
+            let kartenHtml = '';
+            if (gefiltert.length === 0) {
+                kartenHtml = `<p style="color: #666; font-size: 14px; text-align: center; margin: 30px 0;">Keine Bierstile gefunden.</p>`;
+            } else {
+                gefiltert.forEach(s => {
+                    const isOber = (s.gaerart || '').toLowerCase().includes('obergärig') || (s.gaerart || '').toLowerCase().includes('obergaerig');
+                    const karteKlasse = isOber ? 'stil-karte obergaerig' : 'stil-karte';
+                    const badgeKlasse = isOber ? 'gaer-badge obergaerig' : 'gaer-badge';
+
+                    kartenHtml += `
+                        <div class="${karteKlasse}">
+                            <div class="karte-header">
+                                <span class="stil-name">🍺 ${s.name || 'Unbekannt'}</span>
+                                <span class="${badgeKlasse}">${s.gaerart || 'Lager'}</span>
+                            </div>
+
+                            <div class="kennzahlen-grid">
+                                <div><b>Stammwürze:</b><br>${s.stammwuerze_min || '-'}–${s.stammwuerze_max || '-'} °P</div>
+                                <div><b>Bittere:</b><br>${s.ibu_min || '-'}–${s.ibu_max || '-'} IBU</div>
+                                <div><b>Farbe:</b><br>${s.ebc_min || '-'}–${s.ebc_max || '-'} EBC</div>
+                            </div>
+
+                            <button class="btn-info" onclick="zeigeStilInfo('${s.id}')">ℹ️ Info & Geschichte</button>
+                        </div>
+                    `;
+                });
+            }
+
+            app.innerHTML = `
+                <button class="btn-back-corner" onclick="geheZumDashboard()">🔙 Zurück</button>
+
+                <h2 class="page-title">🍺 Bierstile</h2>
+
+                <input type="text" class="search-input" id="such-feld" placeholder="🔍 Bierstil suchen..." value="${aktuellerSuchBegriff}" oninput="sucheAnpassen(this.value)">
+
+                <div class="filter-container">
+                    <button class="filter-btn ${aktuellerGaerFilter === 'Alle' ? 'aktiv' : ''}" onclick="setzeGaerFilter('Alle')">Alle</button>
+                    <button class="filter-btn ${aktuellerGaerFilter === 'Untergärig' ? 'aktiv' : ''}" onclick="setzeGaerFilter('Untergärig')">Untergärig</button>
+                    <button class="filter-btn ${aktuellerGaerFilter === 'Obergärig' ? 'aktiv' : ''}" onclick="setzeGaerFilter('Obergärig')">Obergärig</button>
+                </div>
+
+                <div style="max-height: 58vh; overflow-y: auto; padding-right: 2px;">
+                    ${kartenHtml}
+                </div>
+
+                <button class="btn-secondary" onclick="geheZumDashboard()">🔙 Zurück zum Dashboard</button>
+            `;
+
+            // Fokus im Suchfeld erhalten
+            if (aktuellerSuchBegriff) {
+                const input = document.getElementById('such-feld');
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(input.value.length, input.value.length);
+                }
+            }
+        }
+
+        function sucheAnpassen(val) {
+            aktuellerSuchBegriff = val;
+            renovereAnsicht();
+        }
+
+        function setzeGaerFilter(f) {
+            aktuellerGaerFilter = f;
+            renovereAnsicht();
+        }
+
+        function zeigeStilInfo(id) {
+            const stil = alleBierstile.find(item => String(item.id) === String(id));
+            if (!stil) return;
+
+            const inhalt = document.getElementById('modal-inhalt');
+
+            inhalt.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E3F2FD; padding-bottom: 10px; margin-bottom: 15px;">
+                    <h3 style="color: #1565C0; margin: 0; font-size: 19px;">🍺 ${stil.name}</h3>
+                    <span style="background-color: #E3F2FD; color: #1565C0; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold;">
+                        ${stil.gaerart || 'Bierstil'}
+                    </span>
+                </div>
+
+                <!-- KENNDATEN-ÜBERSICHT -->
+                <div style="background-color: #F8F9FA; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 13px; color: #333; display: flex; justify-content: space-around; text-align: center; border: 1px solid #E0E0E0;">
+                    <div><b>Stammwürze:</b><br>${stil.stammwuerze_min || '-'} – ${stil.stammwuerze_max || '-'} °P</div>
+                    <div><b>Bittere:</b><br>${stil.ibu_min || '-'} – ${stil.ibu_max || '-'} IBU</div>
+                    <div><b>Farbe:</b><br>${stil.ebc_min || '-'} – ${stil.ebc_max || '-'} EBC</div>
+                </div>
+
+                <!-- GESCHICHTE -->
+                <div style="margin-bottom: 15px;">
+                    <h4 style="color: #1565C0; margin: 0 0 6px 0; font-size: 14px;">📜 Herkunft & Geschichte</h4>
+                    <p style="font-size: 13px; color: #333; line-height: 1.5; margin: 0; background: #FFF8E1; padding: 10px; border-left: 4px solid #FFA000; border-radius: 4px;">
+                        ${stil.geschichte || 'Keine historische Beschreibung hinterlegt.'}
+                    </p>
+                </div>
+
+                <!-- PROFIL & BRAUTIPP -->
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #1565C0; margin: 0 0 6px 0; font-size: 14px;">🌾 Profil & Braucharakter</h4>
+                    <p style="font-size: 13px; color: #333; line-height: 1.5; margin: 0; background: #E8F5E9; padding: 10px; border-left: 4px solid #2E7D32; border-radius: 4px;">
+                        ${stil.profil || 'Kein Geschmacksprofil hinterlegt.'}
+                    </p>
+                </div>
+
+                <button class="btn-secondary" style="background-color: #1976D2; margin-top: 0;" onclick="schliesseModal()">Schließen</button>
+            `;
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function schliesseModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+        }
+
+        function geheZumDashboard() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
