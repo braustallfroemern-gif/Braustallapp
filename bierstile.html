@@ -243,8 +243,8 @@
             if (aktuellerGaerFilter !== 'Alle') {
                 gefiltert = gefiltert.filter(s => {
                     const g = (s.gaerart || '').toLowerCase();
-                    if (aktuellerGaerFilter === 'Untergärig') return g.includes('untergärig') || g.includes('untergaerig');
-                    if (aktuellerGaerFilter === 'Obergärig') return g.includes('obergärig') || g.includes('obergaerig');
+                    if (aktuellerGaerFilter === 'Untergärig') return g.includes('unter');
+                    if (aktuellerGaerFilter === 'Obergärig') return g.includes('ober');
                     return true;
                 });
             }
@@ -259,15 +259,31 @@
                 kartenHtml = `<p style="color: #666; font-size: 14px; text-align: center; margin: 30px 0;">Keine Bierstile gefunden.</p>`;
             } else {
                 gefiltert.forEach(s => {
-                    const isOber = (s.gaerart || '').toLowerCase().includes('obergärig') || (s.gaerart || '').toLowerCase().includes('obergaerig');
-                    const karteKlasse = isOber ? 'stil-karte obergaerig' : 'stil-karte';
-                    const badgeKlasse = isOber ? 'gaer-badge obergaerig' : 'gaer-badge';
+                    const g = (s.gaerart || '').toLowerCase();
+                    const hatOber = g.includes('ober');
+                    const hatUnter = g.includes('unter');
+
+                    let karteKlasse = 'stil-karte';
+                    let badgeKlasse = 'gaer-badge';
+                    let badgeStyle = '';
+                    let karteCustomStyle = '';
+
+                    if (hatOber && hatUnter) {
+                        karteCustomStyle = 'border-left: 5px solid #00695C;';
+                        badgeStyle = 'background-color: #E0F2F1; color: #00695C;';
+                    } else if (hatOber) {
+                        karteKlasse = 'stil-karte obergaerig';
+                        badgeKlasse = 'gaer-badge obergaerig';
+                    } else {
+                        karteKlasse = 'stil-karte';
+                        badgeKlasse = 'gaer-badge';
+                    }
 
                     kartenHtml += `
-                        <div class="${karteKlasse}">
+                        <div class="${karteKlasse}" style="${karteCustomStyle}">
                             <div class="karte-header">
                                 <span class="stil-name">🍺 ${s.name || 'Unbekannt'}</span>
-                                <span class="${badgeKlasse}">${s.gaerart || 'Lager'}</span>
+                                <span class="${badgeKlasse}" style="${badgeStyle}">${s.gaerart || 'Lager'}</span>
                             </div>
 
                             <div class="kennzahlen-grid">
@@ -302,7 +318,6 @@
                 <button class="btn-secondary" onclick="geheZumDashboard()">🔙 Zurück zum Dashboard</button>
             `;
 
-            // Fokus im Suchfeld erhalten
             if (aktuellerSuchBegriff) {
                 const input = document.getElementById('such-feld');
                 if (input) {
