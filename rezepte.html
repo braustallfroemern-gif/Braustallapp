@@ -109,24 +109,37 @@
             font-weight: 500;
         }
 
+        .bewertung-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            cursor: pointer;
+        }
+
         .bewertung-badge-top {
             display: inline-flex;
             align-items: center;
             gap: 4px;
             background: #FFF8E1;
-            border: 1px solid #FFE082;
+            border: 1.5px solid #FFB300;
             color: #E65100;
-            padding: 5px 10px;
+            padding: 6px 11px;
             border-radius: 16px;
             font-size: 13px;
             font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
             white-space: nowrap;
-            transition: background 0.2s;
+            transition: transform 0.1s, background 0.2s;
         }
-        .bewertung-badge-top:hover {
-            background: #FFECB3;
+        .bewertung-badge-top:active {
+            transform: scale(0.96);
+        }
+        .bewertung-hinweis {
+            font-size: 10px;
+            color: #1976D2;
+            font-weight: bold;
+            margin-top: 3px;
+            text-align: right;
         }
 
         .grid-werte {
@@ -286,9 +299,12 @@
                                 <div class="karte-stil">${escapeHtml(r.stil || 'Unbekannter Stil')} • ${r.liter || 50} L</div>
                             </div>
                             <div>
-                                <span class="bewertung-badge-top" onclick="oeffneBewertungModal('${r.id}')" title="Alle Bewertungen anzeigen">
-                                    ${bewText} 💬
-                                </span>
+                                <div class="bewertung-wrapper" onclick="oeffneBewertungModal('${r.id}')" title="Tippen zum Bewerten">
+                                    <span class="bewertung-badge-top">
+                                        ${bewText} 💬
+                                    </span>
+                                    <span class="bewertung-hinweis">👉 Hier bewerten</span>
+                                </div>
                             </div>
                         </div>
 
@@ -473,7 +489,6 @@
                 <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 2px;">📋 ${escapeHtml(r.name)}</h3>
                 <div style="font-size: 13px; color: #555; margin-bottom: 12px;">Bierstil: <b>${escapeHtml(r.stil || '-')}</b> • ${r.liter || 50} Liter</div>
 
-                <!-- GRAUES KERN-INFZFELD (STAMMWÜRZE, BITTERE, FARBE) -->
                 <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 8px; padding: 10px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 6px; text-align: center; align-items: center;">
                     <div style="display: flex; flex-direction: column;">
                         <span style="font-size: 10px; color: #777; font-weight: bold; text-transform: uppercase;">Stammwürze</span>
