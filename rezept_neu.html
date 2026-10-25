@@ -107,7 +107,7 @@
             gap: 8px;
         }
 
-        /* PERFEKT AUSGERICHTETE GRID-LAYOUTS */
+        /* GRID-LAYOUTS */
         .grid-malz-head, .grid-malz-row {
             display: grid;
             grid-template-columns: 2fr 1fr 32px;
@@ -272,21 +272,6 @@
                     <div id="hinweis-ebc" class="stil-hinweis">Zulässig: -</div>
                 </div>
             </div>
-            
-            <div class="grid-2">
-                <div>
-                    <label class="label-style">Sterne-Bewertung:</label>
-                    <select id="rezept-bewertung" class="select-style">
-                        <option value="0" selected>⚪ Noch nicht gebraut (0)</option>
-                        <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
-                        <option value="4">⭐⭐⭐⭐ (4/5)</option>
-                        <option value="3">⭐⭐⭐ (3/5)</option>
-                        <option value="2">⭐⭐ (2/5)</option>
-                        <option value="1">⭐ (1/5)</option>
-                    </select>
-                </div>
-                <div></div>
-            </div>
         </div>
 
         <!-- 2. Wasser & Aufbereitung -->
@@ -343,16 +328,11 @@
             <div class="section-title">
                 <span>3. Schüttung (Malz)</span>
                 
-                <!-- DYNAMISCHES BIERGLAS MIT LIVE-EBC -->
                 <div class="bierglas-container">
                     <svg id="bierglas-icon" width="22" height="30" viewBox="0 0 100 130" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.15));">
-                        <!-- Schaumkrone -->
                         <path d="M 20 22 Q 30 12 40 22 Q 50 12 60 22 Q 70 12 80 22 L 80 30 L 20 30 Z" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2"/>
-                        <!-- Bierflüssigkeit -->
                         <path id="bier-fluessigkeit" d="M 22 30 L 78 30 L 72 110 Q 50 118 28 110 Z" fill="#FFE699"/>
-                        <!-- Glaskontur -->
                         <path d="M 18 18 L 82 18 L 74 112 Q 50 120 26 112 Z" fill="none" stroke="#475569" stroke-width="6" stroke-linejoin="round" opacity="0.8"/>
-                        <!-- Lichtreflex -->
                         <path d="M 26 26 L 32 26 L 30 105 L 28 105 Z" fill="#FFFFFF" opacity="0.4"/>
                     </svg>
                     <span id="ebc-anzeige-label" style="font-size: 12px; font-weight: bold; color: #1565C0;">- EBC</span>
@@ -439,7 +419,7 @@
                 <div>
                     <label class="label-style">Hefe:</label>
                     <select id="hefe-name" class="select-style" onchange="pruefeHefeAuswahl(this)">
-                        <!-- Wird dynamisch geladen -->
+                        <!-- Dynamisch -->
                     </select>
                 </div>
                 <div>
@@ -647,7 +627,7 @@
             }
         }
 
-        /* MOREY-FORMEL & BIERFARBEN-BERECHNUNG (LIVE BIERGLAS) */
+        /* MOREY-FORMEL & BIERFARBEN-BERECHNUNG */
         function berechneBierFarbe() {
             const literInput = parseFloat(document.getElementById('ausschlag-liter').value);
             const liter = (literInput && literInput > 0) ? literInput : 50;
@@ -669,11 +649,9 @@
 
             let bierEbc = 0;
             if (mcuGesamt > 0) {
-                // Morey-Formel in EBC: EBC = 2.9396 * (MCU ^ 0.6859)
                 bierEbc = Math.round(2.9396 * Math.pow(mcuGesamt, 0.6859));
             }
 
-            // UI Aktualisieren
             const ebcLabel = document.getElementById('ebc-anzeige-label');
             const ebcInput = document.getElementById('ebc-wert');
             const flüssigkeit = document.getElementById('bier-fluessigkeit');
@@ -688,21 +666,17 @@
                 ebcLabel.innerText = `- EBC`;
             }
 
-            // Farbe auf SVG-Flüssigkeit anwenden
             const hexFarbe = ebcToRgbColor(bierEbc);
             if (flüssigkeit) {
                 flüssigkeit.setAttribute('fill', hexFarbe);
             }
         }
 
-        /* CONVERTER: EBC ZU REALISTISCHER BIERFARBE (RGB) */
         function ebcToRgbColor(ebc) {
-            if (!ebc || ebc <= 0) return '#FFE699'; // Standard blasses Strohgelb
-            
+            if (!ebc || ebc <= 0) return '#FFE699';
             const srm = ebc / 1.97;
             const clampedSrm = Math.max(1, srm);
 
-            // Kalibrierte RGB-Kurven für das Bierspektrum
             const r = Math.min(255, Math.max(15, Math.round(255 * Math.pow(0.965, clampedSrm))));
             const g = Math.min(255, Math.max(5, Math.round(255 * Math.pow(0.88, clampedSrm))));
             const b = Math.min(255, Math.max(0, Math.round(255 * Math.pow(0.70, clampedSrm))));
@@ -757,7 +731,6 @@
             }
         }
 
-        // Kochhopfen
         function fuegeKochhopfenZeileHinzu(name = '', menge = '', zeit = '') {
             const container = document.getElementById('kochhopfen-container');
             const div = document.createElement('div');
@@ -773,7 +746,6 @@
             container.appendChild(div);
         }
 
-        // Whirlpool-Hopfen
         function fuegeWhirlpoolHopfenZeileHinzu(name = '', menge = '', temp = '') {
             const container = document.getElementById('whirlpool-container');
             const div = document.createElement('div');
@@ -789,7 +761,6 @@
             container.appendChild(div);
         }
 
-        // Kalthopfen
         function fuegeKalthopfenZeileHinzu(name = '', menge = '') {
             const container = document.getElementById('kalthopfen-container');
             const div = document.createElement('div');
@@ -817,7 +788,6 @@
             document.getElementById('stammwuerze').value = r.stammwuerze || '';
             document.getElementById('ibu-wert').value = r.ibu || '';
             document.getElementById('ebc-wert').value = r.ebc || '';
-            document.getElementById('rezept-bewertung').value = r.bewertung || 0;
 
             document.getElementById('hauptguss-liter').value = r.hauptguss || '';
             document.getElementById('hauptguss-milchsaeure').value = r.hauptguss_milchsaeure || '';
@@ -829,7 +799,6 @@
 
             document.getElementById('kochzeit-gesamt').value = r.kochzeit_gesamt || 90;
 
-            // Schüttung
             const malzContainer = document.getElementById('malz-container');
             malzContainer.innerHTML = '';
             if (r.schuettung && Array.isArray(r.schuettung) && r.schuettung.length > 0) {
@@ -838,7 +807,6 @@
                 fuegeMalzZeileHinzu();
             }
 
-            // Rasten
             const rastContainer = document.getElementById('rast-container');
             rastContainer.innerHTML = '';
             if (r.rasten && Array.isArray(r.rasten) && r.rasten.length > 0) {
@@ -847,7 +815,6 @@
                 fuegeRastZeile();
             }
 
-            // Kochhopfen
             const kochhopfenContainer = document.getElementById('kochhopfen-container');
             kochhopfenContainer.innerHTML = '';
             if (r.hopfung && Array.isArray(r.hopfung) && r.hopfung.length > 0) {
@@ -856,14 +823,12 @@
                 fuegeKochhopfenZeileHinzu();
             }
 
-            // Whirlpool
             const wpContainer = document.getElementById('whirlpool-container');
             wpContainer.innerHTML = '';
             if (r.whirlpool_hopfung && Array.isArray(r.whirlpool_hopfung) && r.whirlpool_hopfung.length > 0) {
                 r.whirlpool_hopfung.forEach(w => fuegeWhirlpoolHopfenZeileHinzu(w.name, w.menge_g, w.temperatur_c));
             }
 
-            // Kalthopfen
             const kaltContainer = document.getElementById('kalthopfen-container');
             kaltContainer.innerHTML = '';
             if (r.kalthopfung && Array.isArray(r.kalthopfung) && r.kalthopfung.length > 0) {
@@ -1019,8 +984,6 @@
             const ibuVal = ibuInput !== "" ? parseInt(ibuInput) : parseInt(document.getElementById('ibu-wert').placeholder.replace('Empfohlen: ', ''));
             const ebcVal = ebcInput !== "" ? parseInt(ebcInput) : parseInt(document.getElementById('ebc-wert').placeholder.replace('Empfohlen: ', ''));
 
-            const bewertung = parseInt(document.getElementById('rezept-bewertung').value) || 0;
-            
             const hauptguss = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
             const hauptgussSalze = document.getElementById('hauptguss-salze').value;
             const hauptgussMilchsaeure = document.getElementById('hauptguss-milchsaeure').value.trim();
@@ -1043,7 +1006,6 @@
                 return;
             }
 
-            // Schüttung sammeln
             let schuettung = [];
             document.querySelectorAll('#malz-container > div').forEach(row => {
                 const mName = row.querySelector('.malz-select').value;
@@ -1051,14 +1013,11 @@
                 if (mName && mName !== 'NEU_ANLEGEN') schuettung.push({ name: mName, menge_kg: mMenge });
             });
 
-            // Rasten sammeln
             let rasten = [];
             document.querySelectorAll('#rast-container > div').forEach(row => {
                 const rName = row.querySelector('.rast-name').value;
-                
                 const tempInput = row.querySelector('.rast-temp').value.trim();
                 const rTemp = tempInput !== "" ? parseFloat(tempInput) : parseFloat(row.querySelector('.rast-temp').placeholder);
-                
                 const dauerInput = row.querySelector('.rast-dauer').value.trim();
                 const rDauer = dauerInput !== "" ? parseInt(dauerInput) : parseInt(row.querySelector('.rast-dauer').placeholder);
 
@@ -1071,7 +1030,6 @@
                 }
             });
 
-            // Kochhopfen sammeln
             let kochhopfen = [];
             document.querySelectorAll('#kochhopfen-container > div').forEach(row => {
                 const hName = row.querySelector('.kochhopfen-select').value;
@@ -1080,7 +1038,6 @@
                 if (hName && hName !== 'NEU_ANLEGEN') kochhopfen.push({ name: hName, menge_g: hMenge, kochzeit_min: hZeit });
             });
 
-            // Whirlpool-Hopfen sammeln
             let whirlpoolHopfen = [];
             document.querySelectorAll('#whirlpool-container > div').forEach(row => {
                 const hName = row.querySelector('.wp-select').value;
@@ -1089,7 +1046,6 @@
                 if (hName && hName !== 'NEU_ANLEGEN') whirlpoolHopfen.push({ name: hName, menge_g: hMenge, temperatur_c: hTemp });
             });
 
-            // Kalthopfen sammeln
             let kalthopfen = [];
             document.querySelectorAll('#kalthopfen-container > div').forEach(row => {
                 const hName = row.querySelector('.kalt-select').value;
@@ -1104,7 +1060,6 @@
                 stammwuerze: isNaN(stammwuerzeVal) ? 0 : stammwuerzeVal,
                 ibu: isNaN(ibuVal) ? 0 : ibuVal,
                 ebc: isNaN(ebcVal) ? 0 : ebcVal,
-                bewertung: bewertung,
                 hauptguss: hauptguss,
                 hauptguss_salze: hauptgussSalze,
                 hauptguss_milchsaeure: hauptgussMilchsaeure,
