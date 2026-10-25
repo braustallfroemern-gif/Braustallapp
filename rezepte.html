@@ -460,7 +460,6 @@
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
 
-            const bew = berechneRezeptSchnitt(r.id);
             const ebcWert = r.ebc || 0;
             const ebcFarbeHex = ebcToRgbColor(ebcWert);
             const ebcText = getEbcBezeichnung(ebcWert);
@@ -471,22 +470,26 @@
 
             const inhalt = document.getElementById('modal-inhalt');
             inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">📋 ${escapeHtml(r.name)}</h3>
-                <div style="font-size: 13px; color: #555; margin-bottom: 10px;">Bierstil: <b>${escapeHtml(r.stil || '-')}</b> (${r.liter || 50} Liter)</div>
+                <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 2px;">📋 ${escapeHtml(r.name)}</h3>
+                <div style="font-size: 13px; color: #555; margin-bottom: 12px;">Bierstil: <b>${escapeHtml(r.stil || '-')}</b> • ${r.liter || 50} Liter</div>
 
-                <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 6px; padding: 8px; font-size: 12px; margin-bottom: 10px;">
-                    <div>🧪 <b>Stammwürze:</b> ${r.stammwuerze || '-'} °P</div>
-                    <div>🍃 <b>Bittere:</b> ${r.ibu || '-'} IBU</div>
-                    <div>⭐ <b>Durchschnitt:</b> ${bew.anzahl > 0 ? `${bew.schnitt}/5 (${bew.anzahl} Stimmen)` : 'Noch keine'}</div>
-                </div>
-
-                <!-- OPTISCHE FARB-PLAKETTE MIT FARBBALKEN -->
-                <div style="display: flex; align-items: center; justify-content: space-between; background: #F8F9FA; padding: 8px 12px; border-radius: 8px; border: 1px solid #E0E0E0; margin-bottom: 10px;">
-                    <div>
-                        <div style="font-size: 10px; color: #666; font-weight: bold; text-transform: uppercase;">Geplante Farbe</div>
-                        <div style="font-size: 13px; font-weight: bold; color: #333;">${ebcWert} EBC <span style="font-size: 11px; font-weight: normal; color: #555;">(${ebcText})</span></div>
+                <!-- GRAUES KERN-INFZFELD (STAMMWÜRZE, BITTERE, FARBE) -->
+                <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 8px; padding: 10px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 6px; text-align: center; align-items: center;">
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-size: 10px; color: #777; font-weight: bold; text-transform: uppercase;">Stammwürze</span>
+                        <span style="font-size: 13px; font-weight: bold; color: #333; margin-top: 2px;">${r.stammwuerze || '-'} °P</span>
                     </div>
-                    <div style="width: 48px; height: 24px; background-color: ${ebcFarbeHex}; border-radius: 6px; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.15);"></div>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-size: 10px; color: #777; font-weight: bold; text-transform: uppercase;">Bittere</span>
+                        <span style="font-size: 13px; font-weight: bold; color: #333; margin-top: 2px;">${r.ibu || '-'} IBU</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-size: 10px; color: #777; font-weight: bold; text-transform: uppercase;">Geplante Farbe</span>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 2px;">
+                            <span style="font-size: 12px; font-weight: bold; color: #333;">${ebcWert} EBC</span>
+                            <div style="width: 22px; height: 14px; background-color: ${ebcFarbeHex}; border-radius: 3px; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);" title="${ebcText}"></div>
+                        </div>
+                    </div>
                 </div>
 
                 ${schuettungHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌾 Schüttung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px;">${schuettungHtml}</ul>` : ''}
