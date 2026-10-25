@@ -256,7 +256,6 @@
             const { data, error } = await _supabase.from('mitglieder').select('*').ilike('vorname', vorname).single();
             if (!error && data) {
                 const kw = data.kassenwart;
-                // Prüft ob kassenwart auf 'ja', true oder 1 steht
                 if (kw === true || kw === 1 || String(kw).toLowerCase() === 'ja' || String(kw).toLowerCase() === 'true') {
                     istKassenwart = true;
                     document.getElementById('btn-neu').style.display = 'block';
@@ -303,8 +302,9 @@
                 const bez = escapeHtml(item.bezeichnung || item.name || 'Unbenannt');
                 const kat = escapeHtml(item.kategorie || 'Allgemein');
                 
+                // Bestand streng auf exakt 2 Nachkommastellen formatiert
                 const bestandRoh = item.bestand !== undefined ? parseFloat(item.bestand) : 0;
-                const bestand = isNaN(bestandRoh) ? '-' : (Number.isInteger(bestandRoh) ? bestandRoh : bestandRoh.toFixed(2));
+                const bestand = isNaN(bestandRoh) ? '0.00' : bestandRoh.toFixed(2);
                 
                 const einheit = escapeHtml(item.einheit || '');
                 const preis = item.preis ? `${parseFloat(item.preis).toFixed(2)} €` : '-';
@@ -335,7 +335,6 @@
 
                 let aromatiktext = item.aromatik ? escapeHtml(item.aromatik) : '';
 
-                // Klick auf Karte öffnet Bearbeiten nur für Kassenwarte
                 const kartenKlasse = istKassenwart ? "lager-karte kassenwart-aktiv" : "lager-karte";
                 const klickAktion = istKassenwart ? `onclick="oeffneRohstoffModal('${item.id}')"` : '';
                 const tippHinweis = istKassenwart ? `<div style="font-size: 10px; color: #1565C0; text-align: right; margin-top: 4px; font-weight: bold;">Tippen zum Bearbeiten ➔</div>` : '';
@@ -478,7 +477,7 @@
                     <div style="display: flex; gap: 8px;">
                         <div style="flex: 1;">
                             <label class="label-style">Gärart:</label>
-                            <select id="edit-gaerart" class="select-style">
+                            <select id="edit-gaerart" class="input-style">
                                 <option value="Obergärig" ${item.gaerart === 'Obergärig' ? 'selected' : ''}>Obergärig</option>
                                 <option value="Untergärig" ${item.gaerart === 'Untergärig' ? 'selected' : ''}>Untergärig</option>
                             </select>
