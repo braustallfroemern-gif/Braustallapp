@@ -206,7 +206,7 @@
 
         <h2 class="page-title">📦 Rohstofflager</h2>
 
-        <!-- Nur sichtbar für Kassenwart -->
+        <!-- Button nur für Kassenwarte sichtbar -->
         <button id="btn-neu" class="btn-primary" style="display: none;" onclick="oeffneRohstoffModal()">➕ Neuen Rohstoff anlegen</button>
 
         <!-- FILTER LEISTE -->
@@ -255,8 +255,9 @@
 
             const { data, error } = await _supabase.from('mitglieder').select('*').ilike('vorname', vorname).single();
             if (!error && data) {
-                // Prüft ob das Feld 'kassenwart' in der Tabelle auf true gesetzt ist
-                if (data.kassenwart === true || String(data.kassenwart).toLowerCase() === 'true' || data.kassenwart === 1) {
+                const kw = data.kassenwart;
+                // Prüft ob kassenwart auf 'ja', true oder 1 steht
+                if (kw === true || kw === 1 || String(kw).toLowerCase() === 'ja' || String(kw).toLowerCase() === 'true') {
                     istKassenwart = true;
                     document.getElementById('btn-neu').style.display = 'block';
                 }
@@ -302,7 +303,6 @@
                 const bez = escapeHtml(item.bezeichnung || item.name || 'Unbenannt');
                 const kat = escapeHtml(item.kategorie || 'Allgemein');
                 
-                // Bestand auf max 2 Nachkommastellen runden
                 const bestandRoh = item.bestand !== undefined ? parseFloat(item.bestand) : 0;
                 const bestand = isNaN(bestandRoh) ? '-' : (Number.isInteger(bestandRoh) ? bestandRoh : bestandRoh.toFixed(2));
                 
@@ -310,7 +310,6 @@
                 const preis = item.preis ? `${parseFloat(item.preis).toFixed(2)} €` : '-';
                 const lagerort = escapeHtml(item.lagerort || '');
 
-                // Exakter Zugriff auf das Datenbankfeld "alphasaeure"
                 const alphaWert = item.alphasaeure !== undefined ? item.alphasaeure : (item.alpha_saeure !== undefined ? item.alpha_saeure : (item.alpha !== undefined ? item.alpha : null));
 
                 let typUndWertHtml = "";
@@ -336,7 +335,7 @@
 
                 let aromatiktext = item.aromatik ? escapeHtml(item.aromatik) : '';
 
-                // Klick auf Karte öffnet Modal nur für Kassenwarte
+                // Klick auf Karte öffnet Bearbeiten nur für Kassenwarte
                 const kartenKlasse = istKassenwart ? "lager-karte kassenwart-aktiv" : "lager-karte";
                 const klickAktion = istKassenwart ? `onclick="oeffneRohstoffModal('${item.id}')"` : '';
                 const tippHinweis = istKassenwart ? `<div style="font-size: 10px; color: #1565C0; text-align: right; margin-top: 4px; font-weight: bold;">Tippen zum Bearbeiten ➔</div>` : '';
