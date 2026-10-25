@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Braustall Rezepte</title>
+    <title>Braustall - Rezeptbuch</title>
     
-    <!-- Mobil-Icons & Manifest -->
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
 
-    <!-- Supabase Bibliothek -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -55,101 +53,110 @@
         .page-title {
             color: #1565C0;
             margin-top: 35px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-size: 22px;
             text-align: center;
         }
 
-        .btn-menu {
+        .btn-primary {
             background-color: #1976D2;
             color: white;
             border: none;
-            padding: 16px;
-            margin: 10px 0;
+            padding: 14px;
             width: 100%;
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 15px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: left;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .btn-menu.secondary {
-            background-color: #0288D1;
-        }
-        .btn-menu.assistant {
-            background-color: #00796B;
+            margin-bottom: 15px;
         }
 
-        .info-box {
+        .rezept-karte {
             background-color: #F8F9FA;
-            border: 1px solid #E0E0E0;
-            border-left: 5px solid #1976D2;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: #444;
-            line-height: 1.4;
+            border: 1px solid #D0D7DE;
+            border-left: 6px solid #1976D2;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             text-align: left;
         }
 
-        /* Rezept-Karten in der Liste */
-        .rezept-card {
-            background: #F8F9FA;
-            border: 1px solid #CFD8DC;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 12px;
-            text-align: left;
-        }
-        .rezept-header {
+        .karte-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 6px;
-        }
-        .rezept-name {
-            font-size: 16px;
+            align-items: center;
             font-weight: bold;
+            font-size: 16px;
             color: #1565C0;
+            margin-bottom: 4px;
         }
-        .rezept-stil {
+
+        .karte-stil {
             font-size: 12px;
-            color: #555;
+            color: #666;
             margin-bottom: 8px;
+            font-weight: 500;
         }
-        .rezept-meta {
-            display: flex;
-            gap: 10px;
-            font-size: 12px;
-            color: #333;
-            background: #E3F2FD;
-            padding: 6px 8px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-        }
-        .rezept-actions {
-            display: flex;
-            gap: 8px;
-        }
-        .btn-card {
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
+
+        .bewertung-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #FFF8E1;
+            border: 1px solid #FFE082;
+            color: #F57F17;
+            padding: 3px 8px;
+            border-radius: 12px;
             font-size: 12px;
             font-weight: bold;
             cursor: pointer;
+            transition: background 0.2s;
+        }
+        .bewertung-badge:hover {
+            background: #FFECB3;
+        }
+
+        .grid-werte {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #E0E0E0;
+            margin-bottom: 10px;
             text-align: center;
         }
-        .btn-details { background-color: #1976D2; color: white; flex: 2; }
-        .btn-loeschen { background-color: #C62828; color: white; flex: 1; }
+        .wert-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .wert-label { font-size: 10px; color: #777; text-transform: uppercase; font-weight: bold; }
+        .wert-zahl { font-size: 13px; font-weight: bold; color: #333; margin-top: 2px; }
 
-        /* Modal Overlays */
-        #modal-overlay, #modal-delete-overlay {
+        .btn-aktion-row {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-card {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .btn-ansehen { background: #E3F2FD; color: #1565C0; }
+        .btn-bearbeiten { background: #E8F5E9; color: #2E7D32; }
+        .btn-loeschen { background: #FFEBEE; color: #C62828; flex: 0.5; }
+
+        /* MODAL STYLES */
+        #modal-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -169,37 +176,39 @@
             max-height: 90vh;
             overflow-y: auto;
         }
-        #modal-delete-box {
-            background-color: white;
-            padding: 20px;
-            border-radius: 12px;
-            width: 88%;
-            max-width: 380px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+
+        .input-style {
+            width: 100%;
+            padding: 8px 10px;
+            margin: 4px 0 10px 0;
+            border: 1px solid #90CAF9;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .kommentar-zeile {
+            background: #F8F9FA;
+            border-bottom: 1px solid #EEE;
+            padding: 8px 0;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
 
-    <div id="app">Lade Rezepte-Zentrale...</div>
+    <div id="app">
+        <button class="btn-back-corner" onclick="location.href='index.html'">🔙 Zurück</button>
 
-    <!-- Detail & Bearbeiten Modal -->
-    <div id="modal-overlay">
-        <div id="modal-inhalt"></div>
+        <h2 class="page-title">📖 Braustall Rezepte</h2>
+
+        <button class="btn-primary" onclick="location.href='rezept_neu.html'">➕ Neues Rezept anlegen</button>
+
+        <div id="rezepte-liste">Lade Rezepte...</div>
     </div>
 
-    <!-- Sicherheits-Sicherheitsabfrage zum Löschen -->
-    <div id="modal-delete-overlay">
-        <div id="modal-delete-box">
-            <div style="font-size: 38px; margin-bottom: 8px;">⚠️</div>
-            <h3 style="margin: 0 0 10px 0; color: #C62828;">Rezept wirklich löschen?</h3>
-            <p id="delete-rezept-text" style="font-size: 13px; color: #555; margin-bottom: 20px; line-height: 1.4;"></p>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="schliesseLoeschModal()" style="flex: 1; padding: 10px; border: 1px solid #ccc; background: #ECEFF1; color: #37474F; border-radius: 6px; font-weight: bold; cursor: pointer;">Abbrechen</button>
-                <button id="btn-confirm-delete" style="flex: 1; padding: 10px; border: none; background: #C62828; color: white; border-radius: 6px; font-weight: bold; cursor: pointer;">Ja, löschen</button>
-            </div>
-        </div>
+    <!-- MODAL FÜR BEWERTUNGEN & FEEDBACK -->
+    <div id="modal-overlay">
+        <div id="modal-inhalt"></div>
     </div>
 
     <script>
@@ -207,8 +216,8 @@
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let aktuellesRezeptImModal = null;
-        let rezeptIdZuLoeschen = null;
+        let alleRezepte = [];
+        let alleBewertungen = [];
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -216,268 +225,246 @@
                 window.location.href = 'index.html';
                 return;
             }
-            zeigeRezepteZentrale();
+            await ladeRezepteUndBewertungen();
         };
 
-        function zeigeRezepteZentrale() {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <button class="btn-back-corner" onclick="location.href='index.html'">🔙 Zurück</button>
+        async function ladeRezepteUndBewertungen() {
+            const { data: rezData, error: rezError } = await _supabase.from('rezepte').select('*').order('id', { ascending: false });
+            if (rezData) alleRezepte = rezData;
 
-                <h2 class="page-title">📖 Braustall Rezepte</h2>
+            const { data: bewData, error: bewError } = await _supabase.from('rezept_bewertungen').select('*').order('created_at', { ascending: false });
+            if (bewData) alleBewertungen = bewData;
 
-                <div class="info-box">
-                    <b>Rezept-Zentrale:</b> Verwalte deine gespeicherten Rezepte, erfasse neue Rezepte manuell oder bearbeite bestehende Einträge.
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <button class="btn-menu" onclick="ladeVorhandeneRezepte()">
-                        <span style="font-size: 22px;">📚</span>
-                        <div>
-                            <div>Vorhandene Rezepte</div>
-                            <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Ansehen, Bearbeiten & Löschen</small>
-                        </div>
-                    </button>
-
-                    <button class="btn-menu secondary" onclick="oeffneManuelleEingabeAnsicht()">
-                        <span style="font-size: 22px;">📋</span>
-                        <div>
-                            <div>Rezept manuelle Eingabe</div>
-                            <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Zettel-Import & neues Rezept in Datenbank speichern</small>
-                        </div>
-                    </button>
-
-                    <button class="btn-menu assistant" onclick="oeffneAssistentAnsicht()">
-                        <span style="font-size: 22px;">🧙‍♂️</span>
-                        <div>
-                            <div>Neues Rezept entwickeln</div>
-                            <small style="font-size: 11px; font-weight: normal; opacity: 0.9;">Geführter Braumeister-Assistent mit Brauwissen</small>
-                        </div>
-                    </button>
-                </div>
-
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Rezepte Version 1.6</div>
-            `;
+            raendereRezeptListe();
         }
 
-        async function ladeVorhandeneRezepte() {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
-                <h2 class="page-title">📚 Vorhandene Rezepte</h2>
-                <p style="text-align: center; color: #666;">Lade Rezepte aus der Datenbank...</p>
-            `;
+        function berechneRezeptSchnitt(rezeptId) {
+            const gefiltert = alleBewertungen.filter(b => String(b.rezept_id) === String(rezeptId));
+            if (gefiltert.length === 0) return { schnitt: 0, anzahl: 0 };
 
-            const { data: rezepte, error } = await _supabase.from('rezepte').select('*').order('name', { ascending: true });
+            const summe = gefiltert.reduce((acc, curr) => acc + (parseInt(curr.sterne) || 0), 0);
+            const schnitt = (summe / gefiltert.length).toFixed(1);
+            return { schnitt: parseFloat(schnitt), anzahl: gefiltert.length };
+        }
 
-            if (error) {
-                app.innerHTML = `
-                    <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
-                    <h2 class="page-title">📚 Vorhandene Rezepte</h2>
-                    <p style="color: red; text-align: center;">Fehler beim Laden: ${error.message}</p>
-                `;
+        function raendereRezeptListe() {
+            const container = document.getElementById('rezepte-liste');
+            if (alleRezepte.length === 0) {
+                container.innerHTML = `<p style="text-align: center; color: #666; margin-top: 30px;">Noch keine Rezepte vorhanden.</p>`;
                 return;
             }
 
-            if (!rezepte || rezepte.length === 0) {
-                app.innerHTML = `
-                    <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
-                    <h2 class="page-title">📚 Vorhandene Rezepte</h2>
-                    <div class="info-box" style="text-align: center;">Noch keine Rezepte gespeichert. Nutze die manuelle Eingabe, um ein erstes Rezept anzulegen!</div>
-                `;
-                return;
-            }
-
-            let html = `
-                <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
-                <h2 class="page-title">📚 Vorhandene Rezepte</h2>
-                <div style="margin-bottom: 15px; font-size: 13px; color: #555; text-align: center;">Übersicht aller gespeicherten Rezepte im Braustall.</div>
-            `;
-
-            rezepte.forEach(r => {
-                const sterne = r.bewertung ? '⭐'.repeat(Math.round(r.bewertung)) + ` (${r.bewertung})` : 'Noch nicht gebraut';
-                const rezeptJson = JSON.stringify(r).replace(/'/g, "&#39;");
+            let html = "";
+            alleRezepte.forEach(r => {
+                const bew = berechneRezeptSchnitt(r.id);
+                let bewText = "⚪ Noch nicht bewertet";
+                if (bew.anzahl > 0) {
+                    bewText = `⭐ ${bew.schnitt.toString().replace('.', ',')} (${bew.anzahl} ${bew.anzahl === 1 ? 'Bewertung' : 'Bewertungen'})`;
+                }
 
                 html += `
-                    <div class="rezept-card">
-                        <div class="rezept-header">
-                            <span class="rezept-name">${escapeHtml(r.name)}</span>
-                            <span style="font-size: 12px; color: #F57F17;">${sterne}</span>
+                    <div class="rezept-karte">
+                        <div class="karte-header">
+                            <span>🍺 ${escapeHtml(r.name || 'Unbenannt')}</span>
                         </div>
-                        <div class="rezept-stil">Stil: <b>${escapeHtml(r.stil || 'Unbekannt')}</b></div>
-                        <div class="rezept-meta">
-                            <div><b>${r.stammwuerze || '-'}</b> °P</div>
-                            <div><b>${r.ibu || '-'}</b> IBU</div>
-                            <div><b>${r.ebc || '-'}</b> EBC</div>
-                            <div>Basis: <b>${r.liter || 50} L</b></div>
+                        <div class="karte-stil">Bierstil: ${escapeHtml(r.stil || 'Unbekannt')}</div>
+                        
+                        <div style="margin-bottom: 8px;">
+                            <span class="bewertung-badge" onclick="oeffneBewertungModal('${r.id}')">
+                                ${bewText} 💬
+                            </span>
                         </div>
-                        <div class="rezept-actions">
-                            <button class="btn-card btn-details" onclick='zeigRezeptDetails(${rezeptJson})'>👁️✏️ Ansehen / Bearbeiten</button>
-                            <button class="btn-card btn-loeschen" onclick="oeffneLoeschModal('${r.id}', '${escapeHtml(r.name)}')">🗑️ Löschen</button>
+
+                        <div class="grid-werte">
+                            <div class="wert-item">
+                                <span class="wert-label">Stammwürze</span>
+                                <span class="wert-zahl">${r.stammwuerze || '-'} °P</span>
+                            </div>
+                            <div class="wert-item">
+                                <span class="wert-label">Bittere</span>
+                                <span class="wert-zahl">${r.ibu || '-'} IBU</span>
+                            </div>
+                            <div class="wert-item">
+                                <span class="wert-label">Farbe</span>
+                                <span class="wert-zahl">${r.ebc || '-'} EBC</span>
+                            </div>
+                        </div>
+
+                        <div class="btn-aktion-row">
+                            <button class="btn-card btn-ansehen" onclick="oeffneRezeptDetailsModal('${r.id}')">👁️ Details</button>
+                            <button class="btn-card btn-bearbeiten" onclick="bearbeiteRezept('${r.id}')">✏️ Bearbeiten</button>
+                            <button class="btn-card btn-loeschen" onclick="loescheRezept('${r.id}')">🗑️</button>
                         </div>
                     </div>
                 `;
             });
 
-            app.innerHTML = html;
+            container.innerHTML = html;
         }
 
-        function zeigRezeptDetails(rezept) {
-            aktuellesRezeptImModal = rezept;
+        // --- 1. MODAL FOR MEMBER REVIEWS & FEEDBACK ---
+        function oeffneBewertungModal(rezeptId) {
+            const rezept = alleRezepte.find(r => String(r.id) === String(rezeptId));
+            if (!rezept) return;
 
-            // 1. Schüttung
-            let schuettungHtml = '';
-            if (rezept.schuettung && Array.isArray(rezept.schuettung) && rezept.schuettung.length > 0) {
-                rezept.schuettung.forEach(m => {
-                    schuettungHtml += `<li><b>${m.menge_kg} kg</b> ${escapeHtml(m.name)}</li>`;
-                });
-            } else {
-                schuettungHtml = '<li>Keine Malzangaben hinterlegt.</li>';
-            }
+            const gefilterteBewertungen = alleBewertungen.filter(b => String(b.rezept_id) === String(rezeptId));
+            const meinName = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "";
 
-            // 2. Rasten
-            let rastenHtml = '';
-            if (rezept.rasten && Array.isArray(rezept.rasten) && rezept.rasten.length > 0) {
-                rezept.rasten.forEach(r => {
-                    rastenHtml += `<li><b>${escapeHtml(r.name)}:</b> ${r.temperatur_c} °C, ${r.dauer_min} Min.</li>`;
-                });
-            } else {
-                rastenHtml = '<li>Keine Rasten hinterlegt.</li>';
-            }
-
-            // 3. Kochhopfen
-            let hopfenHtml = '';
-            if (rezept.hopfung && Array.isArray(rezept.hopfung) && rezept.hopfung.length > 0) {
-                rezept.hopfung.forEach(h => {
-                    hopfenHtml += `<li><b>${h.menge_g} g</b> ${escapeHtml(h.name)} <small style="color:#666;">(${h.kochzeit_min} Min. kochen)</small></li>`;
-                });
-            } else {
-                hopfenHtml = '<li>Keine Kochgaben hinterlegt.</li>';
-            }
-
-            // 4. Whirlpool-Hopfung
-            let wpHtml = '';
-            if (rezept.whirlpool_hopfung && Array.isArray(rezept.whirlpool_hopfung) && rezept.whirlpool_hopfung.length > 0) {
-                rezept.whirlpool_hopfung.forEach(w => {
-                    wpHtml += `<li><b>${w.menge_g} g</b> ${escapeHtml(w.name)} bei ${w.temperatur_c} °C</li>`;
-                });
-            } else {
-                wpHtml = '<li>Keine Whirlpool-Hopfung.</li>';
-            }
-
-            // 5. Kalthopfung
-            let kaltHtml = '';
-            if (rezept.kalthopfung && Array.isArray(rezept.kalthopfung) && rezept.kalthopfung.length > 0) {
-                rezept.kalthopfung.forEach(k => {
-                    kaltHtml += `<li><b>${k.menge_g} g</b> ${escapeHtml(k.name)}</li>`;
-                });
-            } else {
-                kaltHtml = '<li>Keine Kalthopfung (Stopfen).</li>';
-            }
+            // Eigene bestehende Bewertung finden
+            const meineBestehende = gefilterteBewertungen.find(b => b.mitglied_name.toLowerCase() === meinName.toLowerCase());
 
             const inhalt = document.getElementById('modal-inhalt');
+
+            let bewertungenListeHtml = "";
+            if (gefilterteBewertungen.length === 0) {
+                bewertungenListeHtml = `<p style="color: #777; font-size: 12px; font-style: italic; text-align: center; margin: 15px 0;">Noch keine Feedbacks abgegeben.</p>`;
+            } else {
+                gefilterteBewertungen.forEach(b => {
+                    const sterneStars = "⭐".repeat(b.sterne);
+                    const datumStr = b.created_at ? new Date(b.created_at).toLocaleDateString('de-DE') : '';
+                    
+                    bewertungenListeHtml += `
+                        <div class="kommentar-zeile">
+                            <div style="display: flex; justify-content: space-between; font-weight: bold; color: #1565C0;">
+                                <span>👤 ${escapeHtml(b.mitglied_name)}</span>
+                                <span>${sterneStars} (${b.sterne}/5)</span>
+                            </div>
+                            ${b.kommentar ? `<div style="color: #333; margin-top: 4px; font-size: 13px;">"${escapeHtml(b.kommentar)}"</div>` : ''}
+                            <div style="color: #aaa; font-size: 10px; margin-top: 2px;">${datumStr}</div>
+                        </div>
+                    `;
+                });
+            }
+
             inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">📜 ${escapeHtml(rezept.name)}</h3>
-                <div style="background: #E3F2FD; padding: 8px; border-radius: 6px; font-size: 13px; margin-bottom: 10px;">
-                    Stil: <b>${escapeHtml(rezept.stil || '-')}</b> | Ausschlag: <b>${rezept.liter || 50} Liter</b><br>
-                    Stammwürze: <b>${rezept.stammwuerze || '-'} °P</b> | IBU: <b>${rezept.ibu || '-'}</b> | EBC: <b>${rezept.ebc || '-'}</b>
+                <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 4px;">⭐ Bewertungen & Feedback</h3>
+                <div style="font-weight: bold; color: #333; font-size: 14px; margin-bottom: 12px;">🍺 ${escapeHtml(rezept.name)}</div>
+
+                <!-- NEUE BEWERTUNG ABGEBEN -->
+                <div style="background: #F0F4F8; border: 1px solid #90CAF9; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
+                    <span style="font-size: 12px; font-weight: bold; color: #1565C0; display: block; margin-bottom: 6px;">
+                        ${meineBestehende ? '✏️ Deine Bewertung anpassen:' : '➕ Eigene Bewertung abgeben:'}
+                    </span>
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: bold; color: #555;">Dein Name:</label>
+                            <input type="text" id="bew-name" class="input-style" value="${escapeHtml(meinName)}" placeholder="z.B. Alex" style="margin-bottom: 0;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: bold; color: #555;">Sterne:</label>
+                            <select id="bew-sterne" class="input-style" style="margin-bottom: 0;">
+                                <option value="5" ${meineBestehende && meineBestehende.sterne === 5 ? 'selected' : ''}>⭐⭐⭐⭐⭐ (5/5)</option>
+                                <option value="4" ${meineBestehende && meineBestehende.sterne === 4 ? 'selected' : ''}>⭐⭐⭐⭐ (4/5)</option>
+                                <option value="3" ${meineBestehende && meineBestehende.sterne === 3 ? 'selected' : ''}>⭐⭐⭐ (3/5)</option>
+                                <option value="2" ${meineBestehende && meineBestehende.sterne === 2 ? 'selected' : ''}>⭐⭐ (2/5)</option>
+                                <option value="1" ${meineBestehende && meineBestehende.sterne === 1 ? 'selected' : ''}>⭐ (1/5)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Kommentar / Geschmackseindruck:</label>
+                    <textarea id="bew-kommentar" class="input-style" rows="2" placeholder="z.B. Sehr süffig, feines Hopfenaroma..." style="margin-bottom: 8px;">${meineBestehende ? escapeHtml(meineBestehende.kommentar || '') : ''}</textarea>
+
+                    <button class="btn-card btn-bearbeiten" style="width: 100%; padding: 10px;" onclick="speichereBewertung('${rezept.id}')">
+                        💾 Bewertung abschicken
+                    </button>
                 </div>
 
-                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">💧 Wasser & Aufbereitung</div>
-                <div style="font-size: 12px; margin-left: 5px; margin-bottom: 6px;">
-                    • Hauptguss: <b>${rezept.hauptguss || 0} L</b> (${rezept.hauptguss_salze || 'Keine Salze'}, ${rezept.hauptguss_milchsaeure || '0 ml'} MS)<br>
-                    • Nachguss: <b>${rezept.nachguss || 0} L</b> (${rezept.nachguss_salze || 'Keine Salze'}, ${rezept.nachguss_milchsaeure || '0 ml'} MS)
+                <!-- LISTE ALLER KOMMENTARE -->
+                <span style="font-size: 12px; font-weight: bold; color: #1565C0; display: block; margin-bottom: 6px;">Alle Mitglieder-Feedbacks:</span>
+                <div style="max-height: 25vh; overflow-y: auto; padding-right: 4px;">
+                    ${bewertungenListeHtml}
                 </div>
 
-                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🌾 Schüttung (Malz)</div>
-                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${schuettungHtml}</ul>
-
-                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🌡️ Maischplan</div>
-                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${rastenHtml}</ul>
-
-                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🔥 Würze kochen (${rezept.kochzeit_gesamt || 90} Min.)</div>
-                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${hopfenHtml}</ul>
-
-                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🌀 Whirlpool-Hopfung</div>
-                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${wpHtml}</ul>
-
-                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">❄️ Kalthopfung (Stopfen)</div>
-                <ul style="font-size: 12px; padding-left: 18px; margin: 2px 0;">${kaltHtml}</ul>
-
-                <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">🧪 Hefe & Gärung</div>
-                <div style="font-size: 12px; margin-left: 5px; margin-bottom: 6px;">
-                    • Hefe: <b>${escapeHtml(rezept.hefe || 'Keine Angabe')}</b><br>
-                    • Gärtemperatur: <b>${escapeHtml(rezept.gaer_temp || '-')}</b>
-                </div>
-
-                ${rezept.notizen ? `
-                    <div style="font-size: 13px; font-weight: bold; color: #1565C0; margin-top: 8px;">📝 Notizen</div>
-                    <div style="font-size: 12px; background: #F8F9FA; padding: 6px; border-radius: 4px; margin-top: 2px;">${escapeHtml(rezept.notizen)}</div>
-                ` : ''}
-
-                <div style="font-size: 11px; color: #777; text-align: right; margin-top: 12px;">Erstellt von: ${escapeHtml(rezept.ersteller || 'Mitglied')}</div>
-                
-                <div style="display: flex; gap: 8px; margin-top: 18px;">
-                    <button class="btn-menu" style="background-color: #F57C00; justify-content: center; margin: 0; flex: 1; font-size: 13px; padding: 12px;" onclick="starteBearbeitungAusModal()">✏️ Im Editor bearbeiten</button>
-                    <button class="btn-menu" style="background-color: #546E7A; justify-content: center; margin: 0; flex: 1; font-size: 13px; padding: 12px;" onclick="schliesseModal()">Schließen</button>
-                </div>
+                <button class="btn-card btn-ansehen" onclick="schliesseModal()" style="width: 100%; margin-top: 15px; padding: 10px;">Schließen</button>
             `;
+
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
-        function starteBearbeitungAusModal() {
-            if (!aktuellesRezeptImModal) return;
-            sessionStorage.setItem('rezeptBearbeitenId', aktuellesRezeptImModal.id);
-            sessionStorage.setItem('rezeptBearbeitenDaten', JSON.stringify(aktuellesRezeptImModal));
-            window.location.href = 'rezept_neu.html';
+        async function speichereBewertung(rezeptId) {
+            const mitgliedName = document.getElementById('bew-name').value.trim();
+            const sterne = parseInt(document.getElementById('bew-sterne').value) || 5;
+            const kommentar = document.getElementById('bew-kommentar').value.trim();
+
+            if (!mitgliedName) {
+                alert("Bitte gib deinen Namen ein.");
+                return;
+            }
+
+            // Upsert in Supabase (aktualisiert bestehenden Eintrag für diesen Namen & dieses Rezept)
+            const { error } = await _supabase.from('rezept_bewertungen').upsert([{
+                rezept_id: rezeptId,
+                mitglied_name: mitgliedName,
+                sterne: sterne,
+                kommentar: kommentar
+            }], { onConflict: 'rezept_id, mitglied_name' });
+
+            if (error) {
+                alert("Fehler beim Speichern der Bewertung: " + error.message);
+                return;
+            }
+
+            alert("✓ Vielen Dank für dein Feedback! 🍻");
+            schliesseModal();
+            await ladeRezepteUndBewertungen();
         }
 
-        /* LÖSCHEN-DIALOG (SICHERHEITSABFRAGE) */
-        function oeffneLoeschModal(id, name) {
-            rezeptIdZuLoeschen = id;
-            document.getElementById('delete-rezept-text').innerHTML = `Möchtest du das Rezept <b>"${name}"</b> wirklich unwiderruflich aus der Datenbank löschen?`;
-            
-            const confirmBtn = document.getElementById('btn-confirm-delete');
-            confirmBtn.onclick = function() {
-                loescheRezeptAusfuehren();
-            };
+        // --- 2. MODAL FÜR COMPLETE REZEPT DETAILS ---
+        function oeffneRezeptDetailsModal(rezeptId) {
+            const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
+            if (!r) return;
 
-            document.getElementById('modal-delete-overlay').style.display = 'flex';
+            const bew = berechneRezeptSchnitt(r.id);
+
+            let schuettungHtml = (r.schuettung || []).map(m => `<li><b>${m.menge_kg} kg</b> ${escapeHtml(m.name)}</li>`).join('');
+            let rastenHtml = (r.rasten || []).map(rst => `<li><b>${escapeHtml(rst.name)}:</b> ${rst.temperatur_c}°C (${rst.dauer_min} Min)</li>`).join('');
+            let hopfenHtml = (r.hopfung || []).map(h => `<li><b>${h.menge_g} g</b> ${escapeHtml(h.name)} (${h.kochzeit_min} Min kochen)</li>`).join('');
+
+            const inhalt = document.getElementById('modal-inhalt');
+            inhalt.innerHTML = `
+                <h3 style="color: #1565C0; margin-top: 0;">📋 ${escapeHtml(r.name)}</h3>
+                <div style="font-size: 13px; color: #555; margin-bottom: 10px;">Bierstil: <b>${escapeHtml(r.stil || '-')}</b></div>
+
+                <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 6px; padding: 8px; font-size: 12px; margin-bottom: 10px;">
+                    <div>📏 <b>Ausschlag:</b> ${r.liter || 50} Liter</div>
+                    <div>🧪 <b>Stammwürze:</b> ${r.stammwuerze || '-'} °P</div>
+                    <div>🍃 <b>Bittere:</b> ${r.ibu || '-'} IBU | 🎨 <b>Farbe:</b> ${r.ebc || '-'} EBC</div>
+                    <div>⭐ <b>Bewertung:</b> ${bew.anzahl > 0 ? `${bew.schnitt}/5 (${bew.anzahl} Stimmen)` : 'Noch keine'}</div>
+                </div>
+
+                ${schuettungHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌾 Schüttung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px;">${schuettungHtml}</ul>` : ''}
+                ${rastenHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">⏱️ Maischplan:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px;">${rastenHtml}</ul>` : ''}
+                ${hopfenHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌿 Hopfung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px;">${hopfenHtml}</ul>` : ''}
+                
+                <div style="font-size: 12px; color: #555; margin-top: 8px;">🧬 <b>Hefe:</b> ${escapeHtml(r.hefe || '-')} (${escapeHtml(r.gaer_temp || 'Normal')})</div>
+                ${r.notizen ? `<div style="font-size: 12px; background: #FFFDE7; border: 1px solid #FFF59D; padding: 6px; border-radius: 4px; margin-top: 8px;">📝 <b>Notizen:</b> ${escapeHtml(r.notizen)}</div>` : ''}
+
+                <button class="btn-card btn-ansehen" onclick="schliesseModal()" style="width: 100%; margin-top: 15px; padding: 10px;">Schließen</button>
+            `;
+
+            document.getElementById('modal-overlay').style.display = 'flex';
         }
 
-        function schliesseLoeschModal() {
-            rezeptIdZuLoeschen = null;
-            document.getElementById('modal-delete-overlay').style.display = 'none';
+        function bearbeiteRezept(rezeptId) {
+            const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
+            if (!r) return;
+
+            sessionStorage.setItem('rezeptBearbeitenDaten', JSON.stringify(r));
+            location.href = 'rezept_neu.html';
         }
 
-        async function loescheRezeptAusfuehren() {
-            if (!rezeptIdZuLoeschen) return;
+        async function loescheRezept(rezeptId) {
+            if (!confirm("Möchtest du dieses Rezept wirklich löschen?")) return;
 
-            const { error } = await _supabase.from('rezepte').delete().eq('id', rezeptIdZuLoeschen);
-            schliesseLoeschModal();
-
+            const { error } = await _supabase.from('rezepte').delete().eq('id', rezeptId);
             if (error) {
                 alert("Fehler beim Löschen: " + error.message);
                 return;
             }
 
-            ladeVorhandeneRezepte();
-        }
-
-        function oeffneManuelleEingabeAnsicht() {
-            sessionStorage.removeItem('rezeptBearbeitenId');
-            sessionStorage.removeItem('rezeptBearbeitenDaten');
-            window.location.href = 'rezept_neu.html';
-        }
-
-        function oeffneAssistentAnsicht() {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <button class="btn-back-corner" onclick="zeigeRezepteZentrale()">🔙 Zurück</button>
-                <h2 class="page-title">🧙‍♂️ Braumeister-Assistent</h2>
-                <div class="info-box">Der geführte Fragebogen hilft dir Schritt für Schritt bei der Erstellung – inklusive integriertem Brauwissen und Stil-Checks.</div>
-                <p style="text-align: center; color: #666; font-size: 14px; margin-top: 40px;">(Schritt-für-Schritt-Assistent folgt im nächsten Schritt)</p>
-            `;
+            await ladeRezepteUndBewertungen();
         }
 
         function schliesseModal() {
