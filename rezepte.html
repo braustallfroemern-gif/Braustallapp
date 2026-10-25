@@ -134,11 +134,10 @@
         }
         .rezept-actions {
             display: flex;
-            gap: 6px;
+            gap: 8px;
         }
         .btn-card {
-            flex: 1;
-            padding: 8px;
+            padding: 10px;
             border: none;
             border-radius: 6px;
             font-size: 12px;
@@ -146,11 +145,11 @@
             cursor: pointer;
             text-align: center;
         }
-        .btn-details { background-color: #1976D2; color: white; }
-        .btn-bearbeiten { background-color: #F57C00; color: white; }
-        .btn-loeschen { background-color: #C62828; color: white; }
+        .btn-details { background-color: #1976D2; color: white; flex: 2; }
+        .btn-loeschen { background-color: #C62828; color: white; flex: 1; }
 
-        #modal-overlay {
+        /* Modal Overlays */
+        #modal-overlay, #modal-delete-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -170,20 +169,46 @@
             max-height: 90vh;
             overflow-y: auto;
         }
+        #modal-delete-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 88%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
 
     <div id="app">Lade Rezepte-Zentrale...</div>
 
+    <!-- Detail & Bearbeiten Modal -->
     <div id="modal-overlay">
         <div id="modal-inhalt"></div>
+    </div>
+
+    <!-- Sicherheits-Sicherheitsabfrage zum Löschen -->
+    <div id="modal-delete-overlay">
+        <div id="modal-delete-box">
+            <div style="font-size: 38px; margin-bottom: 8px;">⚠️</div>
+            <h3 style="margin: 0 0 10px 0; color: #C62828;">Rezept wirklich löschen?</h3>
+            <p id="delete-rezept-text" style="font-size: 13px; color: #555; margin-bottom: 20px; line-height: 1.4;"></p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="schliesseLoeschModal()" style="flex: 1; padding: 10px; border: 1px solid #ccc; background: #ECEFF1; color: #37474F; border-radius: 6px; font-weight: bold; cursor: pointer;">Abbrechen</button>
+                <button id="btn-confirm-delete" style="flex: 1; padding: 10px; border: none; background: #C62828; color: white; border-radius: 6px; font-weight: bold; cursor: pointer;">Ja, löschen</button>
+            </div>
+        </div>
     </div>
 
     <script>
         const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let aktuellesRezeptImModal = null;
+        let rezeptIdZuLoeschen = null;
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -231,7 +256,7 @@
                     </button>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Rezepte Version 1.5</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Rezepte Version 1.6</div>
             `;
         }
 
@@ -271,6 +296,8 @@
 
             rezepte.forEach(r => {
                 const sterne = r.bewertung ? '⭐'.repeat(Math.round(r.bewertung)) + ` (${r.bewertung})` : 'Noch nicht gebraut';
+                const rezeptJson = JSON.stringify(r).replace(/'/g, "&#39;");
+
                 html += `
                     <div class="rezept-card">
                         <div class="rezept-header">
@@ -285,9 +312,8 @@
                             <div>Basis: <b>${r.liter || 50} L</b></div>
                         </div>
                         <div class="rezept-actions">
-                            <button class="btn-card btn-details" onclick='zeigRezeptDetails(${JSON.stringify(r)})'>👁️ Ansehen</button>
-                            <button class="btn-card btn-bearbeiten" onclick='bearbeiteRezept(${JSON.stringify(r)})'>✏️ Bearbeiten</button>
-                            <button class="btn-card btn-loeschen" onclick="loescheRezept('${r.id}', '${escapeHtml(r.name)}')">🗑️ Löschen</button>
+                            <button class="btn-card btn-details" onclick='zeigRezeptDetails(${rezeptJson})'>👁️✏️ Ansehen / Bearbeiten</button>
+                            <button class="btn-card btn-loeschen" onclick="oeffneLoeschModal('${r.id}', '${escapeHtml(r.name)}')">🗑️ Löschen</button>
                         </div>
                     </div>
                 `;
@@ -297,6 +323,8 @@
         }
 
         function zeigRezeptDetails(rezept) {
+            aktuellesRezeptImModal = rezept;
+
             // 1. Schüttung
             let schuettungHtml = '';
             if (rezept.schuettung && Array.isArray(rezept.schuettung) && rezept.schuettung.length > 0) {
@@ -317,7 +345,7 @@
                 rastenHtml = '<li>Keine Rasten hinterlegt.</li>';
             }
 
-            // 3. Kochhopfen / Kochgaben
+            // 3. Kochhopfen
             let hopfenHtml = '';
             if (rezept.hopfung && Array.isArray(rezept.hopfung) && rezept.hopfung.length > 0) {
                 rezept.hopfung.forEach(h => {
@@ -389,26 +417,50 @@
 
                 <div style="font-size: 11px; color: #777; text-align: right; margin-top: 12px;">Erstellt von: ${escapeHtml(rezept.ersteller || 'Mitglied')}</div>
                 
-                <button class="btn-menu" style="background-color: #546E7A; justify-content: center; margin-top: 15px;" onclick="schliesseModal()">Schließen</button>
+                <div style="display: flex; gap: 8px; margin-top: 18px;">
+                    <button class="btn-menu" style="background-color: #F57C00; justify-content: center; margin: 0; flex: 1; font-size: 13px; padding: 12px;" onclick="starteBearbeitungAusModal()">✏️ Im Editor bearbeiten</button>
+                    <button class="btn-menu" style="background-color: #546E7A; justify-content: center; margin: 0; flex: 1; font-size: 13px; padding: 12px;" onclick="schliesseModal()">Schließen</button>
+                </div>
             `;
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
-        function bearbeiteRezept(rezept) {
-            sessionStorage.setItem('rezeptBearbeitenId', rezept.id);
-            sessionStorage.setItem('rezeptBearbeitenDaten', JSON.stringify(rezept));
+        function starteBearbeitungAusModal() {
+            if (!aktuellesRezeptImModal) return;
+            sessionStorage.setItem('rezeptBearbeitenId', aktuellesRezeptImModal.id);
+            sessionStorage.setItem('rezeptBearbeitenDaten', JSON.stringify(aktuellesRezeptImModal));
             window.location.href = 'rezept_neu.html';
         }
 
-        async function loescheRezept(id, name) {
-            if (!confirm(`Möchtest du das Rezept "${name}" wirklich unwiderruflich löschen?`)) return;
+        /* LÖSCHEN-DIALOG (SICHERHEITSABFRAGE) */
+        function oeffneLoeschModal(id, name) {
+            rezeptIdZuLoeschen = id;
+            document.getElementById('delete-rezept-text').innerHTML = `Möchtest du das Rezept <b>"${name}"</b> wirklich unwiderruflich aus der Datenbank löschen?`;
+            
+            const confirmBtn = document.getElementById('btn-confirm-delete');
+            confirmBtn.onclick = function() {
+                loescheRezeptAusfuehren();
+            };
 
-            const { error } = await _supabase.from('rezepte').delete().eq('id', id);
+            document.getElementById('modal-delete-overlay').style.display = 'flex';
+        }
+
+        function schliesseLoeschModal() {
+            rezeptIdZuLoeschen = null;
+            document.getElementById('modal-delete-overlay').style.display = 'none';
+        }
+
+        async function loescheRezeptAusfuehren() {
+            if (!rezeptIdZuLoeschen) return;
+
+            const { error } = await _supabase.from('rezepte').delete().eq('id', rezeptIdZuLoeschen);
+            schliesseLoeschModal();
+
             if (error) {
                 alert("Fehler beim Löschen: " + error.message);
                 return;
             }
-            alert("Rezept wurde gelöscht.");
+
             ladeVorhandeneRezepte();
         }
 
