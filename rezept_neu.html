@@ -532,7 +532,7 @@
                 lagerHefeListe = data.filter(item => (item.kategorie || '').toLowerCase().includes('hefe'));
             }
 
-            if (lagerMalzListe.length === 0) lagerMalzListe = [{bezeichnung: 'Pilsner Malz', farbe_ebc: 3}, {bezeichnung: 'Münchner Malz I', farbe_ebc: 15}, {bezeichnung: 'Caramalz', farbe_ebc: 120}];
+            if (lagerMalzListe.length === 0) lagerMalzListe = [{bezeichnung: 'Pilsner Malz', farbe_ebc: 3}, {bezeichnung: 'Münchner Malz I', farbe_ebc: 15}, {bezeichnung: 'Caramalz', farbe_ebc: 120}, {bezeichnung: 'Röstmalz', farbe_ebc: 1100}];
             if (lagerHopfenListe.length === 0) lagerHopfenListe = [{bezeichnung: 'Chinook'}, {bezeichnung: 'Cascade'}, {bezeichnung: 'Hallertauer Mittelfrüh'}];
             if (lagerHefeListe.length === 0) lagerHefeListe = [{bezeichnung: 'SafAle S-04 (Obergärig)'}, {bezeichnung: 'W-34/70 (Untergärig)'}];
 
@@ -544,7 +544,24 @@
             let html = `<option value="" data-ebc="0">-- Malz wählen --</option>`;
             lagerMalzListe.forEach(m => {
                 const bez = m.bezeichnung || m.name || '';
-                const ebc = m.farbe_ebc || m.ebc || 3;
+                let ebc = parseFloat(m.farbe_ebc || m.ebc || m.ebc_wert || m.farbe) || 0;
+                
+                // Intelligente Fallback-Erkennung für EBC bei unvollständigen Lager-Einträgen
+                if (ebc <= 0) {
+                    const bezLower = bez.toLowerCase();
+                    if (bezLower.includes('röst') || bezLower.includes('carafa') || bezLower.includes('schwarz') || bezLower.includes('chocolate') || bezLower.includes('black')) {
+                        ebc = 1000;
+                    } else if (bezLower.includes('münch') || bezLower.includes('munich')) {
+                        ebc = 18;
+                    } else if (bezLower.includes('wien') || bezLower.includes('vienna')) {
+                        ebc = 8;
+                    } else if (bezLower.includes('cara')) {
+                        ebc = 120;
+                    } else {
+                        ebc = 3.5;
+                    }
+                }
+
                 html += `<option value="${bez}" data-ebc="${ebc}" ${bez === aktuellerWert ? 'selected' : ''}>${bez} (${ebc} EBC)</option>`;
             });
             html += `<option value="NEU_ANLEGEN" data-ebc="0" style="color: #1976D2; font-weight: bold;">➕ Neues Malz im Lager anlegen...</option>`;
@@ -627,12 +644,12 @@
             }
         }
 
-        /* MOREY-FORMEL & BIERFARBEN-BERECHNUNG */
+        /* MOREY-FORMEL & METRISCHE BIERFARBEN-BERECHNUNG */
         function berechneBierFarbe() {
             const literInput = parseFloat(document.getElementById('ausschlag-liter').value);
             const liter = (literInput && literInput > 0) ? literInput : 50;
 
-            let mcuGesamt = 0;
+            let ebcKgSumme = 0;
 
             document.querySelectorAll('#malz-container > div').forEach(row => {
                 const select = row.querySelector('.malz-select');
@@ -640,16 +657,18 @@
 
                 if (select && select.selectedIndex >= 0) {
                     const opt = select.options[select.selectedIndex];
-                    const malzEbc = parseFloat(opt.getAttribute('data-ebc')) || 3;
+                    const malzEbc = parseFloat(opt.getAttribute('data-ebc')) || 0;
                     if (mengeInput > 0 && malzEbc > 0) {
-                        mcuGesamt += (mengeInput * malzEbc) / liter;
+                        ebcKgSumme += (mengeInput * malzEbc);
                     }
                 }
             });
 
             let bierEbc = 0;
-            if (mcuGesamt > 0) {
-                bierEbc = Math.round(2.9396 * Math.pow(mcuGesamt, 0.6859));
+            if (ebcKgSumme > 0 && liter > 0) {
+                const mcuMetric = ebcKgSumme / liter;
+                // Korrigierte metrische Morey-Formel: EBC = 7.9 * (MCU_metric ^ 0.6859)
+                bierEbc = Math.round(7.9 * Math.pow(mcuMetric, 0.6859));
             }
 
             const ebcLabel = document.getElementById('ebc-anzeige-label');
@@ -672,14 +691,24 @@
             }
         }
 
+        /* CONVERTER: EBC ZU REALISTISCHER BIERFARBE (RGB) */
         function ebcToRgbColor(ebc) {
             if (!ebc || ebc <= 0) return '#FFE699';
+            
             const srm = ebc / 1.97;
             const clampedSrm = Math.max(1, srm);
 
-            const r = Math.min(255, Math.max(15, Math.round(255 * Math.pow(0.965, clampedSrm))));
-            const g = Math.min(255, Math.max(5, Math.round(255 * Math.pow(0.88, clampedSrm))));
-            const b = Math.min(255, Math.max(0, Math.round(255 * Math.pow(0.70, clampedSrm))));
+            let r = Math.min(255, Math.max(15, Math.round(255 * Math.pow(0.965, clampedSrm))));
+            let g = Math.min(255, Math.max(5, Math.round(255 * Math.pow(0.88, clampedSrm))));
+            let b = Math.min(255, Math.max(0, Math.round(255 * Math.pow(0.70, clampedSrm))));
+
+            // Ab 40 EBC (Schwarze/Dunkle Biersorten) dunkelt das Glas stufenlos bis tiefschwarz ab
+            if (ebc >= 40) {
+                const abdunkelnFactor = Math.max(0.05, 1 - ((ebc - 40) / 45));
+                r = Math.round(r * abdunkelnFactor);
+                g = Math.round(g * abdunkelnFactor);
+                b = Math.round(b * abdunkelnFactor);
+            }
 
             return `rgb(${r}, ${g}, ${b})`;
         }
@@ -849,7 +878,7 @@
             if (kategorie === 'Malz') {
                 spezifischeFelder = `
                     <label class="label-style">Farbe (EBC):</label>
-                    <input type="number" id="neu-ebc" placeholder="z.B. 3" class="input-style">
+                    <input type="number" id="neu-ebc" placeholder="z.B. 1000" class="input-style">
                     <label class="label-style">Max. Gabe (%):</label>
                     <input type="number" id="neu-maxgabe" placeholder="z.B. 100" class="input-style">
                 `;
@@ -876,7 +905,7 @@
 
             document.getElementById('modal-body').innerHTML = `
                 <label class="label-style">Bezeichnung:</label>
-                <input type="text" id="neuer-rohstoff-name" class="input-style" placeholder="z.B. ${kategorie === 'Malz' ? 'Pilsner Malz' : kategorie === 'Hopfen' ? 'Cascade' : 'SafAle US-05'}">
+                <input type="text" id="neuer-rohstoff-name" class="input-style" placeholder="z.B. ${kategorie === 'Malz' ? 'Röstmalz Extra' : kategorie === 'Hopfen' ? 'Cascade' : 'SafAle US-05'}">
                 
                 <div style="display: flex; gap: 10px;">
                     <div style="flex: 2;">
@@ -895,10 +924,10 @@
                 ${spezifischeFelder}
 
                 <label class="label-style">Aromatik / Geschmacksprofil:</label>
-                <input type="text" id="neuer-rohstoff-aromatik" placeholder="z.B. Zitrus, harzig" class="input-style">
+                <input type="text" id="neuer-rohstoff-aromatik" placeholder="z.B. Kaffee, Bitterschokolade" class="input-style">
 
                 <label class="label-style">Mögliche Alternativen:</label>
-                <input type="text" id="neuer-rohstoff-alternativen" placeholder="z.B. Cascade, Centennial" class="input-style">
+                <input type="text" id="neuer-rohstoff-alternativen" placeholder="z.B. Carafa II" class="input-style">
 
                 <button class="btn-primary" onclick="speichereVollstaendigenRohstoffInLager('${kategorie}')">💾 Im Lager speichern & auswählen</button>
                 <button class="btn-primary" style="background-color: #546E7A; margin-top: 6px;" onclick="schliesseModal()">Abbrechen</button>
