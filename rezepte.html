@@ -471,7 +471,7 @@
             await ladeRezepteUndBewertungen();
         }
 
-        // --- 2. MODAL FÜR REZEPT DETAILS (STILDATEN UNTEREINANDER) ---
+        // --- 2. MODAL FÜR REZEPT DETAILS (STILDATEN MIT PUNKTEN) ---
         function oeffneRezeptDetailsModal(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
@@ -489,14 +489,15 @@
                 <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 2px;">📋 ${escapeHtml(r.name)}</h3>
                 <div style="font-size: 13px; color: #555; margin-bottom: 12px;">Bierstil: <b>${escapeHtml(r.stil || '-')}</b> • ${r.liter || 50} Liter</div>
 
-                <!-- STILDATEN UNTEREINANDER (WIE SCHÜTTUNG / MAISCHPLAN) -->
                 <div style="font-size: 12px; font-weight: bold; color: #1565C0; margin-top: 4px;">📊 Stildaten & Zielwerte:</div>
                 <ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px; list-style-type: disc;">
                     <li><b>Stammwürze:</b> ${r.stammwuerze || '-'} °P</li>
                     <li><b>Bittere:</b> ${r.ibu || '-'} IBU</li>
-                    <li style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
-                        <span><b>Geplante Farbe:</b> ${ebcWert} EBC (${ebcText})</span>
-                        <div style="width: 20px; height: 13px; background-color: ${ebcFarbeHex}; border-radius: 3px; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);" title="${ebcText}"></div>
+                    <li>
+                        <span style="display: inline-flex; align-items: center; gap: 6px;">
+                            <b>Geplante Farbe:</b> ${ebcWert} EBC (${ebcText})
+                            <span style="display: inline-block; width: 20px; height: 13px; background-color: ${ebcFarbeHex}; border-radius: 3px; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);" title="${ebcText}"></span>
+                        </span>
                     </li>
                 </ul>
 
