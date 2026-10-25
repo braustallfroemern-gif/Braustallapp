@@ -264,7 +264,7 @@
         }
 
         async function ladeLagerdaten() {
-            const { data, error } = await _supabase.from('lager').select('*').order('bezeichnung', { ascending: true });
+            const { data, error } = await _supabase.from('lager').select('*');
             
             if (error) {
                 document.getElementById('lager-liste').innerHTML = `<p style="text-align: center; color: #C62828;">Fehler beim Laden: ${error.message}</p>`;
@@ -272,6 +272,25 @@
             }
 
             gesamtesLager = data || [];
+            
+            // Eigene Sortierung: Malz in feste Blöcke (Basismalz, Karamellmalz, Röstmalz, Sondermalz), Rest alphabetisch
+            gesamtesLager.sort((a, b) => {
+                const katA = (a.kategorie || '').toLowerCase();
+                const katB = (b.kategorie || '').toLowerCase();
+
+                if (katA === 'malz' && katB === 'malz') {
+                    const reihenfolge = { 'basismalz': 1, 'karamellmalz': 2, 'röstmalz': 3, 'rostmalz': 3, 'sondermalz': 4 };
+                    const typA = reihenfolge[(a.malz_typ || '').toLowerCase()] || 99;
+                    const typB = reihenfolge[(b.malz_typ || '').toLowerCase()] || 99;
+
+                    if (typA !== typB) return typA - typB;
+                }
+
+                const bezA = (a.bezeichnung || a.name || '').toLowerCase();
+                const bezB = (b.bezeichnung || b.name || '').toLowerCase();
+                return bezA.localeCompare(bezB);
+            });
+
             raendereLagerListe();
         }
 
@@ -302,7 +321,6 @@
                 const bez = escapeHtml(item.bezeichnung || item.name || 'Unbenannt');
                 const kat = escapeHtml(item.kategorie || 'Allgemein');
                 
-                // Bestand streng auf exakt 2 Nachkommastellen formatiert
                 const bestandRoh = item.bestand !== undefined ? parseFloat(item.bestand) : 0;
                 const bestand = isNaN(bestandRoh) ? '0.00' : bestandRoh.toFixed(2);
                 
@@ -380,9 +398,11 @@
             if (!istKassenwart) return;
 
             let item = {};
+            let istBearbeitung = false;
             if (id) {
                 item = gesamtesLager.find(r => String(r.id) === String(id)) || {};
                 document.getElementById('modal-titel').innerText = "Rohstoff bearbeiten";
+                istBearbeitung = true;
             } else {
                 document.getElementById('modal-titel').innerText = "Neuen Rohstoff anlegen";
             }
@@ -393,7 +413,7 @@
                 <input type="hidden" id="edit-id" value="${item.id || ''}">
                 
                 <label class="label-style">Kategorie:</label>
-                <select id="edit-kategorie" class="select-style" onchange="passeModalFelderAn(this.value)">
+                <select id="edit-kategorie" class="select-style" ${istBearbeitung ? 'disabled style="background-color: #E0E0E0; color: #555;"' : ''} onchange="passeModalFelderAn(this.value)">
                     <option value="Malz" ${kategorie === 'Malz' ? 'selected' : ''}>Malz</option>
                     <option value="Hopfen" ${kategorie === 'Hopfen' ? 'selected' : ''}>Hopfen</option>
                     <option value="Hefe" ${kategorie === 'Hefe' ? 'selected' : ''}>Hefe</option>
@@ -505,7 +525,10 @@
             if (!istKassenwart) return;
 
             const id = document.getElementById('edit-id').value;
-            const kategorie = document.getElementById('edit-kategorie').value;
+            // Wenn Kategorie disabled ist, holen wir sie vom versteckten/existierenden Item oder Fallback auf select
+            const katSelect = document.getElementById('edit-kategorie');
+            const kategorie = katSelect.value;
+            
             const bezeichnung = document.getElementById('edit-bezeichnung').value.trim();
             const bestand = parseFloat(document.getElementById('edit-bestand').value) || 0;
             const einheit = document.getElementById('edit-einheit').value.trim();
