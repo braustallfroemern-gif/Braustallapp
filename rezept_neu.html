@@ -223,9 +223,28 @@
             border-radius: 20px;
             border: 1px solid #BBDEFB;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            cursor: pointer;
+            user-select: none;
         }
-        #bier-fluessigkeit {
+        .bierglas-container:active {
+            transform: scale(0.97);
+        }
+        #bier-fluessigkeit, #bier-fluessigkeit-gross {
             transition: fill 0.5s ease-in-out;
+        }
+
+        /* VOLLBILD BIERGLAS MODAL */
+        #glas-zoom-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+            cursor: pointer;
         }
     </style>
 </head>
@@ -328,7 +347,8 @@
             <div class="section-title">
                 <span>3. Schüttung (Malz)</span>
                 
-                <div class="bierglas-container">
+                <!-- DYNAMISCHES BIERGLAS (KLICKBAR FÜR VOLLBILD) -->
+                <div class="bierglas-container" onclick="oeffneGlasZoom()" title="Tippen für Großansicht">
                     <svg id="bierglas-icon" width="22" height="30" viewBox="0 0 100 130" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.15));">
                         <path d="M 20 22 Q 30 12 40 22 Q 50 12 60 22 Q 70 12 80 22 L 80 30 L 20 30 Z" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2"/>
                         <path id="bier-fluessigkeit" d="M 22 30 L 78 30 L 72 110 Q 50 118 28 110 Z" fill="#FFE699"/>
@@ -446,6 +466,19 @@
         </div>
     </div>
 
+    <!-- VOLLBILD BIERGLAS ZOOM OVERLAY -->
+    <div id="glas-zoom-overlay" onclick="schliesseGlasZoom()">
+        <svg id="bierglas-icon-gross" width="180" height="260" viewBox="0 0 100 130" style="filter: drop-shadow(0px 8px 20px rgba(0,0,0,0.5));">
+            <path d="M 20 22 Q 30 12 40 22 Q 50 12 60 22 Q 70 12 80 22 L 80 30 L 20 30 Z" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2"/>
+            <path id="bier-fluessigkeit-gross" d="M 22 30 L 78 30 L 72 110 Q 50 118 28 110 Z" fill="#FFE699"/>
+            <path d="M 18 18 L 82 18 L 74 112 Q 50 120 26 112 Z" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" opacity="0.9"/>
+            <path d="M 26 26 L 32 26 L 30 105 L 28 105 Z" fill="#FFFFFF" opacity="0.4"/>
+        </svg>
+        <div id="zoom-ebc-zahl" style="color: white; font-size: 32px; font-weight: bold; margin-top: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">-- EBC</div>
+        <div id="zoom-ebc-bezeichnung" style="color: #BBDEFB; font-size: 16px; margin-top: 5px;">-</div>
+        <div style="color: #90CAF9; font-size: 12px; margin-top: 25px;">(Tippen zum Schließen)</div>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
         const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
@@ -456,6 +489,7 @@
         let lagerHopfenListe = [];
         let lagerHefeListe = [];
         let aktuellesRezeptId = null;
+        let aktuellerBierEbc = 0;
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -532,7 +566,7 @@
                 lagerHefeListe = data.filter(item => (item.kategorie || '').toLowerCase().includes('hefe'));
             }
 
-            if (lagerMalzListe.length === 0) lagerMalzListe = [{bezeichnung: 'Pilsner Malz', farbe_ebc: 3}, {bezeichnung: 'Münchner Malz I', farbe_ebc: 15}, {bezeichnung: 'Caramalz', farbe_ebc: 120}, {bezeichnung: 'Röstmalz', farbe_ebc: 1100}];
+            if (lagerMalzListe.length === 0) lagerMalzListe = [{bezeichnung: 'Pilsner Malz', farbe_ebc: 3.5}, {bezeichnung: 'Münchner Malz I', farbe_ebc: 20}, {bezeichnung: 'Caramalz Dunkel', farbe_ebc: 60}, {bezeichnung: 'Röstmalz', farbe_ebc: 1000}, {bezeichnung: 'Röstgerste', farbe_ebc: 1100}];
             if (lagerHopfenListe.length === 0) lagerHopfenListe = [{bezeichnung: 'Chinook'}, {bezeichnung: 'Cascade'}, {bezeichnung: 'Hallertauer Mittelfrüh'}];
             if (lagerHefeListe.length === 0) lagerHefeListe = [{bezeichnung: 'SafAle S-04 (Obergärig)'}, {bezeichnung: 'W-34/70 (Untergärig)'}];
 
@@ -546,20 +580,15 @@
                 const bez = m.bezeichnung || m.name || '';
                 let ebc = parseFloat(m.farbe_ebc || m.ebc || m.ebc_wert || m.farbe) || 0;
                 
-                // Intelligente Fallback-Erkennung für EBC bei unvollständigen Lager-Einträgen
+                // Intelligente Fallback-Erkennung
                 if (ebc <= 0) {
                     const bezLower = bez.toLowerCase();
-                    if (bezLower.includes('röst') || bezLower.includes('carafa') || bezLower.includes('schwarz') || bezLower.includes('chocolate') || bezLower.includes('black')) {
-                        ebc = 1000;
-                    } else if (bezLower.includes('münch') || bezLower.includes('munich')) {
-                        ebc = 18;
-                    } else if (bezLower.includes('wien') || bezLower.includes('vienna')) {
-                        ebc = 8;
-                    } else if (bezLower.includes('cara')) {
-                        ebc = 120;
-                    } else {
-                        ebc = 3.5;
-                    }
+                    if (bezLower.includes('röstgerste')) ebc = 1100;
+                    else if (bezLower.includes('röst') || bezLower.includes('carafa') || bezLower.includes('schwarz') || bezLower.includes('chocolate')) ebc = 1000;
+                    else if (bezLower.includes('münch') || bezLower.includes('munich')) ebc = 20;
+                    else if (bezLower.includes('wien') || bezLower.includes('vienna')) ebc = 8;
+                    else if (bezLower.includes('cara')) ebc = 60;
+                    else ebc = 3.5;
                 }
 
                 html += `<option value="${bez}" data-ebc="${ebc}" ${bez === aktuellerWert ? 'selected' : ''}>${bez} (${ebc} EBC)</option>`;
@@ -629,7 +658,7 @@
                 <select class="select-style malz-select" style="margin:0;" onchange="pruefeMalzAuswahl(this)">
                     ${baueMalzOptionen(name)}
                 </select>
-                <input type="number" step="0.1" class="input-style malz-menge" placeholder="0.0" value="${menge}" style="margin:0;" oninput="berechneBierFarbe()">
+                <input type="number" step="0.01" class="input-style malz-menge" placeholder="0.0" value="${menge}" style="margin:0;" oninput="berechneBierFarbe()">
                 <button class="btn-delete" onclick="this.parentElement.remove(); berechneBierFarbe();">X</button>
             `;
             container.appendChild(div);
@@ -644,7 +673,7 @@
             }
         }
 
-        /* MOREY-FORMEL & METRISCHE BIERFARBEN-BERECHNUNG */
+        /* KONGRESSWÜRZE-PRINZIP (PRÄZISE BIERFARBEN-BERECHNUNG) */
         function berechneBierFarbe() {
             const literInput = parseFloat(document.getElementById('ausschlag-liter').value);
             const liter = (literInput && literInput > 0) ? literInput : 50;
@@ -667,13 +696,16 @@
             let bierEbc = 0;
             if (ebcKgSumme > 0 && liter > 0) {
                 const mcuMetric = ebcKgSumme / liter;
-                // Korrigierte metrische Morey-Formel: EBC = 7.9 * (MCU_metric ^ 0.6859)
-                bierEbc = Math.round(7.9 * Math.pow(mcuMetric, 0.6859));
+                // Kongresswürze-Prinzip: Lineare Skalierung + Hefeverlust (-15%) & Kochdunkelung (+2.5 EBC)
+                bierEbc = Math.round((mcuMetric * 6.8) + 2.5);
             }
+
+            aktuellerBierEbc = bierEbc;
 
             const ebcLabel = document.getElementById('ebc-anzeige-label');
             const ebcInput = document.getElementById('ebc-wert');
             const flüssigkeit = document.getElementById('bier-fluessigkeit');
+            const flüssigkeitGross = document.getElementById('bier-fluessigkeit-gross');
 
             if (bierEbc > 0) {
                 ebcLabel.innerText = `ca. ${bierEbc} EBC`;
@@ -686,9 +718,8 @@
             }
 
             const hexFarbe = ebcToRgbColor(bierEbc);
-            if (flüssigkeit) {
-                flüssigkeit.setAttribute('fill', hexFarbe);
-            }
+            if (flüssigkeit) flüssigkeit.setAttribute('fill', hexFarbe);
+            if (flüssigkeitGross) flüssigkeitGross.setAttribute('fill', hexFarbe);
         }
 
         /* CONVERTER: EBC ZU REALISTISCHER BIERFARBE (RGB) */
@@ -702,15 +733,42 @@
             let g = Math.min(255, Math.max(5, Math.round(255 * Math.pow(0.88, clampedSrm))));
             let b = Math.min(255, Math.max(0, Math.round(255 * Math.pow(0.70, clampedSrm))));
 
-            // Ab 40 EBC (Schwarze/Dunkle Biersorten) dunkelt das Glas stufenlos bis tiefschwarz ab
-            if (ebc >= 40) {
-                const abdunkelnFactor = Math.max(0.05, 1 - ((ebc - 40) / 45));
+            // Ab 35 EBC dunkelt das Glas stufenlos bis tiefschwarz ab
+            if (ebc >= 35) {
+                const abdunkelnFactor = Math.max(0.02, 1 - ((ebc - 35) / 25));
                 r = Math.round(r * abdunkelnFactor);
                 g = Math.round(g * abdunkelnFactor);
                 b = Math.round(b * abdunkelnFactor);
             }
 
             return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        /* VOLLBILD BIERGLAS ZOOM LOGIK */
+        function oeffneGlasZoom() {
+            const overlay = document.getElementById('glas-zoom-overlay');
+            const ebcZahl = document.getElementById('zoom-ebc-zahl');
+            const ebcBezeichnung = document.getElementById('zoom-ebc-bezeichnung');
+
+            if (aktuellerBierEbc > 0) {
+                ebcZahl.innerText = `ca. ${aktuellerBierEbc} EBC`;
+                
+                if (aktuellerBierEbc <= 8) ebcBezeichnung.innerText = "Strohgelb / Pilsener / Hell";
+                else if (aktuellerBierEbc <= 15) ebcBezeichnung.innerText = "Goldgelb / Export / Festbier";
+                else if (aktuellerBierEbc <= 25) ebcBezeichnung.innerText = "Bernstein / Pale Ale";
+                else if (aktuellerBierEbc <= 40) ebcBezeichnung.innerText = "Kupfer / Märzen / Doppelbock";
+                else if (aktuellerBierEbc <= 60) ebcBezeichnung.innerText = "Dunkelbraun / Altbier / Braunbier";
+                else ebcBezeichnung.innerText = "Tiefschwarz / Schwarzbier / Stout";
+            } else {
+                ebcZahl.innerText = "Noch keine Schüttung";
+                ebcBezeichnung.innerText = "Bitte Malzsorten und Mengen eingeben";
+            }
+
+            overlay.style.display = 'flex';
+        }
+
+        function schliesseGlasZoom() {
+            document.getElementById('glas-zoom-overlay').style.display = 'none';
         }
 
         function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
