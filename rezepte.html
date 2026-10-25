@@ -83,51 +83,63 @@
             text-align: left;
         }
 
-        .karte-header {
+        .karte-header-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            font-size: 16px;
-            color: #1565C0;
+            align-items: flex-start;
             margin-bottom: 4px;
+            gap: 8px;
+        }
+
+        .karte-titel-bereich {
+            flex: 1;
+        }
+
+        .karte-name {
+            font-weight: bold;
+            font-size: 17px;
+            color: #1565C0;
+            line-height: 1.2;
         }
 
         .karte-stil {
             font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
+            color: #555;
+            margin-top: 3px;
             font-weight: 500;
         }
 
-        .bewertung-badge {
+        .bewertung-badge-top {
             display: inline-flex;
             align-items: center;
             gap: 4px;
             background: #FFF8E1;
             border: 1px solid #FFE082;
-            color: #F57F17;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
+            color: #E65100;
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 13px;
             font-weight: bold;
             cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            white-space: nowrap;
             transition: background 0.2s;
         }
-        .bewertung-badge:hover {
+        .bewertung-badge-top:hover {
             background: #FFECB3;
         }
 
         .grid-werte {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1.2fr;
             gap: 6px;
             background: white;
             padding: 8px;
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px solid #E0E0E0;
-            margin-bottom: 10px;
+            margin: 10px 0;
             text-align: center;
+            align-items: center;
         }
         .wert-item {
             display: flex;
@@ -139,6 +151,7 @@
         .btn-aktion-row {
             display: flex;
             gap: 6px;
+            margin-top: 8px;
         }
         .btn-card {
             flex: 1;
@@ -257,22 +270,26 @@
             let html = "";
             alleRezepte.forEach(r => {
                 const bew = berechneRezeptSchnitt(r.id);
-                let bewText = "⚪ Noch nicht bewertet";
+                let bewText = "⭐ 0,0 (0)";
                 if (bew.anzahl > 0) {
-                    bewText = `⭐ ${bew.schnitt.toString().replace('.', ',')} (${bew.anzahl} ${bew.anzahl === 1 ? 'Bewertung' : 'Bewertungen'})`;
+                    bewText = `⭐ ${bew.schnitt.toString().replace('.', ',')} (${bew.anzahl})`;
                 }
+
+                const ebcWert = r.ebc || 0;
+                const ebcFarbeHex = ebcToRgbColor(ebcWert);
 
                 html += `
                     <div class="rezept-karte">
-                        <div class="karte-header">
-                            <span>🍺 ${escapeHtml(r.name || 'Unbenannt')}</span>
-                        </div>
-                        <div class="karte-stil">Bierstil: ${escapeHtml(r.stil || 'Unbekannt')}</div>
-                        
-                        <div style="margin-bottom: 8px;">
-                            <span class="bewertung-badge" onclick="oeffneBewertungModal('${r.id}')">
-                                ${bewText} 💬
-                            </span>
+                        <div class="karte-header-row">
+                            <div class="karte-titel-bereich">
+                                <div class="karte-name">🍺 ${escapeHtml(r.name || 'Unbenannt')}</div>
+                                <div class="karte-stil">${escapeHtml(r.stil || 'Unbekannter Stil')} • ${r.liter || 50} L</div>
+                            </div>
+                            <div>
+                                <span class="bewertung-badge-top" onclick="oeffneBewertungModal('${r.id}')" title="Alle Bewertungen anzeigen">
+                                    ${bewText} 💬
+                                </span>
+                            </div>
                         </div>
 
                         <div class="grid-werte">
@@ -285,8 +302,11 @@
                                 <span class="wert-zahl">${r.ibu || '-'} IBU</span>
                             </div>
                             <div class="wert-item">
-                                <span class="wert-label">Farbe</span>
-                                <span class="wert-zahl">${r.ebc || '-'} EBC</span>
+                                <span class="wert-label">Farbe (EBC)</span>
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 2px;">
+                                    <span style="font-size: 13px; font-weight: bold; color: #333;">${ebcWert}</span>
+                                    <div style="width: 20px; height: 14px; background-color: ${ebcFarbeHex}; border-radius: 3px; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);"></div>
+                                </div>
                             </div>
                         </div>
 
@@ -435,7 +455,7 @@
             await ladeRezepteUndBewertungen();
         }
 
-        // --- 2. MODAL FÜR REZEPT DETAILS (INKL. FARBBALKEN) ---
+        // --- 2. MODAL FÜR REZEPT DETAILS ---
         function oeffneRezeptDetailsModal(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
@@ -452,13 +472,12 @@
             const inhalt = document.getElementById('modal-inhalt');
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">📋 ${escapeHtml(r.name)}</h3>
-                <div style="font-size: 13px; color: #555; margin-bottom: 10px;">Bierstil: <b>${escapeHtml(r.stil || '-')}</b></div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 10px;">Bierstil: <b>${escapeHtml(r.stil || '-')}</b> (${r.liter || 50} Liter)</div>
 
                 <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 6px; padding: 8px; font-size: 12px; margin-bottom: 10px;">
-                    <div>📏 <b>Ausschlag:</b> ${r.liter || 50} Liter</div>
                     <div>🧪 <b>Stammwürze:</b> ${r.stammwuerze || '-'} °P</div>
                     <div>🍃 <b>Bittere:</b> ${r.ibu || '-'} IBU</div>
-                    <div>⭐ <b>Bewertung:</b> ${bew.anzahl > 0 ? `${bew.schnitt}/5 (${bew.anzahl} Stimmen)` : 'Noch keine'}</div>
+                    <div>⭐ <b>Durchschnitt:</b> ${bew.anzahl > 0 ? `${bew.schnitt}/5 (${bew.anzahl} Stimmen)` : 'Noch keine'}</div>
                 </div>
 
                 <!-- OPTISCHE FARB-PLAKETTE MIT FARBBALKEN -->
