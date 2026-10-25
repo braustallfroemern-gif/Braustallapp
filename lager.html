@@ -72,7 +72,7 @@
             margin-bottom: 15px;
         }
 
-        /* FILTER BUTTONS LEISTE */
+        /* FILTER BUTTONS LEISTE (ANGESCHLOSSEN AN DEN REST DES PROGRAMMS) */
         .filter-container {
             display: flex;
             gap: 6px;
@@ -85,11 +85,11 @@
             display: none;
         }
         .filter-btn {
-            background-color: #F0F4F8;
+            background-color: #F8F9FA;
             color: #555;
             border: 1px solid #D0D7DE;
             padding: 6px 12px;
-            border-radius: 16px;
+            border-radius: 6px;
             font-size: 12px;
             font-weight: bold;
             cursor: pointer;
@@ -100,10 +100,10 @@
             background-color: #1976D2;
             color: white;
             border-color: #1976D2;
-            box-shadow: 0 2px 4px rgba(25,118,210,0.3);
+            box-shadow: 0 2px 4px rgba(25,118,210,0.2);
         }
 
-        /* LAGER KARTE */
+        /* LAGER KARTE (OHNE LÖSCHEN-BUTTON DIRECT DARAUF) */
         .lager-karte {
             background-color: #F8F9FA;
             border: 1px solid #D0D7DE;
@@ -121,7 +121,7 @@
             font-weight: bold;
             font-size: 16px;
             color: #1565C0;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         .karte-kategorie {
             font-size: 11px;
@@ -149,12 +149,8 @@
         .wert-label { font-size: 10px; color: #777; text-transform: uppercase; font-weight: bold; }
         .wert-zahl { font-size: 13px; font-weight: bold; color: #333; margin-top: 2px; }
 
-        .btn-aktion-row {
-            display: flex;
-            gap: 6px;
-        }
         .btn-card {
-            flex: 1;
+            width: 100%;
             padding: 8px;
             border-radius: 6px;
             font-size: 12px;
@@ -165,7 +161,6 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .btn-bearbeiten { background: #E8F5E9; color: #2E7D32; }
-        .btn-loeschen { background: #FFEBEE; color: #C62828; flex: 0.5; }
 
         /* MODAL STYLES */
         #modal-overlay {
@@ -297,9 +292,10 @@
 
                 let zusatzInfos = "";
                 if (item.farbe_ebc) zusatzInfos += `<div>🌾 <b>Farbe:</b> ${item.farbe_ebc} EBC</div>`;
-                if (item.alpha_saeure) zusatzInfos += `<div>🌿 <b>Alpha:</b> ${item.alpha_saeure}%</div>`;
+                if (item.max_gabe_prozent) zusatzInfos += `<div>📊 <b>Max. Schüttung:</b> ${item.max_gabe_prozent}%</div>`;
+                if (item.alpha_saeure) zusatzInfos += `<div>🌿 <b>Alpha-Säure:</b> ${item.alpha_saeure}%</div>`;
                 if (item.gaerart) zusatzInfos += `<div>🧬 <b>Gärart:</b> ${escapeHtml(item.gaerart)}</div>`;
-                if (item.gaertemperatur) zusatzInfos += `<div>🌡️ <b>Temp:</b> ${escapeHtml(item.gaertemperatur)}</div>`;
+                if (item.gaertemperatur) zusatzInfos += `<div>🌡️ <b>Gärtemperatur:</b> ${escapeHtml(item.gaertemperatur)}</div>`;
                 if (item.aromatik) zusatzInfos += `<div>💬 <b>Aromatik:</b> ${escapeHtml(item.aromatik)}</div>`;
 
                 html += `
@@ -322,10 +318,7 @@
 
                         ${zusatzInfos ? `<div style="font-size: 12px; color: #444; margin-bottom: 10px; background: white; padding: 6px; border-radius: 6px; border: 1px solid #E0E0E0;">${zusatzInfos}</div>` : ''}
 
-                        <div class="btn-aktion-row">
-                            <button class="btn-card btn-bearbeiten" onclick="oeffneRohstoffModal('${item.id}')">✏️ Bearbeiten</button>
-                            <button class="btn-card btn-loeschen" onclick="loescheRohstoff('${item.id}')">🗑️</button>
-                        </div>
+                        <button class="btn-card btn-bearbeiten" onclick="oeffneRohstoffModal('${item.id}')">✏️ Bearbeiten / Details</button>
                     </div>
                 `;
             });
@@ -378,6 +371,9 @@
                 <input type="text" id="edit-aromatik" class="input-style" value="${escapeHtml(item.aromatik || '')}" placeholder="z.B. Karamell, Brot, Citrus">
 
                 <button class="btn-primary" onclick="speichereRohstoff()">💾 Speichern</button>
+                
+                ${item.id ? `<button class="btn-primary" style="background-color: #C62828; margin-top: 6px;" onclick="loescheRohstoff('${item.id}')">🗑️ Rohstoff löschen</button>` : ''}
+                
                 <button class="btn-primary" style="background-color: #546E7A; margin-top: 6px;" onclick="schliesseModal()">Abbrechen</button>
             `;
 
@@ -393,6 +389,8 @@
                 html = `
                     <label class="label-style">Farbe (EBC):</label>
                     <input type="number" id="edit-ebc" class="input-style" value="${item.farbe_ebc || ''}" placeholder="z.B. 4">
+                    <label class="label-style">Max. Schüttungsgrad (%):</label>
+                    <input type="number" id="edit-maxgabe" class="input-style" value="${item.max_gabe_prozent || ''}" placeholder="z.B. 100">
                 `;
             } else if (kategorie === 'Hopfen') {
                 html = `
@@ -436,6 +434,7 @@
                 preis: preis,
                 aromatik: aromatik,
                 farbe_ebc: null,
+                max_gabe_prozent: null,
                 alpha_saeure: null,
                 gaerart: null,
                 gaertemperatur: null
@@ -443,7 +442,9 @@
 
             if (kategorie === 'Malz') {
                 const ebc = document.getElementById('edit-ebc');
+                const maxgabe = document.getElementById('edit-maxgabe');
                 if (ebc) daten.farbe_ebc = parseFloat(ebc.value) || null;
+                if (maxgabe) daten.max_gabe_prozent = parseFloat(maxgabe.value) || null;
             } else if (kategorie === 'Hopfen') {
                 const alpha = document.getElementById('edit-alpha');
                 if (alpha) daten.alpha_saeure = parseFloat(alpha.value) || null;
@@ -482,6 +483,7 @@
                 return;
             }
 
+            schliesseModal();
             await ladeLagerdaten();
         }
 
