@@ -113,7 +113,16 @@
             margin-bottom: 12px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             text-align: left;
+            transition: transform 0.1s, background-color 0.2s;
         }
+        .lager-karte.kassenwart-aktiv {
+            cursor: pointer;
+        }
+        .lager-karte.kassenwart-aktiv:active {
+            transform: scale(0.98);
+            background-color: #F0F4F8;
+        }
+
         .karte-header {
             display: flex;
             justify-content: space-between;
@@ -148,19 +157,6 @@
         }
         .wert-label { font-size: 10px; color: #777; text-transform: uppercase; font-weight: bold; }
         .wert-zahl { font-size: 13px; font-weight: bold; color: #333; margin-top: 2px; }
-
-        .btn-card {
-            width: 100%;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            text-align: center;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        .btn-bearbeiten { background: #E8F5E9; color: #2E7D32; }
 
         /* MODAL STYLES */
         #modal-overlay {
@@ -210,7 +206,8 @@
 
         <h2 class="page-title">📦 Rohstofflager</h2>
 
-        <button class="btn-primary" onclick="oeffneRohstoffModal()">➕ Neuen Rohstoff anlegen</button>
+        <!-- Nur sichtbar für Kassenwart -->
+        <button id="btn-neu" class="btn-primary" style="display: none;" onclick="oeffneRohstoffModal()">➕ Neuen Rohstoff anlegen</button>
 
         <!-- FILTER LEISTE -->
         <div class="filter-container" id="filter-leiste">
@@ -239,6 +236,7 @@
 
         let gesamtesLager = [];
         let aktuellerFilter = 'Alle';
+        let istKassenwart = false;
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -246,8 +244,24 @@
                 window.location.href = 'index.html';
                 return;
             }
+
+            await pruefeKassenwartRechte();
             await ladeLagerdaten();
         };
+
+        async function pruefeKassenwartRechte() {
+            const vorname = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache');
+            if (!vorname) return;
+
+            const { data, error } = await _supabase.from('mitglieder').select('*').ilike('vorname', vorname).single();
+            if (!error && data) {
+                // Prüft ob das Feld 'kassenwart' in der Tabelle auf true gesetzt ist
+                if (data.kassenwart === true || String(data.kassenwart).toLowerCase() === 'true' || data.kassenwart === 1) {
+                    istKassenwart = true;
+                    document.getElementById('btn-neu').style.display = 'block';
+                }
+            }
+        }
 
         async function ladeLagerdaten() {
             const { data, error } = await _supabase.from('lager').select('*').order('bezeichnung', { ascending: true });
@@ -296,8 +310,8 @@
                 const preis = item.preis ? `${parseFloat(item.preis).toFixed(2)} €` : '-';
                 const lagerort = escapeHtml(item.lagerort || '');
 
-                // Exakter Zugriff auf das Feld "alphasäure" (mit Fallbacks falls nötig)
-                const alphaWert = item.alphasäure !== undefined ? item.alphasäure : (item.alpha_saeure !== undefined ? item.alpha_saeure : (item.alpha !== undefined ? item.alpha : null));
+                // Exakter Zugriff auf das Datenbankfeld "alphasaeure"
+                const alphaWert = item.alphasaeure !== undefined ? item.alphasaeure : (item.alpha_saeure !== undefined ? item.alpha_saeure : (item.alpha !== undefined ? item.alpha : null));
 
                 let typUndWertHtml = "";
                 if (item.kategorie === 'Hopfen') {
@@ -322,8 +336,13 @@
 
                 let aromatiktext = item.aromatik ? escapeHtml(item.aromatik) : '';
 
+                // Klick auf Karte öffnet Modal nur für Kassenwarte
+                const kartenKlasse = istKassenwart ? "lager-karte kassenwart-aktiv" : "lager-karte";
+                const klickAktion = istKassenwart ? `onclick="oeffneRohstoffModal('${item.id}')"` : '';
+                const tippHinweis = istKassenwart ? `<div style="font-size: 10px; color: #1565C0; text-align: right; margin-top: 4px; font-weight: bold;">Tippen zum Bearbeiten ➔</div>` : '';
+
                 html += `
-                    <div class="lager-karte">
+                    <div class="${kartenKlasse}" ${klickAktion}>
                         <div class="karte-kategorie">Kategorie: ${kat}</div>
                         <div class="karte-header">
                             <span>📦 ${bez}</span>
@@ -344,9 +363,8 @@
                             </div>
                         </div>
 
-                        ${lagerort ? `<div style="font-size: 11px; color: #666; margin-bottom: 8px;">📍 <b>Lagerort:</b> ${lagerort}</div>` : ''}
-
-                        <button class="btn-card btn-bearbeiten" onclick="oeffneRohstoffModal('${item.id}')">✏️ Bearbeiten / Details</button>
+                        ${lagerort ? `<div style="font-size: 11px; color: #666; margin-bottom: 4px;">📍 <b>Lagerort:</b> ${lagerort}</div>` : ''}
+                        ${tippHinweis}
                     </div>
                 `;
             });
@@ -355,6 +373,8 @@
         }
 
         function oeffneRohstoffModal(id = null) {
+            if (!istKassenwart) return;
+
             let item = {};
             if (id) {
                 item = gesamtesLager.find(r => String(r.id) === String(id)) || {};
@@ -437,7 +457,7 @@
                     <input type="number" id="edit-maxgabe" class="input-style" value="${item.max_gabe_prozent || ''}" placeholder="z.B. 100">
                 `;
             } else if (kategorie === 'Hopfen') {
-                const alphaVal = item.alphasäure !== undefined ? item.alphasäure : (item.alpha_saeure !== undefined ? item.alpha_saeure : (item.alpha !== undefined ? item.alpha : ''));
+                const alphaVal = item.alphasaeure !== undefined ? item.alphasaeure : (item.alpha_saeure !== undefined ? item.alpha_saeure : (item.alpha !== undefined ? item.alpha : ''));
                 html = `
                     <div style="display: flex; gap: 8px;">
                         <div style="flex: 1.2;">
@@ -477,6 +497,8 @@
         }
 
         async function speichereRohstoff() {
+            if (!istKassenwart) return;
+
             const id = document.getElementById('edit-id').value;
             const kategorie = document.getElementById('edit-kategorie').value;
             const bezeichnung = document.getElementById('edit-bezeichnung').value.trim();
@@ -504,7 +526,7 @@
                 farbe_ebc: null,
                 max_gabe_prozent: null,
                 hopfen_typ: null,
-                alphasäure: null,
+                alphasaeure: null,
                 gaerart: null,
                 gaertemperatur: null,
                 vergaerungsgrad: null
@@ -521,7 +543,7 @@
                 const hopfentyp = document.getElementById('edit-hopfentyp');
                 const alpha = document.getElementById('edit-alpha');
                 if (hopfentyp) daten.hopfen_typ = hopfentyp.value;
-                if (alpha) daten.alphasäure = parseFloat(alpha.value) || null;
+                if (alpha) daten.alphasaeure = parseFloat(alpha.value) || null;
             } else if (kategorie === 'Hefe') {
                 const gaerart = document.getElementById('edit-gaerart');
                 const temp = document.getElementById('edit-temp');
@@ -551,6 +573,8 @@
         }
 
         async function loescheRohstoff(id, bezeichnung) {
+            if (!istKassenwart) return;
+
             const sicher = confirm(`⚠️ ACHTUNG!\n\nMöchtest du den Rohstoff "${bezeichnung}" wirklich unwiderruflich aus dem Lager löschen?`);
             if (!sicher) return;
 
