@@ -139,7 +139,7 @@
             padding: 8px;
             border-radius: 6px;
             border: 1px solid #E0E0E0;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-align: center;
         }
         .wert-item {
@@ -296,24 +296,42 @@
                 const preis = item.preis ? `${parseFloat(item.preis).toFixed(2)} €` : '-';
                 const lagerort = escapeHtml(item.lagerort || '');
 
-                let zusatzInfos = "";
-                if (lagerort) zusatzInfos += `<div>📍 <b>Lagerort:</b> ${lagerort}</div>`;
-                if (item.malz_typ) zusatzInfos += `<div>🌾 <b>Malz-Typ:</b> ${escapeHtml(item.malz_typ)}</div>`;
-                if (item.farbe_ebc) zusatzInfos += `<div>🎨 <b>Farbe:</b> ${item.farbe_ebc} EBC</div>`;
-                if (item.max_gabe_prozent) zusatzInfos += `<div>📊 <b>Max. Schüttung:</b> ${item.max_gabe_prozent}%</div>`;
-                if (item.hopfen_typ) zusatzInfos += `<div>🌿 <b>Hopfen-Typ:</b> ${escapeHtml(item.hopfen_typ)}</div>`;
-                if (item.alpha_saeure) zusatzInfos += `<div>⚡ <b>Alpha-Säure:</b> ${item.alpha_saeure}%</div>`;
-                if (item.gaerart) zusatzInfos += `<div>🧬 <b>Gärart:</b> ${escapeHtml(item.gaerart)}</div>`;
-                if (item.gaertemperatur) zusatzInfos += `<div>🌡️ <b>Gärtemperatur:</b> ${escapeHtml(item.gaertemperatur)}</div>`;
-                if (item.vergaerungsgrad) zusatzInfos += `<div>📈 <b>Vergärungsgrad:</b> ${escapeHtml(item.vergaerungsgrad)}</div>`;
-                if (item.aromatik) zusatzInfos += `<div style="margin-top: 4px;">💬 <b>Aromatik:</b><br><span style="white-space: pre-wrap; color: #555;">${escapeHtml(item.aromatik)}</span></div>`;
+                // Exakter Zugriff auf das Feld "alphasäure" (mit Fallbacks falls nötig)
+                const alphaWert = item.alphasäure !== undefined ? item.alphasäure : (item.alpha_saeure !== undefined ? item.alpha_saeure : (item.alpha !== undefined ? item.alpha : null));
+
+                let typUndWertHtml = "";
+                if (item.kategorie === 'Hopfen') {
+                    let hopfenTyp = item.hopfen_typ || item.hopfentyp || '';
+                    let alphaStr = alphaWert !== null && alphaWert !== '' ? `${alphaWert}% Alpha` : '';
+                    if (hopfenTyp && alphaStr) typUndWertHtml = `${hopfenTyp} • ${alphaStr}`;
+                    else if (hopfenTyp) typUndWertHtml = hopfenTyp;
+                    else if (alphaStr) typUndWertHtml = alphaStr;
+                } else if (item.kategorie === 'Malz') {
+                    let malzTyp = item.malz_typ || '';
+                    let ebcStr = item.farbe_ebc ? `${item.farbe_ebc} EBC` : '';
+                    if (malzTyp && ebcStr) typUndWertHtml = `${malzTyp} • ${ebcStr}`;
+                    else if (malzTyp) typUndWertHtml = malzTyp;
+                    else if (ebcStr) typUndWertHtml = ebcStr;
+                } else if (item.kategorie === 'Hefe') {
+                    let gaerart = item.gaerart || '';
+                    let evg = item.vergaerungsgrad ? `EVG: ${item.vergaerungsgrad}` : '';
+                    if (gaerart && evg) typUndWertHtml = `${gaerart} • ${evg}`;
+                    else if (gaerart) typUndWertHtml = gaerart;
+                    else if (evg) typUndWertHtml = evg;
+                }
+
+                let aromatiktext = item.aromatik ? escapeHtml(item.aromatik) : '';
 
                 html += `
                     <div class="lager-karte">
+                        <div class="karte-kategorie">Kategorie: ${kat}</div>
                         <div class="karte-header">
                             <span>📦 ${bez}</span>
                         </div>
-                        <div class="karte-kategorie">Kategorie: ${kat}</div>
+
+                        ${typUndWertHtml ? `<div style="font-size: 13px; font-weight: bold; color: #1976D2; margin-top: 4px; margin-bottom: 4px;">${typUndWertHtml}</div>` : ''}
+
+                        ${aromatiktext ? `<div style="font-size: 12px; color: #444; margin-bottom: 8px; background: white; padding: 6px; border-radius: 6px; border: 1px solid #E0E0E0;"><span style="font-weight: bold; color: #777; font-size: 10px; text-transform: uppercase; display: block;">Aromatik</span><span style="white-space: pre-wrap; color: #333;">${aromatiktext}</span></div>` : ''}
 
                         <div class="grid-werte">
                             <div class="wert-item">
@@ -326,7 +344,7 @@
                             </div>
                         </div>
 
-                        ${zusatzInfos ? `<div style="font-size: 12px; color: #444; margin-bottom: 10px; background: white; padding: 6px; border-radius: 6px; border: 1px solid #E0E0E0;">${zusatzInfos}</div>` : ''}
+                        ${lagerort ? `<div style="font-size: 11px; color: #666; margin-bottom: 8px;">📍 <b>Lagerort:</b> ${lagerort}</div>` : ''}
 
                         <button class="btn-card btn-bearbeiten" onclick="oeffneRohstoffModal('${item.id}')">✏️ Bearbeiten / Details</button>
                     </div>
@@ -359,8 +377,13 @@
                 </select>
 
                 <label class="label-style">Bezeichnung:</label>
-                <input type="text" id="edit-bezeichnung" class="input-style" value="${escapeHtml(item.bezeichnung || '')}" placeholder="z.B. Pilsner Malz">
+                <input type="text" id="edit-bezeichnung" class="input-style" value="${escapeHtml(item.bezeichnung || '')}" placeholder="z.B. Chinook">
                 
+                <div id="spezifische-felder"></div>
+
+                <label class="label-style">Aromatik / Beschreibung:</label>
+                <textarea id="edit-aromatik" class="input-style" rows="3" placeholder="z.B. Citrus, Pinie, Harz">${escapeHtml(item.aromatik || '')}</textarea>
+
                 <div style="display: flex; gap: 10px;">
                     <div style="flex: 2;">
                         <label class="label-style">Bestand:</label>
@@ -368,22 +391,17 @@
                     </div>
                     <div style="flex: 1;">
                         <label class="label-style">Einheit:</label>
-                        <input type="text" id="edit-einheit" class="input-style" value="${escapeHtml(item.einheit || 'kg')}">
+                        <input type="text" id="edit-einheit" class="input-style" value="${escapeHtml(item.einheit || 'g')}">
                     </div>
                 </div>
 
-                <label class="label-style">Lagerort (z.B. Regal A, Keller):</label>
-                <input type="text" id="edit-lagerort" class="input-style" value="${escapeHtml(item.lagerort || '')}" placeholder="z.B. Kühlschrank 2">
-
                 <label class="label-style">Preis pro Einheit (€):</label>
-                <input type="number" step="0.01" id="edit-preis" class="input-style" value="${item.preis !== undefined ? item.preis : ''}" placeholder="z.B. 2.50">
+                <input type="number" step="0.01" id="edit-preis" class="input-style" value="${item.preis !== undefined ? item.preis : ''}" placeholder="z.B. 4.50">
 
-                <div id="spezifische-felder"></div>
+                <label class="label-style">Lagerort (z.B. Gefrierschrank, Regal A):</label>
+                <input type="text" id="edit-lagerort" class="input-style" value="${escapeHtml(item.lagerort || '')}" placeholder="z.B. Gefrierschrank">
 
-                <label class="label-style">Aromatik / Beschreibung:</label>
-                <textarea id="edit-aromatik" class="input-style" rows="3" placeholder="z.B. Karamell, Brot, Citrus">${escapeHtml(item.aromatik || '')}</textarea>
-
-                <button class="btn-primary" onclick="speichereRohstoff()">💾 Speichern</button>
+                <button class="btn-primary" onclick="speichereRohstoff()" style="margin-top: 10px;">💾 Speichern</button>
                 
                 ${item.id ? `<button class="btn-primary" style="background-color: #C62828; margin-top: 6px;" onclick="loescheRohstoff('${item.id}', '${escapeHtml(item.bezeichnung || 'Rohstoff')}')">🗑️ Rohstoff löschen</button>` : ''}
                 
@@ -400,40 +418,59 @@
 
             if (kategorie === 'Malz') {
                 html = `
-                    <label class="label-style">Malz-Typ:</label>
-                    <select id="edit-malztyp" class="select-style">
-                        <option value="Basismalz" ${item.malz_typ === 'Basismalz' ? 'selected' : ''}>Basismalz</option>
-                        <option value="Karamellmalz" ${item.malz_typ === 'Karamellmalz' ? 'selected' : ''}>Karamellmalz</option>
-                        <option value="Röstmalz" ${item.malz_typ === 'Röstmalz' ? 'selected' : ''}>Röstmalz</option>
-                        <option value="Sondermalz" ${item.malz_typ === 'Sondermalz' ? 'selected' : ''}>Sondermalz</option>
-                    </select>
-                    <label class="label-style">Farbe (EBC):</label>
-                    <input type="number" id="edit-ebc" class="input-style" value="${item.farbe_ebc || ''}" placeholder="z.B. 4">
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label class="label-style">Malz-Typ:</label>
+                            <select id="edit-malztyp" class="select-style">
+                                <option value="Basismalz" ${item.malz_typ === 'Basismalz' ? 'selected' : ''}>Basismalz</option>
+                                <option value="Karamellmalz" ${item.malz_typ === 'Karamellmalz' ? 'selected' : ''}>Karamellmalz</option>
+                                <option value="Röstmalz" ${item.malz_typ === 'Röstmalz' ? 'selected' : ''}>Röstmalz</option>
+                                <option value="Sondermalz" ${item.malz_typ === 'Sondermalz' ? 'selected' : ''}>Sondermalz</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="label-style">Farbe (EBC):</label>
+                            <input type="number" id="edit-ebc" class="input-style" value="${item.farbe_ebc || ''}" placeholder="z.B. 4">
+                        </div>
+                    </div>
                     <label class="label-style">Max. Schüttungsgrad (%):</label>
                     <input type="number" id="edit-maxgabe" class="input-style" value="${item.max_gabe_prozent || ''}" placeholder="z.B. 100">
                 `;
             } else if (kategorie === 'Hopfen') {
+                const alphaVal = item.alphasäure !== undefined ? item.alphasäure : (item.alpha_saeure !== undefined ? item.alpha_saeure : (item.alpha !== undefined ? item.alpha : ''));
                 html = `
-                    <label class="label-style">Hopfen-Typ:</label>
-                    <select id="edit-hopfentyp" class="select-style">
-                        <option value="Bitterhopfen" ${item.hopfen_typ === 'Bitterhopfen' ? 'selected' : ''}>Bitterhopfen</option>
-                        <option value="Aromahopfen" ${item.hopfen_typ === 'Aromahopfen' ? 'selected' : ''}>Aromahopfen</option>
-                        <option value="Dual-Use / Mischhopfen" ${item.hopfen_typ === 'Dual-Use / Mischhopfen' ? 'selected' : ''}>Dual-Use / Mischhopfen</option>
-                    </select>
-                    <label class="label-style">Alpha-Säure (%):</label>
-                    <input type="number" step="0.1" id="edit-alpha" class="input-style" value="${item.alpha_saeure || ''}" placeholder="z.B. 6.5">
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1.2;">
+                            <label class="label-style">Hopfentyp:</label>
+                            <select id="edit-hopfentyp" class="select-style">
+                                <option value="Bitterhopfen" ${item.hopfen_typ === 'Bitterhopfen' ? 'selected' : ''}>Bitterhopfen</option>
+                                <option value="Aromahopfen" ${item.hopfen_typ === 'Aromahopfen' ? 'selected' : ''}>Aromahopfen</option>
+                                <option value="Dual-Use / Mischhopfen" ${item.hopfen_typ === 'Dual-Use / Mischhopfen' ? 'selected' : ''}>Dual-Use / Mischhopfen</option>
+                            </select>
+                        </div>
+                        <div style="flex: 0.8;">
+                            <label class="label-style">Alpha-Säure (%):</label>
+                            <input type="number" step="0.1" id="edit-alpha" class="input-style" value="${alphaVal}" placeholder="z.B. 13.0">
+                        </div>
+                    </div>
                 `;
             } else if (kategorie === 'Hefe') {
                 html = `
-                    <label class="label-style">Gärart:</label>
-                    <select id="edit-gaerart" class="input-style">
-                        <option value="Obergärig" ${item.gaerart === 'Obergärig' ? 'selected' : ''}>Obergärig</option>
-                        <option value="Untergärig" ${item.gaerart === 'Untergärig' ? 'selected' : ''}>Untergärig</option>
-                    </select>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label class="label-style">Gärart:</label>
+                            <select id="edit-gaerart" class="select-style">
+                                <option value="Obergärig" ${item.gaerart === 'Obergärig' ? 'selected' : ''}>Obergärig</option>
+                                <option value="Untergärig" ${item.gaerart === 'Untergärig' ? 'selected' : ''}>Untergärig</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="label-style">Vergärungsgrad:</label>
+                            <input type="text" id="edit-evg" class="input-style" value="${escapeHtml(item.vergaerungsgrad || '')}" placeholder="z.B. 75%">
+                        </div>
+                    </div>
                     <label class="label-style">Gärtemperatur:</label>
-                    <input type="text" id="edit-temp" class="input-style" value="${escapeHtml(item.gaertemperatur || '')}" placeholder="z.B. 12-14 °C">
-                    <label class="label-style">Vergärungsgrad (EVG):</label>
-                    <input type="text" id="edit-evg" class="input-style" value="${escapeHtml(item.vergaerungsgrad || '')}" placeholder="z.B. 75-80%">
+                    <input type="text" id="edit-temp" class="input-style" value="${escapeHtml(item.gaertemperatur || '')}" placeholder="z.B. 18-22 °C">
                 `;
             }
             container.innerHTML = html;
@@ -467,7 +504,7 @@
                 farbe_ebc: null,
                 max_gabe_prozent: null,
                 hopfen_typ: null,
-                alpha_saeure: null,
+                alphasäure: null,
                 gaerart: null,
                 gaertemperatur: null,
                 vergaerungsgrad: null
@@ -484,7 +521,7 @@
                 const hopfentyp = document.getElementById('edit-hopfentyp');
                 const alpha = document.getElementById('edit-alpha');
                 if (hopfentyp) daten.hopfen_typ = hopfentyp.value;
-                if (alpha) daten.alpha_saeure = parseFloat(alpha.value) || null;
+                if (alpha) daten.alphasäure = parseFloat(alpha.value) || null;
             } else if (kategorie === 'Hefe') {
                 const gaerart = document.getElementById('edit-gaerart');
                 const temp = document.getElementById('edit-temp');
