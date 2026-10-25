@@ -311,6 +311,7 @@
                 const lagerort = escapeHtml(item.lagerort || '');
 
                 const alphaWert = item.alphasaeure !== undefined ? item.alphasaeure : (item.alpha_saeure !== undefined ? item.alpha_saeure : (item.alpha !== undefined ? item.alpha : null));
+                const maxSchuettungWert = item.max_schuettung !== undefined ? item.max_schuettung : (item.max_gabe_prozent !== undefined ? item.max_gabe_prozent : null);
 
                 let typUndWertHtml = "";
                 if (item.kategorie === 'Hopfen') {
@@ -322,9 +323,14 @@
                 } else if (item.kategorie === 'Malz') {
                     let malzTyp = item.malz_typ || '';
                     let ebcStr = item.farbe_ebc ? `${item.farbe_ebc} EBC` : '';
-                    if (malzTyp && ebcStr) typUndWertHtml = `${malzTyp} • ${ebcStr}`;
-                    else if (malzTyp) typUndWertHtml = malzTyp;
-                    else if (ebcStr) typUndWertHtml = ebcStr;
+                    let schuettungStr = maxSchuettungWert !== null && maxSchuettungWert !== '' ? `Max. ${maxSchuettungWert}%` : '';
+                    
+                    let malzTeile = [];
+                    if (malzTyp) malzTeile.push(malzTyp);
+                    if (ebcStr) malzTeile.push(ebcStr);
+                    if (schuettungStr) malzTeile.push(schuettungStr);
+                    
+                    typUndWertHtml = malzTeile.join(' • ');
                 } else if (item.kategorie === 'Hefe') {
                     let gaerart = item.gaerart || '';
                     let evg = item.vergaerungsgrad ? `EVG: ${item.vergaerungsgrad}` : '';
@@ -435,6 +441,7 @@
             let html = "";
 
             if (kategorie === 'Malz') {
+                const maxSchuettVal = item.max_schuettung !== undefined ? item.max_schuettung : (item.max_gabe_prozent !== undefined ? item.max_gabe_prozent : '');
                 html = `
                     <div style="display: flex; gap: 8px;">
                         <div style="flex: 1;">
@@ -452,7 +459,7 @@
                         </div>
                     </div>
                     <label class="label-style">Max. Schüttungsgrad (%):</label>
-                    <input type="number" id="edit-maxgabe" class="input-style" value="${item.max_gabe_prozent || ''}" placeholder="z.B. 100">
+                    <input type="number" id="edit-maxschuettung" class="input-style" value="${maxSchuettVal}" placeholder="z.B. 100">
                 `;
             } else if (kategorie === 'Hopfen') {
                 const alphaVal = item.alphasaeure !== undefined ? item.alphasaeure : (item.alpha_saeure !== undefined ? item.alpha_saeure : (item.alpha !== undefined ? item.alpha : ''));
@@ -477,7 +484,7 @@
                     <div style="display: flex; gap: 8px;">
                         <div style="flex: 1;">
                             <label class="label-style">Gärart:</label>
-                            <select id="edit-gaerart" class="input-style">
+                            <select id="edit-gaerart" class="select-style">
                                 <option value="Obergärig" ${item.gaerart === 'Obergärig' ? 'selected' : ''}>Obergärig</option>
                                 <option value="Untergärig" ${item.gaerart === 'Untergärig' ? 'selected' : ''}>Untergärig</option>
                             </select>
@@ -522,7 +529,7 @@
                 aromatik: aromatik,
                 malz_typ: null,
                 farbe_ebc: null,
-                max_gabe_prozent: null,
+                max_schuettung: null,
                 hopfen_typ: null,
                 alphasaeure: null,
                 gaerart: null,
@@ -533,10 +540,10 @@
             if (kategorie === 'Malz') {
                 const malztyp = document.getElementById('edit-malztyp');
                 const ebc = document.getElementById('edit-ebc');
-                const maxgabe = document.getElementById('edit-maxgabe');
+                const maxschuettung = document.getElementById('edit-maxschuettung');
                 if (malztyp) daten.malz_typ = malztyp.value;
                 if (ebc) daten.farbe_ebc = parseFloat(ebc.value) || null;
-                if (maxgabe) daten.max_gabe_prozent = parseFloat(maxgabe.value) || null;
+                if (maxschuettung) daten.max_schuettung = parseFloat(maxschuettung.value) || null;
             } else if (kategorie === 'Hopfen') {
                 const hopfentyp = document.getElementById('edit-hopfentyp');
                 const alpha = document.getElementById('edit-alpha');
