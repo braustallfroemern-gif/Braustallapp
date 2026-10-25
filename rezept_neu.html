@@ -107,10 +107,7 @@
             gap: 8px;
         }
 
-        /* ------------------------------------------------ */
-        /* PERFEKT AUSGERICHTETE GRID-LAYOUTS               */
-        /* ------------------------------------------------ */
-
+        /* PERFEKT AUSGERICHTETE GRID-LAYOUTS */
         .grid-malz-head, .grid-malz-row {
             display: grid;
             grid-template-columns: 2fr 1fr 32px;
@@ -215,6 +212,21 @@
             max-height: 90vh;
             overflow-y: auto;
         }
+
+        /* BIERGLAS VORERSCHAU STYLES */
+        .bierglas-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #FFFFFF;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid #BBDEFB;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        #bier-fluessigkeit {
+            transition: fill 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -239,7 +251,7 @@
             <div class="grid-2">
                 <div>
                     <label class="label-style">Ausschlagmenge (L):</label>
-                    <input type="number" id="ausschlag-liter" class="input-style" placeholder="Bitte eingeben">
+                    <input type="number" id="ausschlag-liter" class="input-style" placeholder="Bitte eingeben" oninput="berechneBierFarbe()">
                 </div>
                 <div>
                     <label class="label-style">Stammwürze (°P):</label>
@@ -326,10 +338,26 @@
             </div>
         </div>
 
-        <!-- 3. Schüttung (Malz) -->
+        <!-- 3. Schüttung (Malz mit dynamischem Bierglas) -->
         <div class="section-box">
             <div class="section-title">
-                <span>3. Schüttung (Malz aus Lager)</span>
+                <span>3. Schüttung (Malz)</span>
+                
+                <!-- DYNAMISCHES BIERGLAS MIT LIVE-EBC -->
+                <div class="bierglas-container">
+                    <svg id="bierglas-icon" width="22" height="30" viewBox="0 0 100 130" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.15));">
+                        <!-- Schaumkrone -->
+                        <path d="M 20 22 Q 30 12 40 22 Q 50 12 60 22 Q 70 12 80 22 L 80 30 L 20 30 Z" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2"/>
+                        <!-- Bierflüssigkeit -->
+                        <path id="bier-fluessigkeit" d="M 22 30 L 78 30 L 72 110 Q 50 118 28 110 Z" fill="#FFE699"/>
+                        <!-- Glaskontur -->
+                        <path d="M 18 18 L 82 18 L 74 112 Q 50 120 26 112 Z" fill="none" stroke="#475569" stroke-width="6" stroke-linejoin="round" opacity="0.8"/>
+                        <!-- Lichtreflex -->
+                        <path d="M 26 26 L 32 26 L 30 105 L 28 105 Z" fill="#FFFFFF" opacity="0.4"/>
+                    </svg>
+                    <span id="ebc-anzeige-label" style="font-size: 12px; font-weight: bold; color: #1565C0;">- EBC</span>
+                </div>
+
                 <button class="btn-small" onclick="fuegeMalzZeileHinzu()">+ Malz</button>
             </div>
             <div class="grid-malz-head table-head-label">
@@ -524,7 +552,7 @@
                 lagerHefeListe = data.filter(item => (item.kategorie || '').toLowerCase().includes('hefe'));
             }
 
-            if (lagerMalzListe.length === 0) lagerMalzListe = [{bezeichnung: 'Pilsner Malz'}, {bezeichnung: 'Münchner Malz I'}, {bezeichnung: 'Caramalz'}];
+            if (lagerMalzListe.length === 0) lagerMalzListe = [{bezeichnung: 'Pilsner Malz', farbe_ebc: 3}, {bezeichnung: 'Münchner Malz I', farbe_ebc: 15}, {bezeichnung: 'Caramalz', farbe_ebc: 120}];
             if (lagerHopfenListe.length === 0) lagerHopfenListe = [{bezeichnung: 'Chinook'}, {bezeichnung: 'Cascade'}, {bezeichnung: 'Hallertauer Mittelfrüh'}];
             if (lagerHefeListe.length === 0) lagerHefeListe = [{bezeichnung: 'SafAle S-04 (Obergärig)'}, {bezeichnung: 'W-34/70 (Untergärig)'}];
 
@@ -533,12 +561,13 @@
         }
 
         function baueMalzOptionen(aktuellerWert = '') {
-            let html = `<option value="">-- Malz wählen --</option>`;
+            let html = `<option value="" data-ebc="0">-- Malz wählen --</option>`;
             lagerMalzListe.forEach(m => {
                 const bez = m.bezeichnung || m.name || '';
-                html += `<option value="${bez}" ${bez === aktuellerWert ? 'selected' : ''}>${bez}</option>`;
+                const ebc = m.farbe_ebc || m.ebc || 3;
+                html += `<option value="${bez}" data-ebc="${ebc}" ${bez === aktuellerWert ? 'selected' : ''}>${bez} (${ebc} EBC)</option>`;
             });
-            html += `<option value="NEU_ANLEGEN" style="color: #1976D2; font-weight: bold;">➕ Neues Malz im Lager anlegen...</option>`;
+            html += `<option value="NEU_ANLEGEN" data-ebc="0" style="color: #1976D2; font-weight: bold;">➕ Neues Malz im Lager anlegen...</option>`;
             return html;
         }
 
@@ -603,16 +632,82 @@
                 <select class="select-style malz-select" style="margin:0;" onchange="pruefeMalzAuswahl(this)">
                     ${baueMalzOptionen(name)}
                 </select>
-                <input type="number" step="0.1" class="input-style malz-menge" placeholder="0.0" value="${menge}" style="margin:0;">
-                <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
+                <input type="number" step="0.1" class="input-style malz-menge" placeholder="0.0" value="${menge}" style="margin:0;" oninput="berechneBierFarbe()">
+                <button class="btn-delete" onclick="this.parentElement.remove(); berechneBierFarbe();">X</button>
             `;
             container.appendChild(div);
+            berechneBierFarbe();
         }
 
         function pruefeMalzAuswahl(selectElement) {
             if (selectElement.value === 'NEU_ANLEGEN') {
                 oeffneLagerSchnellErfassung('Malz');
+            } else {
+                berechneBierFarbe();
             }
+        }
+
+        /* MOREY-FORMEL & BIERFARBEN-BERECHNUNG (LIVE BIERGLAS) */
+        function berechneBierFarbe() {
+            const literInput = parseFloat(document.getElementById('ausschlag-liter').value);
+            const liter = (literInput && literInput > 0) ? literInput : 50;
+
+            let mcuGesamt = 0;
+
+            document.querySelectorAll('#malz-container > div').forEach(row => {
+                const select = row.querySelector('.malz-select');
+                const mengeInput = parseFloat(row.querySelector('.malz-menge').value) || 0;
+
+                if (select && select.selectedIndex >= 0) {
+                    const opt = select.options[select.selectedIndex];
+                    const malzEbc = parseFloat(opt.getAttribute('data-ebc')) || 3;
+                    if (mengeInput > 0 && malzEbc > 0) {
+                        mcuGesamt += (mengeInput * malzEbc) / liter;
+                    }
+                }
+            });
+
+            let bierEbc = 0;
+            if (mcuGesamt > 0) {
+                // Morey-Formel in EBC: EBC = 2.9396 * (MCU ^ 0.6859)
+                bierEbc = Math.round(2.9396 * Math.pow(mcuGesamt, 0.6859));
+            }
+
+            // UI Aktualisieren
+            const ebcLabel = document.getElementById('ebc-anzeige-label');
+            const ebcInput = document.getElementById('ebc-wert');
+            const flüssigkeit = document.getElementById('bier-fluessigkeit');
+
+            if (bierEbc > 0) {
+                ebcLabel.innerText = `ca. ${bierEbc} EBC`;
+                if (!ebcInput.value || ebcInput.dataset.autoFilled === 'true') {
+                    ebcInput.value = bierEbc;
+                    ebcInput.dataset.autoFilled = 'true';
+                }
+            } else {
+                ebcLabel.innerText = `- EBC`;
+            }
+
+            // Farbe auf SVG-Flüssigkeit anwenden
+            const hexFarbe = ebcToRgbColor(bierEbc);
+            if (flüssigkeit) {
+                flüssigkeit.setAttribute('fill', hexFarbe);
+            }
+        }
+
+        /* CONVERTER: EBC ZU REALISTISCHER BIERFARBE (RGB) */
+        function ebcToRgbColor(ebc) {
+            if (!ebc || ebc <= 0) return '#FFE699'; // Standard blasses Strohgelb
+            
+            const srm = ebc / 1.97;
+            const clampedSrm = Math.max(1, srm);
+
+            // Kalibrierte RGB-Kurven für das Bierspektrum
+            const r = Math.min(255, Math.max(15, Math.round(255 * Math.pow(0.965, clampedSrm))));
+            const g = Math.min(255, Math.max(5, Math.round(255 * Math.pow(0.88, clampedSrm))));
+            const b = Math.min(255, Math.max(0, Math.round(255 * Math.pow(0.70, clampedSrm))));
+
+            return `rgb(${r}, ${g}, ${b})`;
         }
 
         function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
@@ -778,6 +873,8 @@
             document.getElementById('hefe-name').value = r.hefe || '';
             document.getElementById('gaer-temp').value = r.gaer_temp || '';
             document.getElementById('rezept-notizen').value = r.notizen || '';
+
+            berechneBierFarbe();
         }
 
         function oeffneLagerSchnellErfassung(kategorie) {
@@ -899,6 +996,7 @@
             }
 
             schliesseModal();
+            berechneBierFarbe();
             alert(`"${bezeichnung}" wurde vollständig ins Lager aufgenommen und ausgewählt! 🍻`);
         }
 
