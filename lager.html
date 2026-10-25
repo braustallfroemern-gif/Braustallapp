@@ -183,7 +183,7 @@
             max-height: 90vh;
             overflow-y: auto;
         }
-        .input-style, .select-style {
+        .input-style, .select-style, textarea.input-style {
             width: 100%;
             padding: 10px;
             margin: 4px 0 10px 0;
@@ -192,6 +192,7 @@
             box-sizing: border-box;
             font-size: 14px;
             background-color: white;
+            font-family: inherit;
         }
         .label-style {
             display: block;
@@ -297,12 +298,15 @@
 
                 let zusatzInfos = "";
                 if (lagerort) zusatzInfos += `<div>📍 <b>Lagerort:</b> ${lagerort}</div>`;
-                if (item.farbe_ebc) zusatzInfos += `<div>🌾 <b>Farbe:</b> ${item.farbe_ebc} EBC</div>`;
+                if (item.malz_typ) zusatzInfos += `<div>🌾 <b>Malz-Typ:</b> ${escapeHtml(item.malz_typ)}</div>`;
+                if (item.farbe_ebc) zusatzInfos += `<div>🎨 <b>Farbe:</b> ${item.farbe_ebc} EBC</div>`;
                 if (item.max_gabe_prozent) zusatzInfos += `<div>📊 <b>Max. Schüttung:</b> ${item.max_gabe_prozent}%</div>`;
-                if (item.alpha_saeure) zusatzInfos += `<div>🌿 <b>Alpha-Säure:</b> ${item.alpha_saeure}%</div>`;
+                if (item.hopfen_typ) zusatzInfos += `<div>🌿 <b>Hopfen-Typ:</b> ${escapeHtml(item.hopfen_typ)}</div>`;
+                if (item.alpha_saeure) zusatzInfos += `<div>⚡ <b>Alpha-Säure:</b> ${item.alpha_saeure}%</div>`;
                 if (item.gaerart) zusatzInfos += `<div>🧬 <b>Gärart:</b> ${escapeHtml(item.gaerart)}</div>`;
                 if (item.gaertemperatur) zusatzInfos += `<div>🌡️ <b>Gärtemperatur:</b> ${escapeHtml(item.gaertemperatur)}</div>`;
-                if (item.aromatik) zusatzInfos += `<div>💬 <b>Aromatik:</b> ${escapeHtml(item.aromatik)}</div>`;
+                if (item.vergaerungsgrad) zusatzInfos += `<div>📈 <b>Vergärungsgrad:</b> ${escapeHtml(item.vergaerungsgrad)}</div>`;
+                if (item.aromatik) zusatzInfos += `<div style="margin-top: 4px;">💬 <b>Aromatik:</b><br><span style="white-space: pre-wrap; color: #555;">${escapeHtml(item.aromatik)}</span></div>`;
 
                 html += `
                     <div class="lager-karte">
@@ -377,7 +381,7 @@
                 <div id="spezifische-felder"></div>
 
                 <label class="label-style">Aromatik / Beschreibung:</label>
-                <input type="text" id="edit-aromatik" class="input-style" value="${escapeHtml(item.aromatik || '')}" placeholder="z.B. Karamell, Brot, Citrus">
+                <textarea id="edit-aromatik" class="input-style" rows="3" placeholder="z.B. Karamell, Brot, Citrus">${escapeHtml(item.aromatik || '')}</textarea>
 
                 <button class="btn-primary" onclick="speichereRohstoff()">💾 Speichern</button>
                 
@@ -396,6 +400,13 @@
 
             if (kategorie === 'Malz') {
                 html = `
+                    <label class="label-style">Malz-Typ:</label>
+                    <select id="edit-malztyp" class="select-style">
+                        <option value="Basismalz" ${item.malz_typ === 'Basismalz' ? 'selected' : ''}>Basismalz</option>
+                        <option value="Karamellmalz" ${item.malz_typ === 'Karamellmalz' ? 'selected' : ''}>Karamellmalz</option>
+                        <option value="Röstmalz" ${item.malz_typ === 'Röstmalz' ? 'selected' : ''}>Röstmalz</option>
+                        <option value="Sondermalz" ${item.malz_typ === 'Sondermalz' ? 'selected' : ''}>Sondermalz</option>
+                    </select>
                     <label class="label-style">Farbe (EBC):</label>
                     <input type="number" id="edit-ebc" class="input-style" value="${item.farbe_ebc || ''}" placeholder="z.B. 4">
                     <label class="label-style">Max. Schüttungsgrad (%):</label>
@@ -403,6 +414,12 @@
                 `;
             } else if (kategorie === 'Hopfen') {
                 html = `
+                    <label class="label-style">Hopfen-Typ:</label>
+                    <select id="edit-hopfentyp" class="select-style">
+                        <option value="Bitterhopfen" ${item.hopfen_typ === 'Bitterhopfen' ? 'selected' : ''}>Bitterhopfen</option>
+                        <option value="Aromahopfen" ${item.hopfen_typ === 'Aromahopfen' ? 'selected' : ''}>Aromahopfen</option>
+                        <option value="Dual-Use / Mischhopfen" ${item.hopfen_typ === 'Dual-Use / Mischhopfen' ? 'selected' : ''}>Dual-Use / Mischhopfen</option>
+                    </select>
                     <label class="label-style">Alpha-Säure (%):</label>
                     <input type="number" step="0.1" id="edit-alpha" class="input-style" value="${item.alpha_saeure || ''}" placeholder="z.B. 6.5">
                 `;
@@ -415,6 +432,8 @@
                     </select>
                     <label class="label-style">Gärtemperatur:</label>
                     <input type="text" id="edit-temp" class="input-style" value="${escapeHtml(item.gaertemperatur || '')}" placeholder="z.B. 12-14 °C">
+                    <label class="label-style">Vergärungsgrad (EVG):</label>
+                    <input type="text" id="edit-evg" class="input-style" value="${escapeHtml(item.vergaerungsgrad || '')}" placeholder="z.B. 75-80%">
                 `;
             }
             container.innerHTML = html;
@@ -444,26 +463,35 @@
                 lagerort: lagerort,
                 preis: preis,
                 aromatik: aromatik,
+                malz_typ: null,
                 farbe_ebc: null,
                 max_gabe_prozent: null,
+                hopfen_typ: null,
                 alpha_saeure: null,
                 gaerart: null,
-                gaertemperatur: null
+                gaertemperatur: null,
+                vergaerungsgrad: null
             };
 
             if (kategorie === 'Malz') {
+                const malztyp = document.getElementById('edit-malztyp');
                 const ebc = document.getElementById('edit-ebc');
                 const maxgabe = document.getElementById('edit-maxgabe');
+                if (malztyp) daten.malz_typ = malztyp.value;
                 if (ebc) daten.farbe_ebc = parseFloat(ebc.value) || null;
                 if (maxgabe) daten.max_gabe_prozent = parseFloat(maxgabe.value) || null;
             } else if (kategorie === 'Hopfen') {
+                const hopfentyp = document.getElementById('edit-hopfentyp');
                 const alpha = document.getElementById('edit-alpha');
+                if (hopfentyp) daten.hopfen_typ = hopfentyp.value;
                 if (alpha) daten.alpha_saeure = parseFloat(alpha.value) || null;
             } else if (kategorie === 'Hefe') {
                 const gaerart = document.getElementById('edit-gaerart');
                 const temp = document.getElementById('edit-temp');
+                const evg = document.getElementById('edit-evg');
                 if (gaerart) daten.gaerart = gaerart.value;
                 if (temp) daten.gaertemperatur = temp.value.trim() || null;
+                if (evg) daten.vergaerungsgrad = evg.value.trim() || null;
             }
 
             let error;
@@ -486,7 +514,6 @@
         }
 
         async function loescheRohstoff(id, bezeichnung) {
-            // Rote Sicherheitsabfrage
             const sicher = confirm(`⚠️ ACHTUNG!\n\nMöchtest du den Rohstoff "${bezeichnung}" wirklich unwiderruflich aus dem Lager löschen?`);
             if (!sicher) return;
 
