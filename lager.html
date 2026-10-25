@@ -1,628 +1,484 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Braustall Lager</title>
-    
-    <!-- Mobil-Icons & Manifest -->
-    <link rel="icon" type="image/png" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
-    <link rel="manifest" href="manifest.json">
-
-    <!-- Supabase Bibliothek -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #E3F2FD;
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            justify-content: center;
-        }
-        #app {
-            background-color: white;
-            padding: 20px 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 450px;
-            box-sizing: border-box;
-            position: relative;
-            min-height: 90vh;
-        }
-        html, body {
-            overscroll-behavior-y: none; 
-        }
-
-        .btn-back-corner {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background-color: #455A64;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        }
-
-        .page-title {
-            color: #1565C0;
-            margin-top: 35px;
-            margin-bottom: 15px;
-            font-size: 22px;
-            text-align: center;
-        }
-
-        .btn-primary {
-            background-color: #1976D2;
-            color: white;
-            border: none;
-            padding: 14px;
-            margin: 10px 0 15px 0;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .btn-secondary-action {
-            background-color: #546E7A;
-            color: white;
-            border: none;
-            padding: 14px;
-            margin: 8px 0;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .btn-danger-modal {
-            background-color: #D32F2F;
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 10px;
-        }
-
-        .filter-container {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 15px;
-            width: 100%;
-            overflow-x: auto;
-        }
-        .filter-btn {
-            flex: 1;
-            background-color: #E3F2FD;
-            color: #1976D2;
-            border: 1px solid #90CAF9;
-            padding: 8px 4px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            white-space: nowrap;
-        }
-        .filter-btn.aktiv {
-            background-color: #1976D2;
-            color: white;
-            border-color: #1565C0;
-        }
-
-        /* KARTE-FARBEN NACH KATEGORIE */
-        .lager-karte {
-            background-color: #F8F9FA;
-            border: 1px solid #D0D7DE;
-            border-left: 6px solid #1976D2;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            text-align: left;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-            transition: background-color 0.15s ease;
-        }
-        .lager-karte.malz { border-left-color: #E65100; background-color: #FFF8E1; }
-        .lager-karte.hopfen { border-left-color: #2E7D32; background-color: #F1F8E9; }
-        .lager-karte.hefe { border-left-color: #7B1FA2; background-color: #F3E5F5; }
-        .lager-karte.sonstiges { border-left-color: #546E7A; background-color: #ECEFF1; }
-
-        .lager-karte.editierbar {
-            cursor: pointer;
-        }
-        .lager-karte.editierbar:active {
-            opacity: 0.85;
-        }
-
-        .karte-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            font-size: 15px;
-            margin-bottom: 6px;
-        }
-        .karte-header.malz { color: #E65100; }
-        .karte-header.hopfen { color: #2E7D32; }
-        .karte-header.hefe { color: #7B1FA2; }
-        .karte-header.sonstiges { color: #37474F; }
-
-        .karte-details {
-            font-size: 13px;
-            color: #333;
-            line-height: 1.45;
-        }
-
-        /* BADGES NACH KATEGORIE */
-        .kat-badge {
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .kat-badge.malz { background-color: #FFE0B2; color: #E65100; }
-        .kat-badge.hopfen { background-color: #C8E6C9; color: #2E7D32; }
-        .kat-badge.hefe { background-color: #E1BEE7; color: #7B1FA2; }
-        .kat-badge.sonstiges { background-color: #CFD8DC; color: #37474F; }
-
-        .input-style {
-            width: 100%;
-            padding: 11px;
-            margin: 4px 0 10px 0;
-            border: 1px solid #90CAF9;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 15px;
-        }
-        .label-style {
-            display: block;
-            text-align: left;
-            font-size: 13px;
-            font-weight: bold;
-            color: #1565C0;
-            margin-top: 4px;
-        }
-
-        #modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        #modal-inhalt {
-            background-color: white;
-            padding: 20px;
-            border-radius: 12px;
-            width: 92%;
-            max-width: 420px;
-            text-align: left;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            max-height: 92vh;
-            overflow-y: auto;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Braustall - Lagerverwaltung</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome für Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Individuelle Akzent-Bordüren für die Malzkarten */
+    .border-basismalz { border-left-color: #f59e0b !important; }      /* Amber / Goldgelb */
+    .border-karamellmalz { border-left-color: #c2410c !important; }   /* Rostrot / Karamell */
+    .border-roestmalz { border-left-color: #451a03 !important; }      /* Dunkelbraun / Espresso */
+    .border-spezialmalz { border-left-color: #64748b !important; }    /* Schiefergrau */
+  </style>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
 
-    <div id="app">Lade Lagerbestand...</div>
+  <!-- NAVIGATION -->
+  <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <i class="fa-solid fa-beer-mug-empty text-amber-500 text-2xl"></i>
+        <span class="font-bold text-xl tracking-wide text-amber-500">BRAUSTALL</span>
+        <span class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">v2.1</span>
+      </div>
+      <nav class="flex space-x-2">
+        <a href="lager.html" class="bg-amber-500/10 text-amber-500 border border-amber-500/30 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2">
+          <i class="fa-solid fa-boxes-stacked"></i> Lager
+        </a>
+        <a href="brautag.html" class="text-slate-300 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-2">
+          <i class="fa-solid fa-fire-burner"></i> Brautag
+        </a>
+      </nav>
+    </div>
+  </header>
 
-    <div id="modal-overlay">
-        <div id="modal-inhalt"></div>
+  <!-- HAUPTINHALT -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- TITEL & AKTIONEN -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
+          <i class="fa-solid fa-[#d97706] fa-wheat-awn text-amber-500"></i> Malzlager
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">Übersicht aller Rohstoffe, kategorisiert und alphabetisch sortiert.</p>
+      </div>
+      <button onclick="openModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-4 py-2.5 rounded-lg shadow-lg hover:shadow-amber-500/20 transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-plus"></i> Neues Malz anlegen
+      </button>
     </div>
 
-    <script>
-        const SUPABASE_URL = "https://lvaqeraawnwmzxtrlvpo.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_UVeLMfCJJOHcK7OK7574dQ_r2Ia0dVm";
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <!-- FILTER & SUCHE -->
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-8 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div class="relative w-full md:w-96">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="searchInput" oninput="renderMalze()" placeholder="Malz suchen..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-amber-500">
+      </div>
+      <div class="flex items-center gap-2 w-full md:w-auto">
+        <label class="text-xs text-slate-400 whitespace-nowrap">Filter Kategorie:</label>
+        <select id="categoryFilter" onchange="renderMalze()" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 w-full md:w-auto">
+          <option value="ALL">Alle Kategorien</option>
+          <option value="Basismalz">Basismalz</option>
+          <option value="Karamellmalz">Karamellmalz</option>
+          <option value="Röstmalz">Röstmalz</option>
+          <option value="Spezial-/Hilfsmalz">Spezial-/Hilfsmalz</option>
+        </select>
+      </div>
+    </div>
 
-        let alleRohstoffe = [];
-        let aktuelleKategorieFilter = 'Alle';
+    <!-- MALZKARTEN GRID -->
+    <div id="malzGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Wird dynamisch durch JavaScript befüllt -->
+    </div>
 
-        window.onload = async function() {
-            const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
-            if (!angemeldet) {
-                window.location.href = 'index.html';
-                return;
-            }
-            await ladeLagerDaten();
-            zeigeLagerAnsicht();
+    <!-- LEER-ZUSTAND (FALLS KEIN MALZ GEFUNDEN) -->
+    <div id="emptyState" class="hidden text-center py-16 bg-slate-800/50 rounded-xl border border-slate-700/50">
+      <i class="fa-solid fa-wheat-awn-circle-exclamation text-4xl text-slate-500 mb-3"></i>
+      <h3 class="text-lg font-medium text-slate-300">Kein Malz gefunden</h3>
+      <p class="text-slate-500 text-sm mt-1">Passe deine Suche an oder lege ein neues Malz an.</p>
+    </div>
+
+  </main>
+
+  <!-- MODAL: MALZ ANLEGEN / BEARBEITEN -->
+  <div id="malzModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+        <h3 id="modalTitle" class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-wheat-awn text-amber-500"></i> Neues Malz erfassen
+        </h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Formular -->
+      <form id="malzForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="malzId">
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Malz Name *</label>
+          <input type="text" id="malzName" required placeholder="z. B. Pilsner Malz, Special W" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Malz-Typ / Kategorie *</label>
+            <select id="malzTyp" required class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+              <option value="Basismalz">Basismalz</option>
+              <option value="Karamellmalz">Karamellmalz</option>
+              <option value="Röstmalz">Röstmalz</option>
+              <option value="Spezial-/Hilfsmalz">Spezial-/Hilfsmalz</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Bestand (kg) *</label>
+            <input type="number" id="malzMenge" step="0.01" min="0" required placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Farbe (EBC)</label>
+            <input type="number" id="malzEbc" step="0.1" min="0" placeholder="z. B. 4.0" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Max. Schüttung (%)</label>
+            <input type="number" id="malzMaxSchuettung" min="0" max="100" placeholder="z. B. 100" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Aromatik & Beschreibung</label>
+          <textarea id="malzAromatik" rows="3" placeholder="Geschmacksnoten, Einsatzbereich, Besonderheiten..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 resize-none"></textarea>
+        </div>
+
+        <!-- Modal Footer Buttons -->
+        <div class="pt-4 border-t border-slate-700 flex justify-end gap-3">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-700 text-sm font-medium transition">
+            Abbrechen
+          </button>
+          <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-5 py-2 rounded-lg text-sm transition">
+            Speichern
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIK -->
+  <script>
+    // ------------------------------------------------------------------
+    // 1. SUPABASE KONFIGURATION
+    // ------------------------------------------------------------------
+    const SUPABASE_URL = 'https://deine-supabase-url.supabase.co'; 
+    const SUPABASE_KEY = 'dein-anon-key';
+    
+    let supabaseClient = null;
+    if (typeof supabase !== 'undefined' && !SUPABASE_URL.includes('deine-supabase-url')) {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+
+    // LocalStorage Fallback-Key für autarkes Testen ohne DB-Verbindung
+    const LOCAL_STORAGE_KEY = 'braustall_malz_lager';
+
+    // ------------------------------------------------------------------
+    // 2. KATEGORIE-KONFIGURATION & FARBMAPPING
+    // ------------------------------------------------------------------
+    const KATEGORIE_KONFIG = {
+      'Basismalz': {
+        prio: 1,
+        borderClass: 'border-basismalz',
+        badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+      },
+      'Karamellmalz': {
+        prio: 2,
+        borderClass: 'border-karamellmalz',
+        badgeClass: 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+      },
+      'Röstmalz': {
+        prio: 3,
+        borderClass: 'border-roestmalz',
+        badgeClass: 'bg-stone-500/10 text-stone-300 border-stone-500/20'
+      },
+      'Spezial-/Hilfsmalz': {
+        prio: 4,
+        borderClass: 'border-spezialmalz',
+        badgeClass: 'bg-slate-500/10 text-slate-300 border-slate-500/20'
+      }
+    };
+
+    let malzLager = [];
+
+    // Initialisierung beim Laden der Seite
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMalze();
+    });
+
+    // ------------------------------------------------------------------
+    // 3. DATEN LADEN
+    // ------------------------------------------------------------------
+    async function loadMalze() {
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient.from('lager_malz').select('*');
+          if (error) throw error;
+          malzLager = data || [];
+        } catch (err) {
+          console.warn('Supabase Fehler, verwende LocalStorage Fallback:', err);
+          loadFromLocalStorage();
+        }
+      } else {
+        loadFromLocalStorage();
+      }
+      renderMalze();
+    }
+
+    function loadFromLocalStorage() {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        malzLager = JSON.parse(stored);
+      } else {
+        // Demodaten zur Veranschaulichung
+        malzLager = [
+          { id: '1', name: 'Pilsner Malz', typ: 'Basismalz', menge: 25.0, ebc: 3.5, max_schuettung: 100, aromatik: 'Helles Getreide, frisches Stroh, schlanker Körper.' },
+          { id: '2', name: 'Caraaroma', typ: 'Karamellmalz', menge: 2.5, ebc: 350.0, max_schuettung: 15, aromatik: 'Intensives Karamell, Trockenfrüchte, Nüsse.' },
+          { id: '3', name: 'Carared', typ: 'Karamellmalz', menge: 5.0, ebc: 50.0, max_schuettung: 25, aromatik: 'Malzsüße, Honig, Biskuit, leuchtende Rotfärbung.' },
+          { id: '4', name: 'Röstgerste', typ: 'Röstmalz', menge: 1.2, ebc: 1100.0, max_schuettung: 5, aromatik: 'Kräftiger Espresso, Zartbitterschokolade, trocken.' },
+          { id: '5', name: 'Reisflocken', typ: 'Spezial-/Hilfsmalz', menge: 3.0, ebc: 1.0, max_schuettung: 30, aromatik: 'Geschmacksneutral, erzeugt extrem schlanken, spritzigen Körper (Corona/Estrella-Stil). Kein Vorkochen nötig.' }
+        ];
+        saveToLocalStorage();
+      }
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(malzLager));
+    }
+
+    // ------------------------------------------------------------------
+    // 4. SORTIERUNGS-LOGIK (Kategorie Priorität -> Alphabetisch)
+    // ------------------------------------------------------------------
+    function sortiereMalze(liste) {
+      return [...liste].sort((a, b) => {
+        const prioA = KATEGORIE_KONFIG[a.typ]?.prio || 99;
+        const prioB = KATEGORIE_KONFIG[b.typ]?.prio || 99;
+
+        // Primary: Sortierung nach Gruppierung (Basismalz -> Karamell -> Röst -> Spezial)
+        if (prioA !== prioB) {
+          return prioA - prioB;
+        }
+
+        // Secondary: Alphabetisch nach Malzname
+        return (a.name || '').localeCompare(b.name || '', 'de', { sensitivity: 'base' });
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // 5. RENDERING DER KARTEN
+    // ------------------------------------------------------------------
+    function renderMalze() {
+      const grid = document.getElementById('malzGrid');
+      const emptyState = document.getElementById('emptyState');
+      const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+      const filterVal = document.getElementById('categoryFilter').value;
+
+      // Filter anwenden
+      let gefiltert = malzLager.filter(m => {
+        const matchSearch = (m.name || '').toLowerCase().includes(searchVal) || 
+                            (m.aromatik || '').toLowerCase().includes(searchVal);
+        const matchCat = filterVal === 'ALL' || m.typ === filterVal;
+        return matchSearch && matchCat;
+      });
+
+      // Sortierung anwenden
+      const sortierteMalze = sortiereMalze(gefiltert);
+
+      if (sortierteMalze.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = sortierteMalze.map(malz => {
+        const konfig = KATEGORIE_KONFIG[malz.typ] || {
+          borderClass: 'border-slate-600',
+          badgeClass: 'bg-slate-700 text-slate-300'
         };
 
-        function hatKassenwartRechte() {
-            return (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
-        }
-
-        async function ladeLagerDaten() {
-            const { data, error } = await _supabase.from('lager').select('*').order('bezeichnung', { ascending: true });
-            if (!error && data) {
-                alleRohstoffe = data;
-            }
-        }
-
-        function zeigeLagerAnsicht() {
-            const app = document.getElementById('app');
-            const istAdmin = hatKassenwartRechte();
-
-            // 1. Kassenwart-Button "Lager verwalten" nur anzeigen wenn berechtigt
-            let verwaltenBtnHtml = "";
-            if (istAdmin) {
-                verwaltenBtnHtml = `<button class="btn-primary" onclick="oeffneRohstoffModal()">📦 Neuer Rohstoff / Lager verwalten</button>`;
-            }
-
-            // 2. Rohstoffe filtern
-            let gefilterteRohstoffe = alleRohstoffe;
-            if (aktuelleKategorieFilter !== 'Alle') {
-                gefilterteRohstoffe = alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktuelleKategorieFilter.toLowerCase());
-            }
-
-            // 3. Karten erzeugen
-            let kartenHtml = "";
-            if (gefilterteRohstoffe.length === 0) {
-                kartenHtml = `<p style="color: #666; font-size: 14px; text-align: center; margin: 30px 0;">Keine Rohstoffe in dieser Kategorie vorhanden.</p>`;
-            } else {
-                gefilterteRohstoffe.forEach(r => {
-                    let katLower = (r.kategorie || 'sonstiges').toLowerCase();
-                    let klickAttribut = "";
-                    let zeilenKlasse = `lager-karte ${katLower}`;
-                    let hinweisEdit = "";
-
-                    // Nur Kassenwart darf per Klick die Karte bearbeiten
-                    if (istAdmin) {
-                        zeilenKlasse += " editierbar";
-                        klickAttribut = `onclick="oeffneRohstoffModal('${r.id}')"`;
-                        hinweisEdit = `<span style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-left: 6px;">✏️ Bearbeiten</span>`;
-                    }
-
-                    let preisText = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? `${Number(r.preis).toFixed(2)} € / ${r.einheit}` : 'Kein Preis';
-                    let ortText = r.lagerort ? `📍 Ort: ${r.lagerort}` : '';
-                    
-                    // Hopfen-spezifisch
-                    let hopfenTypText = (katLower === 'hopfen' && r.hopfen_typ) ? `🌿 Hopfenart: ${r.hopfen_typ}` : '';
-                    let alphaText = (katLower === 'hopfen' && r.alphasaeure !== null && r.alphasaeure !== undefined && r.alphasaeure !== "") ? `🧪 Alphasäure: ${r.alphasaeure}%` : '';
-                    
-                    // Malz-spezifisch
-                    let malzTypText = (katLower === 'malz' && r.malz_typ) ? `🌾 Malzart: ${r.malz_typ}` : '';
-                    let ebcText = (katLower === 'malz' && r.ebc !== null && r.ebc !== undefined && r.ebc !== "") ? `🎨 Farbe: ${r.ebc} EBC` : '';
-                    let schuettungWert = (r.max_schuettung !== null && r.max_schuettung !== undefined && r.max_schuettung !== "") ? r.max_schuettung : r.schuettung;
-                    let schuettungText = (katLower === 'malz' && schuettungWert !== null && schuettungWert !== undefined && schuettungWert !== "") ? `🌾 Max. Schüttung: ${schuettungWert}%` : '';
-                    
-                    let aromatikText = (r.aromatik || r.beschreibung) ? `🍃 Aromatik: ${r.aromatik || r.beschreibung}` : '';
-                    let alternativenText = r.alternativen ? `🔄 Alternativen: ${r.alternativen}` : '';
-
-                    kartenHtml += `
-                        <div class="${zeilenKlasse}" ${klickAttribut}>
-                            <div class="karte-header ${katLower}">
-                                <span>${r.bezeichnung || 'Rohstoff'} ${hinweisEdit}</span>
-                                <span class="kat-badge ${katLower}">${r.kategorie || 'Sonstiges'}</span>
-                            </div>
-                            <div class="karte-details">
-                                <div><b>Bestand:</b> ${r.bestand || 0} ${r.einheit || ''}</div>
-                                <div><b>Preis:</b> ${preisText}</div>
-                                ${ortText ? `<div style="color: #555; margin-top: 2px;">${ortText}</div>` : ''}
-                                ${hopfenTypText ? `<div style="color: #2E7D32; font-weight: bold; margin-top: 2px;">${hopfenTypText}</div>` : ''}
-                                ${alphaText ? `<div style="color: #1B5E20; font-weight: 500; margin-top: 2px;">${alphaText}</div>` : ''}
-                                ${malzTypText ? `<div style="color: #D35400; font-weight: bold; margin-top: 2px;">${malzTypText}</div>` : ''}
-                                ${ebcText ? `<div style="color: #8D6E63; font-weight: 500; margin-top: 2px;">${ebcText}</div>` : ''}
-                                ${schuettungText ? `<div style="color: #E65100; font-weight: bold; margin-top: 2px;">${schuettungText}</div>` : ''}
-                                ${aromatikText ? `<div style="color: #2E7D32; font-style: italic; margin-top: 4px; font-size: 12px;">${aromatikText}</div>` : ''}
-                                ${alternativenText ? `<div style="color: #455A64; margin-top: 3px; font-size: 12px;">${alternativenText}</div>` : ''}
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            app.innerHTML = `
-                <button class="btn-back-corner" onclick="location.href='index.html'">🔙 Zurück</button>
-
-                <h2 class="page-title">📦 Braustall Lager</h2>
-
-                ${verwaltenBtnHtml}
-
-                <div class="filter-container">
-                    <button class="filter-btn ${aktuelleKategorieFilter === 'Alle' ? 'aktiv' : ''}" onclick="setzeFilter('Alle')">Alle</button>
-                    <button class="filter-btn ${aktuelleKategorieFilter === 'Malz' ? 'aktiv' : ''}" onclick="setzeFilter('Malz')">Malz</button>
-                    <button class="filter-btn ${aktuelleKategorieFilter === 'Hopfen' ? 'aktiv' : ''}" onclick="setzeFilter('Hopfen')">Hopfen</button>
-                    <button class="filter-btn ${aktuelleKategorieFilter === 'Hefe' ? 'aktiv' : ''}" onclick="setzeFilter('Hefe')">Hefe</button>
-                    <button class="filter-btn ${aktuelleKategorieFilter === 'Sonstiges' ? 'aktiv' : ''}" onclick="setzeFilter('Sonstiges')">Sonstiges</button>
-                </div>
-
-                <div style="max-height: 62vh; overflow-y: auto; padding-right: 2px;">
-                    ${kartenHtml}
-                </div>
-
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 25px;">Lager Version 3.01</div>
-            `;
-        }
-
-        function setzeFilter(kat) {
-            aktuelleKategorieFilter = kat;
-            zeigeLagerAnsicht();
-        }
-
-        // --- MODAL ZUM ANLEGEN / BEARBEITEN (NUR KASSENWART) ---
-        function oeffneRohstoffModal(id = null) {
-            if (!hatKassenwartRechte()) return;
-
-            const inhalt = document.getElementById('modal-inhalt');
-            let r = null;
-            if (id) {
-                r = alleRohstoffe.find(item => String(item.id) === String(id));
-            }
-
-            const kategorieWert = r ? (r.kategorie || 'Malz') : (aktuelleKategorieFilter !== 'Alle' ? aktuelleKategorieFilter : 'Malz');
-            const katLower = kategorieWert.toLowerCase();
-
-            const bezeichnungWert = r ? (r.bezeichnung || '') : '';
-            const bestandWert = r ? (r.bestand || '') : '';
-            const einheitWert = r ? (r.einheit || 'kg') : 'kg';
-            const preisWert = r ? (r.preis !== null && r.preis !== undefined ? r.preis : '') : '';
-            const aromatikWert = r ? (r.aromatik || r.beschreibung || '') : '';
-            const schuettungWert = r ? (r.max_schuettung || r.schuettung || '') : '';
-            const ebcWert = r ? (r.ebc !== null && r.ebc !== undefined ? r.ebc : '') : '';
-            const malzTypWert = r ? (r.malz_typ || '') : '';
-            const alternativenWert = r ? (r.alternativen || '') : '';
-            const hopfenTypWert = r ? (r.hopfen_typ || '') : '';
-            const alphaWert = r ? (r.alphasaeure !== null && r.alphasaeure !== undefined ? r.alphasaeure : '') : '';
+        return `
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-lg flex flex-col justify-between border-l-4 ${konfig.borderClass} hover:border-slate-600 transition">
             
-            let ortWert = r ? (r.lagerort || '') : '';
-            if (!r && katLower === 'hopfen' && ortWert === '') {
-                ortWert = 'Gefrierschrank-Fach ';
-            }
+            <!-- Karten Kopfbereich -->
+            <div>
+              <div class="flex justify-between items-start gap-2 mb-3">
+                <h3 class="font-bold text-lg text-white tracking-wide">${escapeHtml(malz.name)}</h3>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full border ${konfig.badgeClass} whitespace-nowrap">
+                  ${escapeHtml(malz.typ || 'Unkategorisiert')}
+                </span>
+              </div>
 
-            const istHopfen = (katLower === 'hopfen');
-            const istMalz = (katLower === 'malz');
-
-            inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0;">${r ? '✏️ Rohstoff bearbeiten' : '➕ Neuer Rohstoff'}</h3>
-
-                <label class="label-style">Kategorie:</label>
-                <select id="m-kategorie" class="input-style" onchange="passEinheitAn(this.value)">
-                    <option value="Malz" ${kategorieWert === 'Malz' ? 'selected' : ''}>Malz</option>
-                    <option value="Hopfen" ${kategorieWert === 'Hopfen' ? 'selected' : ''}>Hopfen</option>
-                    <option value="Hefe" ${kategorieWert === 'Hefe' ? 'selected' : ''}>Hefe</option>
-                    <option value="Sonstiges" ${kategorieWert === 'Sonstiges' ? 'selected' : ''}>Sonstiges</option>
-                </select>
-
-                <!-- BEZEICHNUNG UND TYP NEBENEINANDER -->
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex: 2;">
-                        <label class="label-style">Bezeichnung:</label>
-                        <input type="text" id="m-bezeichnung" value="${bezeichnungWert}" placeholder="z. B. Amarillo / Pilsner Malz" class="input-style">
-                    </div>
-                    <div id="bereich-hopfenart" style="flex: 1; display: ${istHopfen ? 'block' : 'none'};">
-                        <label class="label-style">Hopfenart:</label>
-                        <select id="m-hopfentyp" class="input-style">
-                            <option value="">- wählen -</option>
-                            <option value="Aromahopfen" ${hopfenTypWert === 'Aromahopfen' ? 'selected' : ''}>Aromahopfen</option>
-                            <option value="Bitterhopfen" ${hopfenTypWert === 'Bitterhopfen' ? 'selected' : ''}>Bitterhopfen</option>
-                            <option value="Universalhopfen" ${hopfenTypWert === 'Universalhopfen' ? 'selected' : ''}>Universalhopfen</option>
-                        </select>
-                    </div>
-                    <div id="bereich-malzart" style="flex: 1; display: ${istMalz ? 'block' : 'none'};">
-                        <label class="label-style">Malzart:</label>
-                        <select id="m-malztyp" class="input-style">
-                            <option value="">- wählen -</option>
-                            <option value="Basismalz" ${malzTypWert === 'Basismalz' ? 'selected' : ''}>Basismalz</option>
-                            <option value="Karamellmalz" ${malzTypWert === 'Karamellmalz' ? 'selected' : ''}>Karamellmalz</option>
-                            <option value="Röstmalz" ${malzTypWert === 'Röstmalz' ? 'selected' : ''}>Röstmalz</option>
-                            <option value="Spezial- & Hilfsmalz" ${malzTypWert === 'Spezial- & Hilfsmalz' ? 'selected' : ''}>Spezial- & Hilfsmalz</option>
-                        </select>
-                    </div>
+              <!-- Kennzahlen Grid -->
+              <div class="grid grid-cols-3 gap-2 bg-slate-900/60 rounded-lg p-2.5 mb-4 text-center border border-slate-700/50">
+                <div>
+                  <span class="block text-[10px] text-slate-400 uppercase font-semibold">Bestand</span>
+                  <span class="font-bold text-amber-400 text-sm">${parseFloat(malz.menge || 0).toFixed(2)} kg</span>
                 </div>
-
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex: 2;">
-                        <label class="label-style">Bestand:</label>
-                        <input type="number" step="0.01" id="m-bestand" value="${bestandWert}" placeholder="0.00" class="input-style">
-                    </div>
-                    <div style="flex: 1;">
-                        <label class="label-style">Einheit:</label>
-                        <select id="m-einheit" class="input-style">
-                            <option value="kg" ${einheitWert === 'kg' ? 'selected' : ''}>kg</option>
-                            <option value="g" ${einheitWert === 'g' ? 'selected' : ''}>g</option>
-                            <option value="L" ${einheitWert === 'L' ? 'selected' : ''}>L</option>
-                            <option value="ml" ${einheitWert === 'ml' ? 'selected' : ''}>ml</option>
-                            <option value="Pck" ${einheitWert === 'Pck' ? 'selected' : ''}>Pck</option>
-                            <option value="Stk" ${einheitWert === 'Stk' ? 'selected' : ''}>Stk</option>
-                        </select>
-                    </div>
+                <div>
+                  <span class="block text-[10px] text-slate-400 uppercase font-semibold">Farbe</span>
+                  <span class="font-medium text-slate-200 text-sm">${malz.ebc ? malz.ebc + ' EBC' : '-'}</span>
                 </div>
-
-                <label class="label-style">Preis pro Einheit (€):</label>
-                <input type="number" step="0.001" id="m-preis" value="${preisWert}" placeholder="z. B. 0.05 (optional)" class="input-style">
-
-                <label class="label-style">Lagerort / Fach:</label>
-                <input type="text" id="m-lagerort" value="${ortWert}" placeholder="z. B. Gefrierschrank-Fach 1" class="input-style">
-
-                <label class="label-style">Aromatik / Beschreibung:</label>
-                <input type="text" id="m-aromatik" value="${aromatikWert}" placeholder="z. B. Zitrus, Grapefruit, blumig" class="input-style">
-
-                <!-- KATEGORIE-SPEZIFISCHE FELDER -->
-                <div id="bereich-alpha" style="display: ${istHopfen ? 'block' : 'none'};">
-                    <label class="label-style">🧪 Alphasäure (%):</label>
-                    <input type="number" step="0.1" id="m-alpha" value="${alphaWert}" placeholder="z. B. 9.5" class="input-style">
+                <div>
+                  <span class="block text-[10px] text-slate-400 uppercase font-semibold">Max. Schütt.</span>
+                  <span class="font-medium text-slate-200 text-sm">${malz.max_schuettung ? malz.max_schuettung + ' %' : '-'}</span>
                 </div>
+              </div>
 
-                <div id="bereich-malz-extra" style="display: ${istMalz ? 'block' : 'none'};">
-                    <div style="display: flex; gap: 10px;">
-                        <div style="flex: 1;">
-                            <label class="label-style">🎨 Farbe (EBC):</label>
-                            <input type="number" step="0.1" id="m-ebc" value="${ebcWert}" placeholder="z. B. 4.0" class="input-style">
-                        </div>
-                        <div style="flex: 1;">
-                            <label class="label-style">🌾 Max. Schüttung (%):</label>
-                            <input type="number" step="1" id="m-schuettung" value="${schuettungWert}" placeholder="z. B. 100" class="input-style">
-                        </div>
-                    </div>
-                </div>
+              <!-- Aromatik & Beschreibung -->
+              ${malz.aromatik ? `
+                <p class="text-xs text-slate-300 bg-slate-900/30 p-2.5 rounded-lg border border-slate-700/30 mb-4 line-clamp-3 leading-relaxed">
+                  <i class="fa-solid fa-align-left text-slate-500 mr-1.5"></i>${escapeHtml(malz.aromatik)}
+                </p>
+              ` : ''}
+            </div>
 
-                <label class="label-style">🔄 Alternativen:</label>
-                <input type="text" id="m-alternativen" value="${alternativenWert}" placeholder="z. B. Wiener Malz, Cascade" class="input-style">
+            <!-- Karten Fußbereich / Aktionen -->
+            <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between mt-auto">
+              <!-- Bestand Schnell-Korrektur -->
+              <div class="flex items-center gap-1">
+                <button onclick="adjustQuantity('${malz.id}', -0.5)" title="- 0.5 kg" class="w-7 h-7 bg-slate-700 hover:bg-slate-600 rounded text-slate-200 text-xs transition">
+                  <i class="fa-solid fa-minus"></i>
+                </button>
+                <button onclick="adjustQuantity('${malz.id}', 0.5)" title="+ 0.5 kg" class="w-7 h-7 bg-slate-700 hover:bg-slate-600 rounded text-slate-200 text-xs transition">
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
 
-                <button class="btn-primary" onclick="speichereRohstoff('${r ? r.id : ''}')" style="margin-top: 10px;">${r ? 'Änderungen speichern' : 'Rohstoff anlegen'}</button>
-                ${r ? `<button class="btn-danger-modal" onclick="zeigLoeschWarnungModal('${r.id}')">🗑️ Rohstoff löschen...</button>` : ''}
-                <button class="btn-secondary-action" onclick="schliesseModal()">Abbrechen</button>
-            `;
+              <!-- Bearbeiten / Löschen -->
+              <div class="flex items-center gap-2">
+                <button onclick="editMalz('${malz.id}')" class="text-slate-400 hover:text-amber-400 text-sm p-1 transition" title="Bearbeiten">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="deleteMalz('${malz.id}')" class="text-slate-400 hover:text-red-400 text-sm p-1 transition" title="Löschen">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
 
-            document.getElementById('modal-overlay').style.display = 'flex';
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ------------------------------------------------------------------
+    // 6. MODAL & SPEICHER-AKTIONEN
+    // ------------------------------------------------------------------
+    function openModal(malzObj = null) {
+      const modal = document.getElementById('malzModal');
+      const form = document.getElementById('malzForm');
+      
+      form.reset();
+
+      if (malzObj) {
+        document.getElementById('modalTitle').innerText = 'Malz bearbeiten';
+        document.getElementById('malzId').value = malzObj.id;
+        document.getElementById('malzName').value = malzObj.name || '';
+        document.getElementById('malzTyp').value = malzObj.typ || 'Basismalz';
+        document.getElementById('malzMenge').value = malzObj.menge || '';
+        document.getElementById('malzEbc').value = malzObj.ebc || '';
+        document.getElementById('malzMaxSchuettung').value = malzObj.max_schuettung || '';
+        document.getElementById('malzAromatik').value = malzObj.aromatik || '';
+      } else {
+        document.getElementById('modalTitle').innerText = 'Neues Malz erfassen';
+        document.getElementById('malzId').value = '';
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('malzModal').classList.add('hidden');
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('malzId').value || String(Date.now());
+      const payload = {
+        id: id,
+        name: document.getElementById('malzName').value.trim(),
+        typ: document.getElementById('malzTyp').value,
+        menge: parseFloat(document.getElementById('malzMenge').value) || 0,
+        ebc: document.getElementById('malzEbc').value ? parseFloat(document.getElementById('malzEbc').value) : null,
+        max_schuettung: document.getElementById('malzMaxSchuettung').value ? parseInt(document.getElementById('malzMaxSchuettung').value) : null,
+        aromatik: document.getElementById('malzAromatik').value.trim()
+      };
+
+      if (supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('lager_malz').upsert([payload]);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Fehler beim Speichern in Supabase:', err);
         }
+      }
 
-        // --- EXTREM DEUTLICHER LÖSCH-WARNSCHIRM ---
-        function zeigLoeschWarnungModal(id) {
-            const r = alleRohstoffe.find(item => String(item.id) === String(id));
-            if (!r) return;
+      // Lokal aktualisieren
+      const idx = malzLager.findIndex(m => String(m.id) === String(id));
+      if (idx >= 0) {
+        malzLager[idx] = payload;
+      } else {
+        malzLager.push(payload);
+      }
 
-            const inhalt = document.getElementById('modal-inhalt');
+      saveToLocalStorage();
+      closeModal();
+      renderMalze();
+    }
 
-            inhalt.innerHTML = `
-                <div style="background-color: #FFEBEE; border: 2px solid #D32F2F; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center;">
-                    <span style="font-size: 32px; display: block; margin-bottom: 5px;">⚠️</span>
-                    <h3 style="color: #C62828; margin: 0 0 10px 0; font-size: 18px;">ACHTUNG: ROHSTOFF LÖSCHEN</h3>
-                    <p style="font-size: 14px; color: #333; line-height: 1.4; margin: 0 0 10px 0;">
-                        Möchtest du den Rohstoff<br>
-                        <strong style="font-size: 16px; color: #C62828;">"${r.bezeichnung}"</strong><br>
-                        wirklich unwiderruflich aus dem Lager löschen?
-                    </p>
-                    <small style="color: #777; display: block;">Dieser Schritt kann nicht rückgängig gemacht werden!</small>
-                </div>
+    async function adjustQuantity(id, delta) {
+      const malz = malzLager.find(m => String(m.id) === String(id));
+      if (!malz) return;
 
-                <button class="btn-danger-modal" style="padding: 16px; font-size: 16px; margin-top: 0;" onclick="loescheRohstoff('${r.id}')">🔥 JA, UNWIDERRUFLICH LÖSCHEN</button>
-                <button class="btn-primary" style="background-color: #2E7D32; padding: 14px; margin-top: 10px;" onclick="oeffneRohstoffModal('${r.id}')">🛡️ Abbrechen (Sicher zurück)</button>
-            `;
+      const neueMenge = Math.max(0, parseFloat((malz.menge + delta).toFixed(2)));
+      malz.menge = neueMenge;
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('lager_malz').update({ menge: neueMenge }).eq('id', id);
+        } catch (err) {
+          console.error('Fehler beim Anpassen der Menge in Supabase:', err);
         }
+      }
 
-        function passEinheitAn(kat) {
-            const einheitSelect = document.getElementById('m-einheit');
-            const ortInput = document.getElementById('m-lagerort');
-            const hopfenArtBereich = document.getElementById('bereich-hopfenart');
-            const malzArtBereich = document.getElementById('bereich-malzart');
-            const alphaBereich = document.getElementById('bereich-alpha');
-            const malzExtraBereich = document.getElementById('bereich-malz-extra');
+      saveToLocalStorage();
+      renderMalze();
+    }
 
-            const katLower = kat.toLowerCase();
+    function editMalz(id) {
+      const malz = malzLager.find(m => String(m.id) === String(id));
+      if (malz) {
+        openModal(malz);
+      }
+    }
 
-            if (einheitSelect) {
-                if (katLower === 'malz') {
-                    einheitSelect.value = 'kg';
-                } else if (katLower === 'hopfen' || katLower === 'hefe') {
-                    einheitSelect.value = 'g';
-                }
-            }
+    async function deleteMalz(id) {
+      if (!confirm('Möchtest du dieses Malz wirklich aus dem Lager entfernen?')) return;
 
-            if (katLower === 'hopfen' && ortInput && ortInput.value === '') {
-                ortInput.value = 'Gefrierschrank-Fach ';
-            }
-
-            if (hopfenArtBereich) hopfenArtBereich.style.display = (katLower === 'hopfen') ? 'block' : 'none';
-            if (malzArtBereich) malzArtBereich.style.display = (katLower === 'malz') ? 'block' : 'none';
-            if (alphaBereich) alphaBereich.style.display = (katLower === 'hopfen') ? 'block' : 'none';
-            if (malzExtraBereich) malzExtraBereich.style.display = (katLower === 'malz') ? 'block' : 'none';
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('lager_malz').delete().eq('id', id);
+        } catch (err) {
+          console.error('Fehler beim Löschen aus Supabase:', err);
         }
+      }
 
-        async function speichereRohstoff(id) {
-            if (!hatKassenwartRechte()) return;
+      malzLager = malzLager.filter(m => String(m.id) !== String(id));
+      saveToLocalStorage();
+      renderMalze();
+    }
 
-            const kategorie = document.getElementById('m-kategorie').value;
-            const katLower = kategorie.toLowerCase();
-
-            const bezeichnung = document.getElementById('m-bezeichnung').value.trim();
-            const bestandVal = document.getElementById('m-bestand').value;
-            const einheit = document.getElementById('m-einheit').value;
-            const preisVal = document.getElementById('m-preis').value;
-            const lagerort = document.getElementById('m-lagerort').value.trim();
-            const aromatik = document.getElementById('m-aromatik').value.trim();
-            
-            const schuettungVal = document.getElementById('m-schuettung') ? document.getElementById('m-schuettung').value : '';
-            const ebcVal = document.getElementById('m-ebc') ? document.getElementById('m-ebc').value : '';
-            const malzTyp = document.getElementById('m-malztyp') ? document.getElementById('m-malztyp').value : '';
-            const alternativen = document.getElementById('m-alternativen') ? document.getElementById('m-alternativen').value.trim() : '';
-            const hopfenTyp = document.getElementById('m-hopfentyp') ? document.getElementById('m-hopfentyp').value : '';
-            const alphaVal = document.getElementById('m-alpha') ? document.getElementById('m-alpha').value : '';
-
-            if (bezeichnung === "") {
-                alert("Bitte gib eine Bezeichnung ein.");
-                return;
-            }
-
-            const bestand = bestandVal !== "" ? parseFloat(bestandVal) : 0;
-            const preis = preisVal !== "" ? parseFloat(preisVal) : null;
-            const maxSchuettung = (katLower === 'malz' && schuettungVal !== "") ? parseFloat(schuettungVal) : null;
-            const ebc = (katLower === 'malz' && ebcVal !== "") ? parseFloat(ebcVal) : null;
-            const alphasaeure = (katLower === 'hopfen' && alphaVal !== "") ? parseFloat(alphaVal) : null;
-
-            const datensatz = {
-                kategorie: kategorie,
-                bezeichnung: bezeichnung,
-                bestand: bestand,
-                einheit: einheit,
-                preis: preis,
-                lagerort: lagerort,
-                aromatik: aromatik,
-                max_schuettung: maxSchuettung,
-                ebc: ebc,
-                malz_typ: malzTyp,
-                alternativen: alternativen,
-                hopfen_typ: hopfenTyp,
-                alphasaeure: alphasaeure
-            };
-
-            let err = null;
-            if (id && id !== 'null' && id !== '') {
-                const { error } = await _supabase.from('lager').update(datensatz).eq('id', id);
-                err = error;
-            } else {
-                const { error } = await _supabase.from('lager').insert([datensatz]);
-                err = error;
-            }
-
-            if (err) {
-                alert("Fehler beim Speichern: " + err.message);
-                return;
-            }
-
-            schliesseModal();
-            await ladeLagerDaten();
-            zeigeLagerAnsicht();
-        }
-
-        async function loescheRohstoff(id) {
-            if (!hatKassenwartRechte()) return;
-
-            const { error } = await _supabase.from('lager').delete().eq('id', id);
-            if (error) {
-                alert("Fehler beim Löschen: " + error.message);
-                return;
-            }
-
-            schliesseModal();
-            await ladeLagerDaten();
-            zeigeLagerAnsicht();
-        }
-
-        function schliesseModal() {
-            document.getElementById('modal-overlay').style.display = 'none';
-        }
-    </script>
+    // Hilfsfunktion gegen XSS
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
 </body>
 </html>
