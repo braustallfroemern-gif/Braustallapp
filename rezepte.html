@@ -206,7 +206,7 @@
         <div id="rezepte-liste">Lade Rezepte...</div>
     </div>
 
-    <!-- MODAL FÜR BEWERTUNGEN & FEEDBACK -->
+    <!-- MODAL FÜR BEWERTUNGEN & DETAILS -->
     <div id="modal-overlay">
         <div id="modal-inhalt"></div>
     </div>
@@ -302,15 +302,42 @@
             container.innerHTML = html;
         }
 
-        // --- 1. MODAL FOR MEMBER REVIEWS & FEEDBACK ---
+        // --- HILFSFUNKTIONEN FÜR DIE FARBDYNAMIK ---
+        function ebcToRgbColor(ebc) {
+            if (!ebc || ebc <= 0) return 'rgb(255, 230, 153)';
+            const srm = ebc / 1.97;
+            const clampedSrm = Math.max(1, srm);
+
+            let r = Math.min(255, Math.max(15, Math.round(255 * Math.pow(0.965, clampedSrm))));
+            let g = Math.min(255, Math.max(5, Math.round(255 * Math.pow(0.88, clampedSrm))));
+            let b = Math.min(255, Math.max(0, Math.round(255 * Math.pow(0.70, clampedSrm))));
+
+            if (ebc >= 35) {
+                const abdunkelnFactor = Math.max(0.02, 1 - ((ebc - 35) / 25));
+                r = Math.round(r * abdunkelnFactor);
+                g = Math.round(g * abdunkelnFactor);
+                b = Math.round(b * abdunkelnFactor);
+            }
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function getEbcBezeichnung(ebc) {
+            if (!ebc || ebc <= 0) return 'Unbekannt';
+            if (ebc <= 8) return 'Strohgelb / Hell';
+            if (ebc <= 15) return 'Goldgelb / Festbier';
+            if (ebc <= 25) return 'Bernstein / Pale Ale';
+            if (ebc <= 40) return 'Kupfer / Märzen';
+            if (ebc <= 60) return 'Dunkelbraun / Alt';
+            return 'Tiefschwarz / Stout';
+        }
+
+        // --- 1. MODAL FÜR MITGLIEDER-BEWERTUNGEN ---
         function oeffneBewertungModal(rezeptId) {
             const rezept = alleRezepte.find(r => String(r.id) === String(rezeptId));
             if (!rezept) return;
 
             const gefilterteBewertungen = alleBewertungen.filter(b => String(b.rezept_id) === String(rezeptId));
             const meinName = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || "";
-
-            // Eigene bestehende Bewertung finden
             const meineBestehende = gefilterteBewertungen.find(b => b.mitglied_name.toLowerCase() === meinName.toLowerCase());
 
             const inhalt = document.getElementById('modal-inhalt');
@@ -340,7 +367,6 @@
                 <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 4px;">⭐ Bewertungen & Feedback</h3>
                 <div style="font-weight: bold; color: #333; font-size: 14px; margin-bottom: 12px;">🍺 ${escapeHtml(rezept.name)}</div>
 
-                <!-- NEUE BEWERTUNG ABGEBEN -->
                 <div style="background: #F0F4F8; border: 1px solid #90CAF9; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
                     <span style="font-size: 12px; font-weight: bold; color: #1565C0; display: block; margin-bottom: 6px;">
                         ${meineBestehende ? '✏️ Deine Bewertung anpassen:' : '➕ Eigene Bewertung abgeben:'}
@@ -371,7 +397,6 @@
                     </button>
                 </div>
 
-                <!-- LISTE ALLER KOMMENTARE -->
                 <span style="font-size: 12px; font-weight: bold; color: #1565C0; display: block; margin-bottom: 6px;">Alle Mitglieder-Feedbacks:</span>
                 <div style="max-height: 25vh; overflow-y: auto; padding-right: 4px;">
                     ${bewertungenListeHtml}
@@ -393,7 +418,6 @@
                 return;
             }
 
-            // Upsert in Supabase (aktualisiert bestehenden Eintrag für diesen Namen & dieses Rezept)
             const { error } = await _supabase.from('rezept_bewertungen').upsert([{
                 rezept_id: rezeptId,
                 mitglied_name: mitgliedName,
@@ -411,12 +435,15 @@
             await ladeRezepteUndBewertungen();
         }
 
-        // --- 2. MODAL FÜR COMPLETE REZEPT DETAILS ---
+        // --- 2. MODAL FÜR REZEPT DETAILS (INKL. FARBBALKEN) ---
         function oeffneRezeptDetailsModal(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
 
             const bew = berechneRezeptSchnitt(r.id);
+            const ebcWert = r.ebc || 0;
+            const ebcFarbeHex = ebcToRgbColor(ebcWert);
+            const ebcText = getEbcBezeichnung(ebcWert);
 
             let schuettungHtml = (r.schuettung || []).map(m => `<li><b>${m.menge_kg} kg</b> ${escapeHtml(m.name)}</li>`).join('');
             let rastenHtml = (r.rasten || []).map(rst => `<li><b>${escapeHtml(rst.name)}:</b> ${rst.temperatur_c}°C (${rst.dauer_min} Min)</li>`).join('');
@@ -430,8 +457,17 @@
                 <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 6px; padding: 8px; font-size: 12px; margin-bottom: 10px;">
                     <div>📏 <b>Ausschlag:</b> ${r.liter || 50} Liter</div>
                     <div>🧪 <b>Stammwürze:</b> ${r.stammwuerze || '-'} °P</div>
-                    <div>🍃 <b>Bittere:</b> ${r.ibu || '-'} IBU | 🎨 <b>Farbe:</b> ${r.ebc || '-'} EBC</div>
+                    <div>🍃 <b>Bittere:</b> ${r.ibu || '-'} IBU</div>
                     <div>⭐ <b>Bewertung:</b> ${bew.anzahl > 0 ? `${bew.schnitt}/5 (${bew.anzahl} Stimmen)` : 'Noch keine'}</div>
+                </div>
+
+                <!-- OPTISCHE FARB-PLAKETTE MIT FARBBALKEN -->
+                <div style="display: flex; align-items: center; justify-content: space-between; background: #F8F9FA; padding: 8px 12px; border-radius: 8px; border: 1px solid #E0E0E0; margin-bottom: 10px;">
+                    <div>
+                        <div style="font-size: 10px; color: #666; font-weight: bold; text-transform: uppercase;">Geplante Farbe</div>
+                        <div style="font-size: 13px; font-weight: bold; color: #333;">${ebcWert} EBC <span style="font-size: 11px; font-weight: normal; color: #555;">(${ebcText})</span></div>
+                    </div>
+                    <div style="width: 48px; height: 24px; background-color: ${ebcFarbeHex}; border-radius: 6px; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.15);"></div>
                 </div>
 
                 ${schuettungHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌾 Schüttung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px;">${schuettungHtml}</ul>` : ''}
