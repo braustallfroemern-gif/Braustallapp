@@ -72,7 +72,7 @@
             margin-bottom: 15px;
         }
 
-        /* FILTER BUTTONS LEISTE (ANGESCHLOSSEN AN DEN REST DES PROGRAMMS) */
+        /* FILTER BUTTONS LEISTE */
         .filter-container {
             display: flex;
             gap: 6px;
@@ -103,7 +103,7 @@
             box-shadow: 0 2px 4px rgba(25,118,210,0.2);
         }
 
-        /* LAGER KARTE (OHNE LÖSCHEN-BUTTON DIRECT DARAUF) */
+        /* LAGER KARTE */
         .lager-karte {
             background-color: #F8F9FA;
             border: 1px solid #D0D7DE;
@@ -286,11 +286,17 @@
             gefiltert.forEach(item => {
                 const bez = escapeHtml(item.bezeichnung || item.name || 'Unbenannt');
                 const kat = escapeHtml(item.kategorie || 'Allgemein');
-                const bestand = item.bestand !== undefined ? item.bestand : '-';
+                
+                // Bestand auf max 2 Nachkommastellen runden
+                const bestandRoh = item.bestand !== undefined ? parseFloat(item.bestand) : 0;
+                const bestand = isNaN(bestandRoh) ? '-' : (Number.isInteger(bestandRoh) ? bestandRoh : bestandRoh.toFixed(2));
+                
                 const einheit = escapeHtml(item.einheit || '');
                 const preis = item.preis ? `${parseFloat(item.preis).toFixed(2)} €` : '-';
+                const lagerort = escapeHtml(item.lagerort || '');
 
                 let zusatzInfos = "";
+                if (lagerort) zusatzInfos += `<div>📍 <b>Lagerort:</b> ${lagerort}</div>`;
                 if (item.farbe_ebc) zusatzInfos += `<div>🌾 <b>Farbe:</b> ${item.farbe_ebc} EBC</div>`;
                 if (item.max_gabe_prozent) zusatzInfos += `<div>📊 <b>Max. Schüttung:</b> ${item.max_gabe_prozent}%</div>`;
                 if (item.alpha_saeure) zusatzInfos += `<div>🌿 <b>Alpha-Säure:</b> ${item.alpha_saeure}%</div>`;
@@ -354,13 +360,16 @@
                 <div style="display: flex; gap: 10px;">
                     <div style="flex: 2;">
                         <label class="label-style">Bestand:</label>
-                        <input type="number" step="0.1" id="edit-bestand" class="input-style" value="${item.bestand !== undefined ? item.bestand : '0'}">
+                        <input type="number" step="0.01" id="edit-bestand" class="input-style" value="${item.bestand !== undefined ? item.bestand : '0'}">
                     </div>
                     <div style="flex: 1;">
                         <label class="label-style">Einheit:</label>
                         <input type="text" id="edit-einheit" class="input-style" value="${escapeHtml(item.einheit || 'kg')}">
                     </div>
                 </div>
+
+                <label class="label-style">Lagerort (z.B. Regal A, Keller):</label>
+                <input type="text" id="edit-lagerort" class="input-style" value="${escapeHtml(item.lagerort || '')}" placeholder="z.B. Kühlschrank 2">
 
                 <label class="label-style">Preis pro Einheit (€):</label>
                 <input type="number" step="0.01" id="edit-preis" class="input-style" value="${item.preis !== undefined ? item.preis : ''}" placeholder="z.B. 2.50">
@@ -372,7 +381,7 @@
 
                 <button class="btn-primary" onclick="speichereRohstoff()">💾 Speichern</button>
                 
-                ${item.id ? `<button class="btn-primary" style="background-color: #C62828; margin-top: 6px;" onclick="loescheRohstoff('${item.id}')">🗑️ Rohstoff löschen</button>` : ''}
+                ${item.id ? `<button class="btn-primary" style="background-color: #C62828; margin-top: 6px;" onclick="loescheRohstoff('${item.id}', '${escapeHtml(item.bezeichnung || 'Rohstoff')}')">🗑️ Rohstoff löschen</button>` : ''}
                 
                 <button class="btn-primary" style="background-color: #546E7A; margin-top: 6px;" onclick="schliesseModal()">Abbrechen</button>
             `;
@@ -417,6 +426,7 @@
             const bezeichnung = document.getElementById('edit-bezeichnung').value.trim();
             const bestand = parseFloat(document.getElementById('edit-bestand').value) || 0;
             const einheit = document.getElementById('edit-einheit').value.trim();
+            const lagerort = document.getElementById('edit-lagerort').value.trim();
             const preisInput = document.getElementById('edit-preis').value.trim();
             const preis = preisInput !== "" ? parseFloat(preisInput) : null;
             const aromatik = document.getElementById('edit-aromatik').value.trim();
@@ -431,6 +441,7 @@
                 bezeichnung: bezeichnung,
                 bestand: bestand,
                 einheit: einheit,
+                lagerort: lagerort,
                 preis: preis,
                 aromatik: aromatik,
                 farbe_ebc: null,
@@ -474,8 +485,10 @@
             alert("Rohstoff erfolgreich im Lager gespeichert! 🍻");
         }
 
-        async function loescheRohstoff(id) {
-            if (!confirm("Möchtest du diesen Rohstoff wirklich aus dem Lager löschen?")) return;
+        async function loescheRohstoff(id, bezeichnung) {
+            // Rote Sicherheitsabfrage
+            const sicher = confirm(`⚠️ ACHTUNG!\n\nMöchtest du den Rohstoff "${bezeichnung}" wirklich unwiderruflich aus dem Lager löschen?`);
+            if (!sicher) return;
 
             const { error } = await _supabase.from('lager').delete().eq('id', id);
             if (error) {
@@ -485,6 +498,7 @@
 
             schliesseModal();
             await ladeLagerdaten();
+            alert("Rohstoff wurde gelöscht.");
         }
 
         function schliesseModal() {
