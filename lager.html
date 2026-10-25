@@ -295,9 +295,14 @@
 
                     let preisText = (r.preis !== null && r.preis !== undefined && r.preis !== "") ? `${Number(r.preis).toFixed(2)} € / ${r.einheit}` : 'Kein Preis';
                     let ortText = r.lagerort ? `📍 Ort: ${r.lagerort}` : '';
+                    
+                    // Hopfen-spezifisch
                     let hopfenTypText = (katLower === 'hopfen' && r.hopfen_typ) ? `🌿 Hopfenart: ${r.hopfen_typ}` : '';
                     let alphaText = (katLower === 'hopfen' && r.alphasaeure !== null && r.alphasaeure !== undefined && r.alphasaeure !== "") ? `🧪 Alphasäure: ${r.alphasaeure}%` : '';
                     
+                    // Malz-spezifisch
+                    let malzTypText = (katLower === 'malz' && r.malz_typ) ? `🌾 Malzart: ${r.malz_typ}` : '';
+                    let ebcText = (katLower === 'malz' && r.ebc !== null && r.ebc !== undefined && r.ebc !== "") ? `🎨 Farbe: ${r.ebc} EBC` : '';
                     let schuettungWert = (r.max_schuettung !== null && r.max_schuettung !== undefined && r.max_schuettung !== "") ? r.max_schuettung : r.schuettung;
                     let schuettungText = (katLower === 'malz' && schuettungWert !== null && schuettungWert !== undefined && schuettungWert !== "") ? `🌾 Max. Schüttung: ${schuettungWert}%` : '';
                     
@@ -316,7 +321,9 @@
                                 ${ortText ? `<div style="color: #555; margin-top: 2px;">${ortText}</div>` : ''}
                                 ${hopfenTypText ? `<div style="color: #2E7D32; font-weight: bold; margin-top: 2px;">${hopfenTypText}</div>` : ''}
                                 ${alphaText ? `<div style="color: #1B5E20; font-weight: 500; margin-top: 2px;">${alphaText}</div>` : ''}
-                                ${schuettungText ? `<div style="color: #D35400; font-weight: bold; margin-top: 2px;">${schuettungText}</div>` : ''}
+                                ${malzTypText ? `<div style="color: #D35400; font-weight: bold; margin-top: 2px;">${malzTypText}</div>` : ''}
+                                ${ebcText ? `<div style="color: #8D6E63; font-weight: 500; margin-top: 2px;">${ebcText}</div>` : ''}
+                                ${schuettungText ? `<div style="color: #E65100; font-weight: bold; margin-top: 2px;">${schuettungText}</div>` : ''}
                                 ${aromatikText ? `<div style="color: #2E7D32; font-style: italic; margin-top: 4px; font-size: 12px;">${aromatikText}</div>` : ''}
                                 ${alternativenText ? `<div style="color: #455A64; margin-top: 3px; font-size: 12px;">${alternativenText}</div>` : ''}
                             </div>
@@ -372,6 +379,8 @@
             const preisWert = r ? (r.preis !== null && r.preis !== undefined ? r.preis : '') : '';
             const aromatikWert = r ? (r.aromatik || r.beschreibung || '') : '';
             const schuettungWert = r ? (r.max_schuettung || r.schuettung || '') : '';
+            const ebcWert = r ? (r.ebc !== null && r.ebc !== undefined ? r.ebc : '') : '';
+            const malzTypWert = r ? (r.malz_typ || '') : '';
             const alternativenWert = r ? (r.alternativen || '') : '';
             const hopfenTypWert = r ? (r.hopfen_typ || '') : '';
             const alphaWert = r ? (r.alphasaeure !== null && r.alphasaeure !== undefined ? r.alphasaeure : '') : '';
@@ -395,7 +404,7 @@
                     <option value="Sonstiges" ${kategorieWert === 'Sonstiges' ? 'selected' : ''}>Sonstiges</option>
                 </select>
 
-                <!-- BEZEICHNUNG UND HOPFENART NEBENEINANDER -->
+                <!-- BEZEICHNUNG UND TYP NEBENEINANDER -->
                 <div style="display: flex; gap: 10px;">
                     <div style="flex: 2;">
                         <label class="label-style">Bezeichnung:</label>
@@ -408,6 +417,16 @@
                             <option value="Aromahopfen" ${hopfenTypWert === 'Aromahopfen' ? 'selected' : ''}>Aromahopfen</option>
                             <option value="Bitterhopfen" ${hopfenTypWert === 'Bitterhopfen' ? 'selected' : ''}>Bitterhopfen</option>
                             <option value="Universalhopfen" ${hopfenTypWert === 'Universalhopfen' ? 'selected' : ''}>Universalhopfen</option>
+                        </select>
+                    </div>
+                    <div id="bereich-malzart" style="flex: 1; display: ${istMalz ? 'block' : 'none'};">
+                        <label class="label-style">Malzart:</label>
+                        <select id="m-malztyp" class="input-style">
+                            <option value="">- wählen -</option>
+                            <option value="Basismalz" ${malzTypWert === 'Basismalz' ? 'selected' : ''}>Basismalz</option>
+                            <option value="Karamellmalz" ${malzTypWert === 'Karamellmalz' ? 'selected' : ''}>Karamellmalz</option>
+                            <option value="Röstmalz" ${malzTypWert === 'Röstmalz' ? 'selected' : ''}>Röstmalz</option>
+                            <option value="Spezial- & Hilfsmalz" ${malzTypWert === 'Spezial- & Hilfsmalz' ? 'selected' : ''}>Spezial- & Hilfsmalz</option>
                         </select>
                     </div>
                 </div>
@@ -445,9 +464,17 @@
                     <input type="number" step="0.1" id="m-alpha" value="${alphaWert}" placeholder="z. B. 9.5" class="input-style">
                 </div>
 
-                <div id="bereich-schuettung" style="display: ${istMalz ? 'block' : 'none'};">
-                    <label class="label-style">🌾 Maximale Schüttung (%):</label>
-                    <input type="number" step="1" id="m-schuettung" value="${schuettungWert}" placeholder="z. B. 80" class="input-style">
+                <div id="bereich-malz-extra" style="display: ${istMalz ? 'block' : 'none'};">
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label class="label-style">🎨 Farbe (EBC):</label>
+                            <input type="number" step="0.1" id="m-ebc" value="${ebcWert}" placeholder="z. B. 4.0" class="input-style">
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="label-style">🌾 Max. Schüttung (%):</label>
+                            <input type="number" step="1" id="m-schuettung" value="${schuettungWert}" placeholder="z. B. 100" class="input-style">
+                        </div>
+                    </div>
                 </div>
 
                 <label class="label-style">🔄 Alternativen:</label>
@@ -489,8 +516,9 @@
             const einheitSelect = document.getElementById('m-einheit');
             const ortInput = document.getElementById('m-lagerort');
             const hopfenArtBereich = document.getElementById('bereich-hopfenart');
+            const malzArtBereich = document.getElementById('bereich-malzart');
             const alphaBereich = document.getElementById('bereich-alpha');
-            const schuettungBereich = document.getElementById('bereich-schuettung');
+            const malzExtraBereich = document.getElementById('bereich-malz-extra');
 
             const katLower = kat.toLowerCase();
 
@@ -507,8 +535,9 @@
             }
 
             if (hopfenArtBereich) hopfenArtBereich.style.display = (katLower === 'hopfen') ? 'block' : 'none';
+            if (malzArtBereich) malzArtBereich.style.display = (katLower === 'malz') ? 'block' : 'none';
             if (alphaBereich) alphaBereich.style.display = (katLower === 'hopfen') ? 'block' : 'none';
-            if (schuettungBereich) schuettungBereich.style.display = (katLower === 'malz') ? 'block' : 'none';
+            if (malzExtraBereich) malzExtraBereich.style.display = (katLower === 'malz') ? 'block' : 'none';
         }
 
         async function speichereRohstoff(id) {
@@ -525,6 +554,8 @@
             const aromatik = document.getElementById('m-aromatik').value.trim();
             
             const schuettungVal = document.getElementById('m-schuettung') ? document.getElementById('m-schuettung').value : '';
+            const ebcVal = document.getElementById('m-ebc') ? document.getElementById('m-ebc').value : '';
+            const malzTyp = document.getElementById('m-malztyp') ? document.getElementById('m-malztyp').value : '';
             const alternativen = document.getElementById('m-alternativen') ? document.getElementById('m-alternativen').value.trim() : '';
             const hopfenTyp = document.getElementById('m-hopfentyp') ? document.getElementById('m-hopfentyp').value : '';
             const alphaVal = document.getElementById('m-alpha') ? document.getElementById('m-alpha').value : '';
@@ -537,6 +568,7 @@
             const bestand = bestandVal !== "" ? parseFloat(bestandVal) : 0;
             const preis = preisVal !== "" ? parseFloat(preisVal) : null;
             const maxSchuettung = (katLower === 'malz' && schuettungVal !== "") ? parseFloat(schuettungVal) : null;
+            const ebc = (katLower === 'malz' && ebcVal !== "") ? parseFloat(ebcVal) : null;
             const alphasaeure = (katLower === 'hopfen' && alphaVal !== "") ? parseFloat(alphaVal) : null;
 
             const datensatz = {
@@ -548,6 +580,8 @@
                 lagerort: lagerort,
                 aromatik: aromatik,
                 max_schuettung: maxSchuettung,
+                ebc: ebc,
+                malz_typ: malzTyp,
                 alternativen: alternativen,
                 hopfen_typ: hopfenTyp,
                 alphasaeure: alphasaeure
