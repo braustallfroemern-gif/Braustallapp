@@ -200,6 +200,7 @@
         let rezeptZutaten = [];
         let wasserEnergiePreis = 0.12; // Standard-Fallback in €/Liter
         let sudWasserMenge = 0; // In Litern für den aktuellen Sud
+        let aktuellerSudName = ''; // Merkt sich den Sudnamen dynamisch
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -265,14 +266,21 @@
                 alleSudeCount = count;
             }
             
+            const naechsteSudNummer = alleSudeCount + 1;
+            aktuellerSudName = `Sud ${naechsteSudNummer} - `;
+            
             erzeugeModalInhalt();
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
         function erzeugeModalInhalt() {
+            // Falls bereits ein Text eingegeben wurde, sichern wir ihn vor dem Re-Render
+            const elExistingName = document.getElementById('sud-name');
+            if (elExistingName) {
+                aktuellerSudName = elExistingName.value;
+            }
+
             const inhalt = document.getElementById('modal-inhalt');
-            const naechsteSudNummer = alleSudeCount + 1;
-            const voreingestellterNamePrefix = `Sud ${naechsteSudNummer}`;
 
             const gefiltert = alleRohstoffe.filter(r => r.kategorie && r.kategorie.toLowerCase() === aktuellerFilterModal.toLowerCase());
 
@@ -311,11 +319,11 @@
                 <h3 style="color: #1565C0; margin-top: 0;">🍺 Freies Brauen</h3>
 
                 <label class="label-style">1. Sud-Bezeichnung:</label>
-                <input type="text" id="sud-name" class="input-style" value="${voreingestellterNamePrefix}" placeholder="z.B. Bockbier 18°P">
-                <small style="color: #666; display: block; margin-top: -8px; margin-bottom: 10px;">(Die Nummer wird automatisch fortlaufend vergeben)</small>
+                <input type="text" id="sud-name" class="input-style" value="${aktuellerSudName}" placeholder="z. B. Sud ${alleSudeCount + 1} - Landbier 12°P" oninput="aktuellerSudName = this.value">
+                <small style="color: #666; display: block; margin-top: -8px; margin-bottom: 10px;">(Ergänze einfach deinen Wunschnamen nach dem Bindestrich)</small>
 
                 <label class="label-style">2. Brauwasser Gesamt (Liter):</label>
-                <input type="number" step="1" id="sud-wasser" class="input-style" value="${sudWasserMenge > 0 ? sudWasserMenge : ''}" placeholder="z.B. 50" oninput="aktualisiereWasserMenge(this.value)">
+                <input type="number" step="1" id="sud-wasser" class="input-style" value="${sudWasserMenge > 0 ? sudWasserMenge : ''}" placeholder="z. B. 50" oninput="aktualisiereWasserMenge(this.value)">
 
                 <label class="label-style">3. Zutat-Kategorie wählen:</label>
                 <div class="filter-container">
@@ -473,8 +481,8 @@
                 return;
             }
 
-            const sudNameInput = document.getElementById('sud-name').value.trim();
-            const sudName = sudNameInput !== "" ? sudNameInput : `Sud ${alleSudeCount + 1}`;
+            const sudNameInput = document.getElementById('sud-name') ? document.getElementById('sud-name').value.trim() : aktuellerSudName.trim();
+            const sudName = sudNameInput !== "" ? sudNameInput : `Sud ${alleSudeCount + 1} - `;
 
             let rohstoffKosten = rezeptZutaten.reduce((sum, z) => sum + z.kosten, 0);
             let wasserKosten = sudWasserMenge * wasserEnergiePreis;
