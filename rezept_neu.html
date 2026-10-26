@@ -249,7 +249,7 @@
 
         <h2 class="page-title">📋 Neues Rezept erfassen</h2>
 
-        <!-- NEU: Brauwissen-Wizard Schalter -->
+        <!-- Brauwissen-Wizard Schalter -->
         <div class="section-box" style="background-color: #E3F2FD; border-color: #90CAF9;">
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; color: #1565C0; font-size: 13px;">
                 <input type="checkbox" id="brauwissen-aktiv" style="width: 18px; height: 18px; accent-color: #1565C0;">
@@ -496,28 +496,17 @@
         let aktuellesRezeptId = null;
         let aktuellerBierEbc = 0;
 
-        // BRAUWISSEN / 50L BASISREZEPT-BIBLIOTHEK (Rein im JavaScript, inklusive Landbier)
+        // VOLLSTÄNDIGE 33-STILE 50L BASISREZEPT-BIBLIOTHEK (Freie Schüttungswahl aus dem gesamten Malzspektrum)
         const BRAUWISSEN_BASISREZEPTE = {
             "Landbier": {
                 stammwuerze: 12.8, ibu: 24, ebc: 18, kochzeit: 90,
                 hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
                 nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "11-13 °C", hefe_menge: "45 g",
-                notizen: "Uriges, vollmundiges Braustall-Landbier. Schön malzbetont mit einer feinen karamelligen Note und angenehmer Rezenz.",
+                notizen: "Uriges, vollmundiges Braustall-Landbier. Schön malzbetont mit feiner karamelligen Note.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 2.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Hallertauer Mittelfrüh", menge_g: 40, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
-                whirlpool: [], kalthopfung: []
-            },
-            "Helles / Lager": {
-                stammwuerze: 12.0, ibu: 22, ebc: 8, kochzeit: 90,
-                hauptguss: 42, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "5 ml", nachguss_salze: "",
-                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "45 g",
-                notizen: "Klassisches bayrisches Helles. Ruhige Gärung bei 11°C, 4 Wochen Kaltreifung.",
-                schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
-                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
-                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 120, kochzeit_min: 90}, {name: "Hallertauer Mittelfrüh", menge_g: 50, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
             "Pilsner": {
@@ -525,10 +514,21 @@
                 hauptguss: 40, hauptguss_milchsaeure: "12 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
                 nachguss: 40, nachguss_milchsaeure: "6 ml", nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "45 g",
-                notizen: "Feinherbes Pilsner Brauart. Weiches Wasser und hohe Bitterhopfung im Vorderwürze/Kochbeginn.",
+                notizen: "Feinherbes Pilsner Brauart. Weiches Wasser und hohe Bitterhopfung.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 62, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Saazer", menge_g: 150, kochzeit_min: 90}, {name: "Saazer", menge_g: 80, kochzeit_min: 20}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Helles / Lager": {
+                stammwuerze: 12.0, ibu: 22, ebc: 8, kochzeit: 90,
+                hauptguss: 42, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "5 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "45 g",
+                notizen: "Klassisches bayrisches Helles. Ruhige Gärung bei 11°C.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 120, kochzeit_min: 90}, {name: "Hallertauer Mittelfrüh", menge_g: 50, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
             "Kellerbier / Zwickel": {
@@ -536,7 +536,7 @@
                 hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
                 nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "12-14 °C", hefe_menge: "45 g",
-                notizen: "Naturtrüb, malzbetont und vollmundig. Ungespundet oder leicht im Lagertank gereift.",
+                notizen: "Naturtrüb, malzbetont und vollmundig.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.5}],
                 rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 15}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 100, kochzeit_min: 70}, {name: "Hallertauer Mittelfrüh", menge_g: 60, kochzeit_min: 10}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
@@ -547,10 +547,54 @@
                 hauptguss: 44, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
                 nachguss: 36, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "50 g",
-                notizen: "Kräftiger Malzkörper, wunderschöne Kupferfarbe, harmonisch eingebundene Bittere.",
+                notizen: "Kräftiger Malzkörper, wunderschöne Kupferfarbe.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 5.5}, {name: "Münchner Malz I", menge_kg: 5.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Hallertauer Mittelfrüh", menge_g: 40, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Bockbier / Doppelbock": {
+                stammwuerze: 17.5, ibu: 28, ebc: 30, kochzeit: 90,
+                hauptguss: 48, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
+                nachguss: 32, nachguss_milchsaeure: "5 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "9-11 °C", hefe_menge: "60 g",
+                notizen: "Schwerer, starker Malzkörper mit edler Süße und dezenter Bittere.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 6.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 120, kochzeit_min: 90}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Schwarzbier": {
+                stammwuerze: 12.0, ibu: 28, ebc: 55, kochzeit: 90,
+                hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "11-13 °C", hefe_menge: "45 g",
+                notizen: "Tiefschwarz, aber schlank und überraschend mild im Antrunk ohne Pelzigkeit.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 0.6}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "California Common (Steam Beer)": {
+                stammwuerze: 12.2, ibu: 38, ebc: 25, kochzeit: 60,
+                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "16-18 °C", hefe_menge: "45 g",
+                notizen: "Mit untergäriger Hefe bei wärmeren Ale-Temperaturen vergoren.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 10.0}, {name: "Caramalz Hell", menge_kg: 1.0}],
+                rasten: [{name: "Einmaischen", temperatur_c: 62, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Northern Brewer", menge_g: 120, kochzeit_min: 60}, {name: "Northern Brewer", menge_g: 40, kochzeit_min: 15}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Vienna Lager": {
+                stammwuerze: 12.5, ibu: 24, ebc: 24, kochzeit: 90,
+                hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "45 g",
+                notizen: "Bernsteinfarben mit elegantem Wiener Malz Charakter.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 6.0}, {name: "Münchner Malz I", menge_kg: 4.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
             "Weizen / Weißbier": {
@@ -558,10 +602,54 @@
                 hauptguss: 40, hauptguss_milchsaeure: "5 ml", hauptguss_salze: "",
                 nachguss: 40, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "19-21 °C", hefe_menge: "35 g",
-                notizen: "Klassisches obergäriges Hefeweizen mit schöner Fruchtester- und Nelkennote.",
+                notizen: "Klassisches obergäriges Hefeweizen mit Bananen- und Nelkenaroma.",
                 schuettung: [{name: "Weizenmalz hell", menge_kg: 6.5}, {name: "Pilsner Malz", menge_kg: 4.5}, {name: "Caramalz Hell", menge_kg: 0.3}],
                 rasten: [{name: "Einmaischen", temperatur_c: 52, dauer_min: 15}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 50, kochzeit_min: 60}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Dunkelweizen": {
+                stammwuerze: 12.8, ibu: 14, ebc: 40, kochzeit: 75,
+                hauptguss: 40, hauptguss_milchsaeure: "5 ml", hauptguss_salze: "",
+                nachguss: 40, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "19-21 °C", hefe_menge: "35 g",
+                notizen: "Dunkles Weizenbier mit Röstaromen und feiner Fruchtnote.",
+                schuettung: [{name: "Weizenmalz hell", menge_kg: 6.0}, {name: "Münchner Malz I", menge_kg: 4.0}, {name: "Röstmalz", menge_kg: 0.6}],
+                rasten: [{name: "Einmaischen", temperatur_c: 52, dauer_min: 15}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 60, kochzeit_min: 60}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Weizenbock": {
+                stammwuerze: 18.0, ibu: 22, ebc: 38, kochzeit: 90,
+                hauptguss: 46, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
+                nachguss: 34, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "55 g",
+                notizen: "Wuchtiger Weizenbock mit hoher Stammwürze und reichem Körper.",
+                schuettung: [{name: "Weizenmalz hell", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 6.0}, {name: "Caramalz Dunkel", menge_kg: 1.0}],
+                rasten: [{name: "Einmaischen", temperatur_c: 52, dauer_min: 15}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 90, kochzeit_min: 80}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Altbier": {
+                stammwuerze: 12.5, ibu: 35, ebc: 30, kochzeit: 90,
+                hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "15-17 °C", hefe_menge: "45 g",
+                notizen: "Kupferfarben, hopfenbetont und spritzig.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Spalter Select", menge_g: 130, kochzeit_min: 80}, {name: "Spalter Select", menge_g: 50, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Kölsch": {
+                stammwuerze: 11.5, ibu: 25, ebc: 6, kochzeit: 75,
+                hauptguss: 40, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 40, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "14-16 °C", hefe_menge: "40 g",
+                notizen: "Hell, schlank, feine obergärige Fruchtnoten bei kühlerer Gärung.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 9.8}, {name: "Caramalz Hell", menge_kg: 0.5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 75}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
             "Pale Ale": {
@@ -569,7 +657,7 @@
                 hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
                 nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "35 g",
-                notizen: "Fruchtig-frisches Ale mit Zitrusnoten im Whirlpool und feiner Kalthopfung.",
+                notizen: "Fruchtig-frisches Ale mit Zitrusnoten.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 10.0}, {name: "Caramalz Hell", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 62, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Cascade", menge_g: 50, kochzeit_min: 60}, {name: "Cascade", menge_g: 50, kochzeit_min: 10}],
@@ -581,12 +669,211 @@
                 hauptguss: 45, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
                 nachguss: 35, nachguss_milchsaeure: "4 ml", nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "45 g",
-                notizen: "Hopfenbombe mit intensiven Zitrus-, Tropenfrucht- und Harznoten.",
+                notizen: "Hopfenbombe mit intensiven Zitrus- und Tropenfruchtnoten.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 11.5}, {name: "Pilsner Malz", menge_kg: 1.5}, {name: "Caramalz Hell", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 63, dauer_min: 45}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Chinook", menge_g: 60, kochzeit_min: 60}, {name: "Cascade", menge_g: 60, kochzeit_min: 15}],
                 whirlpool: [{name: "Cascade", menge_g: 120, temperatur_c: 78}, {name: "Chinook", menge_g: 80, temperatur_c: 78}],
                 kalthopfung: [{name: "Cascade", menge_g: 150}, {name: "Chinook", menge_g: 100}]
+            },
+            "Double / Imperial IPA": {
+                stammwuerze: 18.0, ibu: 85, ebc: 25, kochzeit: 60,
+                hauptguss: 48, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
+                nachguss: 32, nachguss_milchsaeure: "4 ml", nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "60 g",
+                notizen: "Extrem hopfenbetont, starker Alkoholgehalt, volle Aromenexplosion.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 14.5}, {name: "Caramalz Hell", menge_kg: 1.2}],
+                rasten: [{name: "Einmaischen", temperatur_c: 63, dauer_min: 50}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Chinook", menge_g: 80, kochzeit_min: 60}, {name: "Cascade", menge_g: 80, kochzeit_min: 15}],
+                whirlpool: [{name: "Cascade", menge_g: 150, temperatur_c: 78}, {name: "Chinook", menge_g: 100, temperatur_c: 78}],
+                kalthopfung: [{name: "Cascade", menge_g: 200}, {name: "Chinook", menge_g: 150}]
+            },
+            "English Porter": {
+                stammwuerze: 12.2, ibu: 25, ebc: 50, kochzeit: 60,
+                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "35 g",
+                notizen: "Klassisches britisches Porter mit Schokoladen- und Karamellnoten.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 1.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}, {name: "Röstmalz", menge_kg: 0.4}],
+                rasten: [{name: "Einmaischen", temperatur_c: 64, dauer_min: 45}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 90, kochzeit_min: 60}],
+                whirlpool: [], kalthopfung: []
+            },
+            "American Porter": {
+                stammwuerze: 14.0, ibu: 38, ebc: 60, kochzeit: 60,
+                hauptguss: 44, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
+                nachguss: 36, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "45 g",
+                notizen: "Kräftigeres Porter mit amerikanischer Hopfennote.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 9.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}, {name: "Röstmalz", menge_kg: 0.6}],
+                rasten: [{name: "Einmaischen", temperatur_c: 64, dauer_min: 45}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Cascade", menge_g: 90, kochzeit_min: 60}, {name: "Cascade", menge_g: 40, kochzeit_min: 15}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Baltic Porter": {
+                stammwuerze: 18.0, ibu: 30, ebc: 55, kochzeit: 90,
+                hauptguss: 48, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 32, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "60 g",
+                notizen: "Starkes Porter, traditionell untergärig vergoren und lange kalt gelagert.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 4.5}, {name: "Caramalz Dunkel", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 0.5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Dry Stout (Irish Stout)": {
+                stammwuerze: 10.2, ibu: 38, ebc: 70, kochzeit: 60,
+                hauptguss: 38, hauptguss_milchsaeure: "5 ml", hauptguss_salze: "",
+                nachguss: 42, nachguss_milchsaeure: "2 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "35 g",
+                notizen: "Trocken, röstmalzbetont mit Kaffeenote, sehr schlank im Abgang.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 7.0}, {name: "Röstgerste", menge_kg: 1.2}],
+                rasten: [{name: "Einmaischen", temperatur_c: 65, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 15}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 90, kochzeit_min: 60}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Sweet Stout (Milk Stout)": {
+                stammwuerze: 13.5, ibu: 28, ebc: 100, kochzeit: 60,
+                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "40 g",
+                notizen: "Vollmundig, malzig-süß durch unvergärbare Extrakte.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 8.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}, {name: "Röstmalz", menge_kg: 0.8}],
+                rasten: [{name: "Einmaischen", temperatur_c: 67, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 80, kochzeit_min: 60}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Oatmeal Stout": {
+                stammwuerze: 13.2, ibu: 32, ebc: 55, kochzeit: 60,
+                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "40 g",
+                notizen: "Seidiges Mundgefühl durch Haferflocken-Anteil.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 8.0}, {name: "Caramalz Dunkel", menge_kg: 1.0}, {name: "Röstmalz", menge_kg: 0.6}],
+                rasten: [{name: "Einmaischen", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 85, kochzeit_min: 60}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Russian Imperial Stout": {
+                stammwuerze: 21.0, ibu: 70, ebc: 120, kochzeit: 90,
+                hauptguss: 52, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
+                nachguss: 28, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-21 °C", hefe_menge: "70 g",
+                notizen: "Gigantisches Schwarzbier mit enormem Alkohol- und Röstkörper.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 13.0}, {name: "Münchner Malz I", menge_kg: 3.0}, {name: "Caramalz Dunkel", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 1.2}],
+                rasten: [{name: "Einmaischen", temperatur_c: 64, dauer_min: 50}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Chinook", menge_g: 130, kochzeit_min: 90}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Witbier (Belgian White)": {
+                stammwuerze: 12.0, ibu: 14, ebc: 6, kochzeit: 60,
+                hauptguss: 40, hauptguss_milchsaeure: "4 ml", hauptguss_salze: "",
+                nachguss: 40, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "19-22 °C", hefe_menge: "35 g",
+                notizen: "Unfiltriertes belgisches Weizenbier mit Koriander- und Orangenschalennoten.",
+                schuettung: [{name: "Weizenmalz hell", menge_kg: 5.5}, {name: "Pilsner Malz", menge_kg: 5.0}],
+                rasten: [{name: "Einmaischen", temperatur_c: 52, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 50, kochzeit_min: 60}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Saison": {
+                stammwuerze: 14.5, ibu: 28, ebc: 15, kochzeit: 75,
+                hauptguss: 44, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
+                nachguss: 36, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "22-25 °C", hefe_menge: "45 g",
+                notizen: "Würziger, extrem hochvergärbarer belgischer Farmhouse Ale Stil.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.8}],
+                rasten: [{name: "Einmaischen", temperatur_c: 62, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 90, kochzeit_min: 75}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Bière de Garde": {
+                stammwuerze: 16.0, ibu: 24, ebc: 22, kochzeit: 90,
+                hauptguss: 46, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 34, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "50 g",
+                notizen: "Französisches Lager-Ale mit reichem Malzkörper.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 3.0}, {name: "Caramalz Dunkel", menge_kg: 1.0}],
+                rasten: [{name: "Einmaischen", temperatur_c: 62, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 100, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Belgian Dubbel": {
+                stammwuerze: 16.0, ibu: 20, ebc: 28, kochzeit: 90,
+                hauptguss: 46, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 34, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "20-22 °C", hefe_menge: "50 g",
+                notizen: "Kräftig dunkles belgisches Abteibier mit Pflaumen- und Rosinenaromen.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 10.0}, {name: "Münchner Malz I", menge_kg: 2.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}],
+                rasten: [{name: "Einmaischen", temperatur_c: 62, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 90, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Belgian Tripel": {
+                stammwuerze: 19.0, ibu: 30, ebc: 10, kochzeit: 90,
+                hauptguss: 48, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 32, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "20-22 °C", hefe_menge: "60 g",
+                notizen: "Starkes, helles belgisches Tripel mit komplexen Estern.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 13.5}, {name: "Caramalz Hell", menge_kg: 0.8}],
+                rasten: [{name: "Einmaischen", temperatur_c: 62, dauer_min: 45}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Berliner Weisse": {
+                stammwuerze: 8.0, ibu: 5, ebc: 4, kochzeit: 30,
+                hauptguss: 35, hauptguss_milchsaeure: "4 ml", hauptguss_salze: "",
+                nachguss: 45, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "20-22 °C", hefe_menge: "30 g",
+                notizen: "Säuerliches, leichtes Berliner Traditionsbier.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 3.5}, {name: "Weizenmalz hell", menge_kg: 3.5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 65, dauer_min: 60}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 20, kochzeit_min: 30}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Gose": {
+                stammwuerze: 10.5, ibu: 12, ebc: 5, kochzeit: 60,
+                hauptguss: 38, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "Kochsalz (NaCl)",
+                nachguss: 42, nachguss_milchsaeure: "2 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "20-22 °C", hefe_menge: "35 g",
+                notizen: "Säuerlich-salziges traditionelles Obergäriges mit Koriander.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 4.5}, {name: "Weizenmalz hell", menge_kg: 4.0}],
+                rasten: [{name: "Einmaischen", temperatur_c: 64, dauer_min: 60}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 35, kochzeit_min: 60}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Classic Rauchbier": {
+                stammwuerze: 13.5, ibu: 25, ebc: 35, kochzeit: 90,
+                hauptguss: 44, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 36, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "50 g",
+                notizen: "Fränkisches Rauchbier mit intensivem Buchenrauch-Aroma.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Old Ale": {
+                stammwuerze: 18.0, ibu: 45, ebc: 45, kochzeit: 90,
+                hauptguss: 48, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 32, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "60 g",
+                notizen: "Komplexes, gehaltvolles britisches Ale mit Reifepotenzial.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 12.0}, {name: "Caramalz Dunkel", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 0.5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 64, dauer_min: 50}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 130, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Barleywine": {
+                stammwuerze: 24.0, ibu: 55, ebc: 35, kochzeit: 90,
+                hauptguss: 55, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
+                nachguss: 25, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "19-21 °C", hefe_menge: "80 g",
+                notizen: "Der König der Ales. Enormer Malzkörper und hohe Alkoholstärke.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 16.0}, {name: "Münchner Malz I", menge_kg: 3.0}, {name: "Caramalz Hell", menge_kg: 1.5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 65, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Chinook", menge_g: 150, kochzeit_min: 90}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
             }
         };
 
@@ -611,9 +898,7 @@
             }
         };
 
-        // Direkt aus der JS-Wörterbuchliste befüllen (inklusive Landbier)
         async function ladeBierstile() {
-            // Optional laden wir zusätzlich die Supabase-Stile, falls vorhanden, aber unsere Basisrezepte sind garantiert da
             const { data } = await _supabase.from('bierstile').select('*').order('name', { ascending: true });
             if (data && data.length > 0) {
                 alleBierstile = data;
@@ -627,7 +912,6 @@
                 const stilObj = BRAUWISSEN_BASISREZEPTE[name];
                 let gaerart = stilObj.hefe.toLowerCase().includes('untergärig') ? 'Untergärig' : 'Obergärig';
                 
-                // Falls der Stil in Supabase genauere Gärart-Infos hat, übernehmen wir die
                 const dbStil = alleBierstile.find(s => s.name === name);
                 if (dbStil && dbStil.gaerart) {
                     gaerart = dbStil.gaerart;
@@ -636,7 +920,6 @@
                 html += `<option value="${name}">${name} (${gaerart})</option>`;
             });
 
-            // Falls noch andere DB-Stile existieren, die nicht im Basisrezept stehen, hängen wir sie an
             alleBierstile.forEach(dbStil => {
                 if (!stilNamen.includes(dbStil.name)) {
                     html += `<option value="${dbStil.name}">${dbStil.name} (${dbStil.gaerart})</option>`;
