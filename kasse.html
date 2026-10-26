@@ -243,6 +243,8 @@
             border-radius: 8px;
             box-sizing: border-box;
             font-size: 15px;
+            background-color: white;
+            font-family: inherit;
         }
         .label-style {
             display: block;
@@ -370,11 +372,9 @@
         let alleBuchungen = [];
         let kassenbuchEditModus = false;
         
-        // Filter-Zustände für das Kassenbuch
-        let filterArt = 'ALL';  // 'ALL', 'EINNAHME', 'AUSGABE'
-        let filterJahr = 'ALL'; // 'ALL', '2026', '2025', etc.
+        let filterArt = 'ALL'; 
+        let filterJahr = 'ALL';
 
-        // Standard-Fallbacks
         let wasserEnergiePreis = 0.12; 
         let standardPreisMalz = 2.00;   
         let standardPreisHopfen = 0.05; 
@@ -411,7 +411,6 @@
 
         async function ladeEinstellungenAusDatenbank() {
             const { data, error } = await _supabase.from('einstellungen').select('*');
-            
             if (!error && data) {
                 data.forEach(item => {
                     if (item.schluessel === 'wasser_energie_preis') wasserEnergiePreis = parseFloat(item.wert) || 0.12;
@@ -439,7 +438,6 @@
 
         function extrahiereJahr(datumStr) {
             if (!datumStr) return '';
-            // Formate wie DD.MM.YYYY oder YYYY-MM-DD abfangen
             if (datumStr.includes('.')) {
                 const parts = datumStr.split('.');
                 return parts[parts.length - 1].trim();
@@ -459,11 +457,34 @@
             return Array.from(jahreSet).sort().reverse();
         }
 
+        // Hilfsfunktion: Konvertiert YYYY-MM-DD (HTML input) zu DD.MM.YYYY (Deutsches Format)
+        function formatiereDatumFuerDb(datumIso) {
+            if (!datumIso) return new Date().toLocaleDateString('de-DE');
+            if (datumIso.includes('-')) {
+                const parts = datumIso.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}.${parts[1]}.${parts[0]}`;
+                }
+            }
+            return datumIso;
+        }
+
+        // Hilfsfunktion: Konvertiert DD.MM.YYYY zu YYYY-MM-DD für das HTML date-input
+        function formatiereDatumFuerInput(datumDe) {
+            if (!datumDe) return new Date().toISOString().split('T')[0];
+            if (datumDe.includes('.')) {
+                const parts = datumDe.split('.');
+                if (parts.length === 3) {
+                    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                }
+            }
+            return datumDe;
+        }
+
         function zeigeKassenZentrale() {
             kassenbuchEditModus = false;
             const app = document.getElementById('app');
             const kassenstand = berechneKassenstand();
-
             const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
 
             let einstellungenBtnHtml = "";
@@ -476,7 +497,7 @@
 
                 <h2 class="page-title">💰 Braustall Kasse</h2>
 
-                <div style="background-color: #E8F5E9; border: 1px solid #C8E6C9; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center; shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div style="background-color: #E8F5E9; border: 1px solid #C8E6C9; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
                     <span style="font-size: 13px; color: #2E7D32; font-weight: bold;">Aktueller Kassenbestand:</span>
                     <div style="font-size: 26px; font-weight: bold; color: #1B5E20; margin-top: 4px;">${kassenstand.toFixed(2)} €</div>
                 </div>
@@ -489,16 +510,14 @@
                     ${einstellungenBtnHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 35px;">Kasse Version 2.5</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 35px;">Kasse Version 2.6</div>
             `;
         }
 
-        // --- 1. KASSENBUCH MIT REITER & JAHR-FILTER ---
         function zeigeKassenbuchAnsicht() {
             const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
             const app = document.getElementById('app');
 
-            // Gefilterte Buchungen
             let gefiltert = alleBuchungen.filter(b => {
                 let artMatch = true;
                 if (filterArt === 'EINNAHME') artMatch = b.art && b.art.toLowerCase() === 'einnahme';
@@ -510,7 +529,6 @@
                 return artMatch && jahrMatch;
             });
 
-            // Summen berechnen für gefilterte Ansicht
             let summeEinnahmen = 0;
             let summeAusgaben = 0;
             gefiltert.forEach(b => {
@@ -526,11 +544,7 @@
                 gefiltert.forEach(b => {
                     let istEinnahme = b.art && b.art.toLowerCase() === 'einnahme';
                     let betrag = parseFloat(b.betrag) || 0;
-
                     let kurzdatum = b.datum || '';
-                    if (kurzdatum.length === 10 && kurzdatum.charAt(6) === '2' && kurzdatum.charAt(7) === '0') {
-                        kurzdatum = kurzdatum.substring(0, 6) + kurzdatum.substring(8);
-                    }
 
                     let zeilenKlasse = "buchungs-zeile";
                     let klickAttribut = "";
@@ -548,7 +562,7 @@
                         <div class="${zeilenKlasse}" ${klickAttribut}>
                             <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; flex: 1;">
                                 <span style="font-size: 10px;">${istEinnahme ? '🟢' : '🔴'}</span>
-                                <span style="color: #666; font-size: 11px; white-space: nowrap; width: 42px;">${kurzdatum}</span>
+                                <span style="color: #666; font-size: 11px; white-space: nowrap; width: 68px;">${kurzdatum}</span>
                                 <div style="min-width: 65px;">${kontoAnzeige}</div>
                                 <span style="color: #333; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${escapeHtml(b.beschreibung || '')} ${editiereHinweis}</span>
                             </div>
@@ -562,7 +576,6 @@
                 });
             }
 
-            // Jahre-Optionen für Dropdown
             const verfuegbareJahre = ermittleVerfuegbareJahre();
             let jahreOptionenHtml = `<option value="ALL" ${filterJahr === 'ALL' ? 'selected' : ''}>Alle Jahre</option>`;
             verfuegbareJahre.forEach(j => {
@@ -586,7 +599,6 @@
 
                 ${topLeisteHtml}
 
-                <!-- REITER & JAHR FILTER -->
                 <div style="margin-bottom: 10px;">
                     <div style="display: flex; margin-bottom: 8px;">
                         <button class="tab-btn ${filterArt === 'ALL' ? 'active' : ''}" onclick="setzeFilterArt('ALL')">Alle</button>
@@ -607,7 +619,7 @@
                 <div class="tabelle-header">
                     <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
                         <span style="width: 10px;"></span>
-                        <span style="width: 42px;">Datum</span>
+                        <span style="width: 68px;">Datum</span>
                         <span style="min-width: 65px; padding-left: 6px;">Konto</span>
                         <span style="flex: 1;">Beschreibung</span>
                     </div>
@@ -635,11 +647,8 @@
             zeigeKassenbuchAnsicht();
         }
 
-        // --- 2. AUSWERTUNG & KONTEN-DASHBOARD (BALKENGRAFIK) ---
         function oeffneAuswertungModal() {
             const inhalt = document.getElementById('modal-inhalt');
-
-            // 1. Konten auswerten
             const kontenMap = {};
             let gesamtEinnahmen = 0;
             let gesamtAusgaben = 0;
@@ -668,35 +677,32 @@
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 12px; text-align: center;">📊 Kassen-Auswertung</h3>
 
-                <!-- 3 KPI KARTEN -->
                 <div style="display: flex; gap: 6px; margin-bottom: 15px;">
                     <div class="kpi-card" style="border-left: 4px solid #2E7D32;">
-                        <span style="font-size: 10px; color: #2E7D32; font-weight: bold; block;">EINNAHMEN</span>
+                        <span style="font-size: 10px; color: #2E7D32; font-weight: bold;">EINNAHMEN</span>
                         <div style="font-size: 13px; font-weight: bold; color: #2E7D32; margin-top: 2px;">+${gesamtEinnahmen.toFixed(2)} €</div>
                     </div>
                     <div class="kpi-card" style="border-left: 4px solid #D32F2F;">
-                        <span style="font-size: 10px; color: #D32F2F; font-weight: bold; block;">AUSGABEN</span>
+                        <span style="font-size: 10px; color: #D32F2F; font-weight: bold;">AUSGABEN</span>
                         <div style="font-size: 13px; font-weight: bold; color: #D32F2F; margin-top: 2px;">-${gesamtAusgaben.toFixed(2)} €</div>
                     </div>
                     <div class="kpi-card" style="border-left: 4px solid #1976D2;">
-                        <span style="font-size: 10px; color: #1976D2; font-weight: bold; block;">SALDO</span>
+                        <span style="font-size: 10px; color: #1976D2; font-weight: bold;">SALDO</span>
                         <div style="font-size: 13px; font-weight: bold; color: #1976D2; margin-top: 2px;">${nettoSaldo.toFixed(2)} €</div>
                     </div>
                 </div>
 
-                <!-- DIAGRAMM CONTAINER -->
                 <div style="background: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
                     <span style="font-size: 12px; font-weight: bold; color: #1565C0; display: block; margin-bottom: 8px; text-align: center;">Verteilung nach Konten (€)</span>
                     <canvas id="auswertungChart" style="width: 100%; max-height: 220px;"></canvas>
                 </div>
 
-                <!-- TABELLARISCHE ZUSAMMENFASSUNG NACH KONTEN -->
                 <div style="font-size: 12px; font-weight: bold; color: #1565C0; margin-bottom: 6px;">Konten-Übersicht:</div>
                 <div style="max-height: 18vh; overflow-y: auto; background: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 6px; padding: 6px;">
                     ${kontenLabels.map(k => {
                         const saldo = kontenMap[k].einnahmen - kontenMap[k].ausgaben;
                         return `
-                            <div style="display: flex; justify-content: space-between; border-b: 1px solid #EEE; padding: 4px 0; font-size: 11px;">
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #EEE; padding: 4px 0; font-size: 11px;">
                                 <b>${k}:</b>
                                 <div>
                                     <span style="color: #2E7D32; margin-right: 6px;">+${kontenMap[k].einnahmen.toFixed(2)}€</span>
@@ -713,7 +719,6 @@
 
             document.getElementById('modal-overlay').style.display = 'flex';
 
-            // Chart.js Rendern
             setTimeout(() => {
                 const ctx = document.getElementById('auswertungChart').getContext('2d');
                 if (auswertungChartInstance) auswertungChartInstance.destroy();
@@ -723,40 +728,27 @@
                     data: {
                         labels: kontenLabels,
                         datasets: [
-                            {
-                                label: 'Einnahmen',
-                                data: einnahmenData,
-                                backgroundColor: '#2E7D32'
-                            },
-                            {
-                                label: 'Ausgaben',
-                                data: ausgabenData,
-                                backgroundColor: '#D32F2F'
-                            }
+                            { label: 'Einnahmen', data: einnahmenData, backgroundColor: '#2E7D32' },
+                            { label: 'Ausgaben', data: ausgabenData, backgroundColor: '#D32F2F' }
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: {
-                            y: { beginAtZero: true }
-                        },
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
-                        }
+                        scales: { y: { beginAtZero: true } },
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
                     }
                 });
             }, 100);
         }
 
-        // --- 3. CSV EXPORT FÜR KASSENPRÜFER ---
         function exportiereKassenbuchCSV() {
             if (alleBuchungen.length === 0) {
                 alert("Keine Buchungen zum Exportieren vorhanden.");
                 return;
             }
 
-            let csvContent = "\uFEFF"; // UTF-8 BOM für Excel-Umlautkompatibilität
+            let csvContent = "\uFEFF";
             csvContent += "ID;Datum;Art;Konto;Beschreibung;Betrag (€)\n";
 
             alleBuchungen.forEach(b => {
@@ -780,7 +772,6 @@
             document.body.removeChild(link);
         }
 
-        // --- 4. NEUE / BEARBEITETE BUCHUNG MODAL ---
         function oeffneNeueBuchungModal(vorbelegung = null) {
             const inhalt = document.getElementById('modal-inhalt');
 
@@ -808,10 +799,17 @@
             const kontoWert = vorbelegung ? (vorbelegung.konto || '') : '';
             const beschreibungWert = vorbelegung ? (vorbelegung.beschreibung || '') : '';
             const betragWert = vorbelegung ? (vorbelegung.betrag || '') : '';
+            
+            // Datum vorbelegen: Entweder von Wiederholung oder heutiges Datum im Input-Format (YYYY-MM-DD)
+            const rohdatum = vorbelegung ? vorbelegung.datum : new Date().toLocaleDateString('de-DE');
+            const datumWertInput = formatiereDatumFuerInput(rohdatum);
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">${vorbelegung ? '🔄 Buchung wiederholen' : '➕ Neue Buchung'}</h3>
                 
+                <label class="label-style">Datum:</label>
+                <input type="date" id="kb-datum" value="${datumWertInput}" class="input-style">
+
                 <label class="label-style">Art:</label>
                 <select id="kb-art" class="input-style">
                     <option value="Einnahme" ${artWert === 'Einnahme' ? 'selected' : ''}>Einnahme</option>
@@ -841,6 +839,8 @@
         }
 
         async function speichereNeueBuchung() {
+            const datumInput = document.getElementById('kb-datum').value;
+            const datumDe = formatiereDatumFuerDb(datumInput);
             const art = document.getElementById('kb-art').value;
             const kontoVal = document.getElementById('kb-konto').value.trim();
             const konto = kontoVal !== "" ? parseInt(kontoVal, 10) : null;
@@ -852,9 +852,8 @@
                 return;
             }
 
-            const heute = new Date().toLocaleDateString('de-DE');
             const { error } = await _supabase.from('kassenbuch').insert([{
-                datum: heute,
+                datum: datumDe,
                 art: art,
                 konto: konto,
                 beschreibung: beschreibung,
@@ -883,10 +882,15 @@
                 kontoListOptions += `<option value="${k}">`;
             });
 
+            const datumWertInput = formatiereDatumFuerInput(b.datum);
+
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0;">✏️ Buchung bearbeiten</h3>
                 
                 <button class="btn-wiederholen" onclick="schliesseModal(); oeffneNeueBuchungModal(${JSON.stringify(b).replace(/"/g, '&quot;')})">🔄 Wiederholen (Nochmal buchen)</button>
+
+                <label class="label-style">Datum:</label>
+                <input type="date" id="edit-kb-datum" value="${datumWertInput}" class="input-style">
 
                 <label class="label-style">Art:</label>
                 <select id="edit-kb-art" class="input-style">
@@ -915,6 +919,8 @@
         }
 
         async function speichereBearbeiteteBuchung(id) {
+            const datumInput = document.getElementById('edit-kb-datum').value;
+            const datumDe = formatiereDatumFuerDb(datumInput);
             const art = document.getElementById('edit-kb-art').value;
             const kontoVal = document.getElementById('edit-kb-konto').value.trim();
             const konto = kontoVal !== "" ? parseInt(kontoVal, 10) : null;
@@ -927,6 +933,7 @@
             }
 
             const { error } = await _supabase.from('kassenbuch').update({
+                datum: datumDe,
                 art: art,
                 konto: konto,
                 beschreibung: beschreibung,
@@ -957,7 +964,6 @@
             zeigeKassenbuchAnsicht();
         }
 
-        // --- 5. SUDE MODAL ---
         function oeffneSudeModal() {
             const istKassenwart = (sessionStorage.getItem('userKassenwart') === 'ja' || localStorage.getItem('userKassenwartCache') === 'ja');
             const inhalt = document.getElementById('modal-inhalt');
@@ -1042,7 +1048,6 @@
             zeigeKassenZentrale();
         }
 
-        // --- 6. EINSTELLUNGEN MODAL ---
         function oeffneEinstellungenModal() {
             const inhalt = document.getElementById('modal-inhalt');
 
