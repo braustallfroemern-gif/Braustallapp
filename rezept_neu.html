@@ -177,7 +177,7 @@
         }
         .btn-delete {
             background-color: #FFEBEE;
-            color: C62828;
+            color: #C62828;
             border: 1px solid #FFCDD2;
             font-weight: bold;
             height: 40px;
@@ -496,7 +496,7 @@
         let aktuellesRezeptId = null;
         let aktuellerBierEbc = 0;
 
-        // BRAUWISSEN / 50L BASISREZEPT-BIBLIOTHEK (Rein im JavaScript)
+        // BRAUWISSEN / 50L BASISREZEPT-BIBLIOTHEK (Rein im JavaScript, inklusive Landbier)
         const BRAUWISSEN_BASISREZEPTE = {
             "Landbier": {
                 stammwuerze: 12.8, ibu: 24, ebc: 18, kochzeit: 90,
@@ -508,7 +508,7 @@
                 rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Hallertauer Mittelfrüh", menge_g: 40, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
-            }
+            },
             "Helles / Lager": {
                 stammwuerze: 12.0, ibu: 22, ebc: 8, kochzeit: 90,
                 hauptguss: 42, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
@@ -611,24 +611,41 @@
             }
         };
 
+        // Direkt aus der JS-Wörterbuchliste befüllen (inklusive Landbier)
         async function ladeBierstile() {
-            const { data, error } = await _supabase.from('bierstile').select('*').order('name', { ascending: true });
-            const select = document.getElementById('bier-stil');
-            
-            if (error || !data || data.length === 0) {
-                select.innerHTML = `<option value="Sonstiges">Sonstiges (Fehler beim Laden)</option>`;
-                return;
+            // Optional laden wir zusätzlich die Supabase-Stile, falls vorhanden, aber unsere Basisrezepte sind garantiert da
+            const { data } = await _supabase.from('bierstile').select('*').order('name', { ascending: true });
+            if (data && data.length > 0) {
+                alleBierstile = data;
             }
 
-            alleBierstile = data;
+            const select = document.getElementById('bier-stil');
+            const stilNamen = Object.keys(BRAUWISSEN_BASISREZEPTE);
+            
             let html = '<option value="">-- Bitte Bierstil wählen --</option>';
-            data.forEach(stil => {
-                html += `<option value="${stil.name}">${stil.name} (${stil.gaerart})</option>`;
+            stilNamen.forEach(name => {
+                const stilObj = BRAUWISSEN_BASISREZEPTE[name];
+                let gaerart = stilObj.hefe.toLowerCase().includes('untergärig') ? 'Untergärig' : 'Obergärig';
+                
+                // Falls der Stil in Supabase genauere Gärart-Infos hat, übernehmen wir die
+                const dbStil = alleBierstile.find(s => s.name === name);
+                if (dbStil && dbStil.gaerart) {
+                    gaerart = dbStil.gaerart;
+                }
+
+                html += `<option value="${name}">${name} (${gaerart})</option>`;
             });
+
+            // Falls noch andere DB-Stile existieren, die nicht im Basisrezept stehen, hängen wir sie an
+            alleBierstile.forEach(dbStil => {
+                if (!stilNamen.includes(dbStil.name)) {
+                    html += `<option value="${dbStil.name}">${dbStil.name} (${dbStil.gaerart})</option>`;
+                }
+            });
+
             select.innerHTML = html;
         }
 
-        // NEU: Logik beim Auswählen des Bierstils mit Wizard-Abfrage
         function behandleBierstilAuswahl() {
             aktualisiereStilHinweise();
 
@@ -676,17 +693,14 @@
             document.getElementById('hefe-menge').value = rezept.hefe_menge;
             document.getElementById('rezept-notizen').value = rezept.notizen;
 
-            // Schüttung befüllen
             const malzContainer = document.getElementById('malz-container');
             malzContainer.innerHTML = '';
             rezept.schuettung.forEach(m => fuegeMalzZeileHinzu(m.name, m.menge_kg));
 
-            // Rasten befüllen
             const rastContainer = document.getElementById('rast-container');
             rastContainer.innerHTML = '';
             rezept.rasten.forEach(r => fuegeRastZeile(r.name, r.temperatur_c, r.dauer_min));
 
-            // Kochhopfen befüllen
             const kochhopfenContainer = document.getElementById('kochhopfen-container');
             kochhopfenContainer.innerHTML = '';
             if (rezept.hopfung && rezept.hopfung.length > 0) {
@@ -695,14 +709,12 @@
                 fuegeKochhopfenZeileHinzu();
             }
 
-            // Whirlpool befüllen
             const wpContainer = document.getElementById('whirlpool-container');
             wpContainer.innerHTML = '';
             if (rezept.whirlpool && rezept.whirlpool.length > 0) {
                 rezept.whirlpool.forEach(w => fuegeWhirlpoolHopfenZeileHinzu(w.name, w.menge_g, w.temperatur_c));
             }
 
-            // Kalthopfung befüllen
             const kaltContainer = document.getElementById('kalthopfen-container');
             kaltContainer.innerHTML = '';
             if (rezept.kalthopfung && rezept.kalthopfung.length > 0) {
