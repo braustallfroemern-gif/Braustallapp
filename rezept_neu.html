@@ -252,7 +252,7 @@
         <!-- Brauwissen-Wizard Schalter -->
         <div class="section-box" style="background-color: #E3F2FD; border-color: #90CAF9;">
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; color: #1565C0; font-size: 13px;">
-                <input type="checkbox" id="brauwissen-aktiv" style="width: 18px; height: 18px; accent-color: #1565C0;">
+                <input type="checkbox" id="brauwissen-aktiv" style="width: 18px; height: 18px; accent-color: #1565C0;" checked>
                 🤖 Brauwissen-Unterstützung (Basisrezept bei Stilwahl laden)
             </label>
         </div>
@@ -289,26 +289,26 @@
                 </div>
                 <div>
                     <label class="label-style">Geplante EBC (Farbe):</label>
-                    <input type="number" id="ebc-wert" class="input-style" placeholder="Empfohlen: -">
+                    <input type="number" id="ebc-wert" class="input-style" placeholder="Empfohlen: -" oninput="berechneWasserUndMilchsaeure()">
                     <div id="hinweis-ebc" class="stil-hinweis">Zulässig: -</div>
                 </div>
             </div>
         </div>
 
-        <!-- 2. Wasser & Aufbereitung -->
+        <!-- 2. Wasser & Aufbereitung (mit automatischer Milchsäure-Berechnung für 6.5 °dH) -->
         <div class="section-box">
-            <div class="section-title">2. Wasser & Aufbereitung</div>
+            <div class="section-title">2. Wasser & Aufbereitung (Wasserwerk: 6,5 °dH KH)</div>
             
             <div style="background: white; padding: 8px; border-radius: 6px; border: 1px solid #E0E0E0; margin-bottom: 8px;">
                 <label class="label-style" style="color: #1565C0;">Hauptguss</label>
                 <div class="grid-2">
                     <div>
                         <label class="label-style">Menge (L):</label>
-                        <input type="number" step="1" id="hauptguss-liter" class="input-style" placeholder="z.B. 40">
+                        <input type="number" step="1" id="hauptguss-liter" class="input-style" placeholder="z.B. 40" oninput="berechneWasserUndMilchsaeure()">
                     </div>
                     <div>
-                        <label class="label-style">Milchsäure (ml):</label>
-                        <input type="text" id="hauptguss-milchsaeure" class="input-style" placeholder="z.B. 10 ml">
+                        <label class="label-style">Milchsäure (ml) [80%]:</label>
+                        <input type="text" id="hauptguss-milchsaeure" class="input-style" placeholder="z.B. 5 ml">
                     </div>
                 </div>
                 <label class="label-style">Salz-Auswahl:</label>
@@ -329,8 +329,8 @@
                         <input type="number" step="1" id="nachguss-liter" class="input-style" placeholder="z.B. 35">
                     </div>
                     <div>
-                        <label class="label-style">Milchsäure (ml):</label>
-                        <input type="text" id="nachguss-milchsaeure" class="input-style" placeholder="z.B. 5 ml">
+                        <label class="label-style">Milchsäure (ml) [80%]:</label>
+                        <input type="text" id="nachguss-milchsaeure" class="input-style" placeholder="z.B. 0 ml">
                     </div>
                 </div>
                 <label class="label-style">Salz-Auswahl:</label>
@@ -496,12 +496,12 @@
         let aktuellesRezeptId = null;
         let aktuellerBierEbc = 0;
 
-        // VOLLSTÄNDIGE 33-STILE 50L BASISREZEPT-BIBLIOTHEK (Freie Schüttungswahl aus dem gesamten Malzspektrum)
+        // VOLLSTÄNDIGE 33-STILE 50L BASISREZEPT-BIBLIOTHEK (Freie Schüttungswahl)
         const BRAUWISSEN_BASISREZEPTE = {
             "Landbier": {
                 stammwuerze: 12.8, ibu: 24, ebc: 18, kochzeit: 90,
-                hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "11-13 °C", hefe_menge: "45 g",
                 notizen: "Uriges, vollmundiges Braustall-Landbier. Schön malzbetont mit feiner karamelligen Note.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 2.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
@@ -511,8 +511,8 @@
             },
             "Pilsner": {
                 stammwuerze: 11.8, ibu: 40, ebc: 5, kochzeit: 90,
-                hauptguss: 40, hauptguss_milchsaeure: "12 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
-                nachguss: 40, nachguss_milchsaeure: "6 ml", nachguss_salze: "",
+                hauptguss: 40, hauptguss_salze: "Calciumchlorid (CaCl2)",
+                nachguss: 40, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "45 g",
                 notizen: "Feinherbes Pilsner Brauart. Weiches Wasser und hohe Bitterhopfung.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.8}],
@@ -522,8 +522,8 @@
             },
             "Helles / Lager": {
                 stammwuerze: 12.0, ibu: 22, ebc: 8, kochzeit: 90,
-                hauptguss: 42, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "5 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "45 g",
                 notizen: "Klassisches bayrisches Helles. Ruhige Gärung bei 11°C.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
@@ -533,8 +533,8 @@
             },
             "Kellerbier / Zwickel": {
                 stammwuerze: 12.5, ibu: 25, ebc: 14, kochzeit: 90,
-                hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "12-14 °C", hefe_menge: "45 g",
                 notizen: "Naturtrüb, malzbetont und vollmundig.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.5}],
@@ -544,8 +544,8 @@
             },
             "Märzen / Festbier": {
                 stammwuerze: 13.8, ibu: 24, ebc: 25, kochzeit: 90,
-                hauptguss: 44, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 36, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 44, hauptguss_salze: "",
+                nachguss: 36, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "50 g",
                 notizen: "Kräftiger Malzkörper, wunderschöne Kupferfarbe.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 5.5}, {name: "Münchner Malz I", menge_kg: 5.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
@@ -555,8 +555,8 @@
             },
             "Bockbier / Doppelbock": {
                 stammwuerze: 17.5, ibu: 28, ebc: 30, kochzeit: 90,
-                hauptguss: 48, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
-                nachguss: 32, nachguss_milchsaeure: "5 ml", nachguss_salze: "",
+                hauptguss: 48, hauptguss_salze: "",
+                nachguss: 32, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "9-11 °C", hefe_menge: "60 g",
                 notizen: "Schwerer, starker Malzkörper mit edler Süße und dezenter Bittere.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 6.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}],
@@ -566,8 +566,8 @@
             },
             "Schwarzbier": {
                 stammwuerze: 12.0, ibu: 28, ebc: 55, kochzeit: 90,
-                hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "11-13 °C", hefe_menge: "45 g",
                 notizen: "Tiefschwarz, aber schlank und überraschend mild im Antrunk ohne Pelzigkeit.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 0.6}],
@@ -577,8 +577,8 @@
             },
             "California Common (Steam Beer)": {
                 stammwuerze: 12.2, ibu: 38, ebc: 25, kochzeit: 60,
-                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "16-18 °C", hefe_menge: "45 g",
                 notizen: "Mit untergäriger Hefe bei wärmeren Ale-Temperaturen vergoren.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 10.0}, {name: "Caramalz Hell", menge_kg: 1.0}],
@@ -588,8 +588,8 @@
             },
             "Vienna Lager": {
                 stammwuerze: 12.5, ibu: 24, ebc: 24, kochzeit: 90,
-                hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "45 g",
                 notizen: "Bernsteinfarben mit elegantem Wiener Malz Charakter.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 6.0}, {name: "Münchner Malz I", menge_kg: 4.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
@@ -599,8 +599,8 @@
             },
             "Weizen / Weißbier": {
                 stammwuerze: 12.2, ibu: 12, ebc: 12, kochzeit: 75,
-                hauptguss: 40, hauptguss_milchsaeure: "5 ml", hauptguss_salze: "",
-                nachguss: 40, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hauptguss: 40, hauptguss_salze: "",
+                nachguss: 40, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "19-21 °C", hefe_menge: "35 g",
                 notizen: "Klassisches obergäriges Hefeweizen mit Bananen- und Nelkenaroma.",
                 schuettung: [{name: "Weizenmalz hell", menge_kg: 6.5}, {name: "Pilsner Malz", menge_kg: 4.5}, {name: "Caramalz Hell", menge_kg: 0.3}],
@@ -610,8 +610,8 @@
             },
             "Dunkelweizen": {
                 stammwuerze: 12.8, ibu: 14, ebc: 40, kochzeit: 75,
-                hauptguss: 40, hauptguss_milchsaeure: "5 ml", hauptguss_salze: "",
-                nachguss: 40, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hauptguss: 40, hauptguss_salze: "",
+                nachguss: 40, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "19-21 °C", hefe_menge: "35 g",
                 notizen: "Dunkles Weizenbier mit Röstaromen und feiner Fruchtnote.",
                 schuettung: [{name: "Weizenmalz hell", menge_kg: 6.0}, {name: "Münchner Malz I", menge_kg: 4.0}, {name: "Röstmalz", menge_kg: 0.6}],
@@ -621,8 +621,8 @@
             },
             "Weizenbock": {
                 stammwuerze: 18.0, ibu: 22, ebc: 38, kochzeit: 90,
-                hauptguss: 46, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
-                nachguss: 34, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hauptguss: 46, hauptguss_salze: "",
+                nachguss: 34, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "55 g",
                 notizen: "Wuchtiger Weizenbock mit hoher Stammwürze und reichem Körper.",
                 schuettung: [{name: "Weizenmalz hell", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 6.0}, {name: "Caramalz Dunkel", menge_kg: 1.0}],
@@ -632,8 +632,8 @@
             },
             "Altbier": {
                 stammwuerze: 12.5, ibu: 35, ebc: 30, kochzeit: 90,
-                hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "15-17 °C", hefe_menge: "45 g",
                 notizen: "Kupferfarben, hopfenbetont und spritzig.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
@@ -643,8 +643,8 @@
             },
             "Kölsch": {
                 stammwuerze: 11.5, ibu: 25, ebc: 6, kochzeit: 75,
-                hauptguss: 40, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 40, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 40, hauptguss_salze: "",
+                nachguss: 40, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "14-16 °C", hefe_menge: "40 g",
                 notizen: "Hell, schlank, feine obergärige Fruchtnoten bei kühlerer Gärung.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 9.8}, {name: "Caramalz Hell", menge_kg: 0.5}],
@@ -654,8 +654,8 @@
             },
             "Pale Ale": {
                 stammwuerze: 12.5, ibu: 38, ebc: 18, kochzeit: 60,
-                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
-                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
+                hauptguss: 42, hauptguss_salze: "Calciumchlorid (CaCl2)",
+                nachguss: 38, nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "35 g",
                 notizen: "Fruchtig-frisches Ale mit Zitrusnoten.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 10.0}, {name: "Caramalz Hell", menge_kg: 0.8}],
@@ -666,8 +666,8 @@
             },
             "IPA (India Pale Ale)": {
                 stammwuerze: 15.2, ibu: 60, ebc: 22, kochzeit: 60,
-                hauptguss: 45, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
-                nachguss: 35, nachguss_milchsaeure: "4 ml", nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
+                hauptguss: 45, hauptguss_salze: "Calciumchlorid (CaCl2)",
+                nachguss: 35, nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "45 g",
                 notizen: "Hopfenbombe mit intensiven Zitrus- und Tropenfruchtnoten.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 11.5}, {name: "Pilsner Malz", menge_kg: 1.5}, {name: "Caramalz Hell", menge_kg: 0.8}],
@@ -678,8 +678,8 @@
             },
             "Double / Imperial IPA": {
                 stammwuerze: 18.0, ibu: 85, ebc: 25, kochzeit: 60,
-                hauptguss: 48, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
-                nachguss: 32, nachguss_milchsaeure: "4 ml", nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
+                hauptguss: 48, hauptguss_salze: "Calciumchlorid (CaCl2)",
+                nachguss: 32, nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "60 g",
                 notizen: "Extrem hopfenbetont, starker Alkoholgehalt, volle Aromenexplosion.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 14.5}, {name: "Caramalz Hell", menge_kg: 1.2}],
@@ -690,8 +690,8 @@
             },
             "English Porter": {
                 stammwuerze: 12.2, ibu: 25, ebc: 50, kochzeit: 60,
-                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "35 g",
                 notizen: "Klassisches britisches Porter mit Schokoladen- und Karamellnoten.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 1.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}, {name: "Röstmalz", menge_kg: 0.4}],
@@ -701,8 +701,8 @@
             },
             "American Porter": {
                 stammwuerze: 14.0, ibu: 38, ebc: 60, kochzeit: 60,
-                hauptguss: 44, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
-                nachguss: 36, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hauptguss: 44, hauptguss_salze: "",
+                nachguss: 36, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "45 g",
                 notizen: "Kräftigeres Porter mit amerikanischer Hopfennote.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 9.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}, {name: "Röstmalz", menge_kg: 0.6}],
@@ -712,8 +712,8 @@
             },
             "Baltic Porter": {
                 stammwuerze: 18.0, ibu: 30, ebc: 55, kochzeit: 90,
-                hauptguss: 48, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 32, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 48, hauptguss_salze: "",
+                nachguss: 32, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "60 g",
                 notizen: "Starkes Porter, traditionell untergärig vergoren und lange kalt gelagert.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 4.5}, {name: "Caramalz Dunkel", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 0.5}],
@@ -723,8 +723,8 @@
             },
             "Dry Stout (Irish Stout)": {
                 stammwuerze: 10.2, ibu: 38, ebc: 70, kochzeit: 60,
-                hauptguss: 38, hauptguss_milchsaeure: "5 ml", hauptguss_salze: "",
-                nachguss: 42, nachguss_milchsaeure: "2 ml", nachguss_salze: "",
+                hauptguss: 38, hauptguss_salze: "",
+                nachguss: 42, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "35 g",
                 notizen: "Trocken, röstmalzbetont mit Kaffeenote, sehr schlank im Abgang.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 7.0}, {name: "Röstgerste", menge_kg: 1.2}],
@@ -734,8 +734,8 @@
             },
             "Sweet Stout (Milk Stout)": {
                 stammwuerze: 13.5, ibu: 28, ebc: 100, kochzeit: 60,
-                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "40 g",
                 notizen: "Vollmundig, malzig-süß durch unvergärbare Extrakte.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 8.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}, {name: "Röstmalz", menge_kg: 0.8}],
@@ -745,8 +745,8 @@
             },
             "Oatmeal Stout": {
                 stammwuerze: 13.2, ibu: 32, ebc: 55, kochzeit: 60,
-                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
-                nachguss: 38, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hauptguss: 42, hauptguss_salze: "",
+                nachguss: 38, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "40 g",
                 notizen: "Seidiges Mundgefühl durch Haferflocken-Anteil.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 8.0}, {name: "Caramalz Dunkel", menge_kg: 1.0}, {name: "Röstmalz", menge_kg: 0.6}],
@@ -756,8 +756,8 @@
             },
             "Russian Imperial Stout": {
                 stammwuerze: 21.0, ibu: 70, ebc: 120, kochzeit: 90,
-                hauptguss: 52, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
-                nachguss: 28, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 52, hauptguss_salze: "",
+                nachguss: 28, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-21 °C", hefe_menge: "70 g",
                 notizen: "Gigantisches Schwarzbier mit enormem Alkohol- und Röstkörper.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 13.0}, {name: "Münchner Malz I", menge_kg: 3.0}, {name: "Caramalz Dunkel", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 1.2}],
@@ -767,8 +767,8 @@
             },
             "Witbier (Belgian White)": {
                 stammwuerze: 12.0, ibu: 14, ebc: 6, kochzeit: 60,
-                hauptguss: 40, hauptguss_milchsaeure: "4 ml", hauptguss_salze: "",
-                nachguss: 40, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hauptguss: 40, hauptguss_salze: "",
+                nachguss: 40, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "19-22 °C", hefe_menge: "35 g",
                 notizen: "Unfiltriertes belgisches Weizenbier mit Koriander- und Orangenschalennoten.",
                 schuettung: [{name: "Weizenmalz hell", menge_kg: 5.5}, {name: "Pilsner Malz", menge_kg: 5.0}],
@@ -778,8 +778,8 @@
             },
             "Saison": {
                 stammwuerze: 14.5, ibu: 28, ebc: 15, kochzeit: 75,
-                hauptguss: 44, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "",
-                nachguss: 36, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hauptguss: 44, hauptguss_salze: "",
+                nachguss: 36, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "22-25 °C", hefe_menge: "45 g",
                 notizen: "Würziger, extrem hochvergärbarer belgischer Farmhouse Ale Stil.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.8}],
@@ -789,8 +789,8 @@
             },
             "Bière de Garde": {
                 stammwuerze: 16.0, ibu: 24, ebc: 22, kochzeit: 90,
-                hauptguss: 46, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 34, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hauptguss: 46, hauptguss_salze: "",
+                nachguss: 34, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "50 g",
                 notizen: "Französisches Lager-Ale mit reichem Malzkörper.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 3.0}, {name: "Caramalz Dunkel", menge_kg: 1.0}],
@@ -800,8 +800,8 @@
             },
             "Belgian Dubbel": {
                 stammwuerze: 16.0, ibu: 20, ebc: 28, kochzeit: 90,
-                hauptguss: 46, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 34, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hauptguss: 46, hauptguss_salze: "",
+                nachguss: 34, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "20-22 °C", hefe_menge: "50 g",
                 notizen: "Kräftig dunkles belgisches Abteibier mit Pflaumen- und Rosinenaromen.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.0}, {name: "Münchner Malz I", menge_kg: 2.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}],
@@ -811,8 +811,8 @@
             },
             "Belgian Tripel": {
                 stammwuerze: 19.0, ibu: 30, ebc: 10, kochzeit: 90,
-                hauptguss: 48, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 32, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hauptguss: 48, hauptguss_salze: "",
+                nachguss: 32, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "20-22 °C", hefe_menge: "60 g",
                 notizen: "Starkes, helles belgisches Tripel mit komplexen Estern.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 13.5}, {name: "Caramalz Hell", menge_kg: 0.8}],
@@ -822,8 +822,8 @@
             },
             "Berliner Weisse": {
                 stammwuerze: 8.0, ibu: 5, ebc: 4, kochzeit: 30,
-                hauptguss: 35, hauptguss_milchsaeure: "4 ml", hauptguss_salze: "",
-                nachguss: 45, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hauptguss: 35, hauptguss_salze: "",
+                nachguss: 45, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "20-22 °C", hefe_menge: "30 g",
                 notizen: "Säuerliches, leichtes Berliner Traditionsbier.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 3.5}, {name: "Weizenmalz hell", menge_kg: 3.5}],
@@ -833,8 +833,8 @@
             },
             "Gose": {
                 stammwuerze: 10.5, ibu: 12, ebc: 5, kochzeit: 60,
-                hauptguss: 38, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "Kochsalz (NaCl)",
-                nachguss: 42, nachguss_milchsaeure: "2 ml", nachguss_salze: "",
+                hauptguss: 38, hauptguss_salze: "Kochsalz (NaCl)",
+                nachguss: 42, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "20-22 °C", hefe_menge: "35 g",
                 notizen: "Säuerlich-salziges traditionelles Obergäriges mit Koriander.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 4.5}, {name: "Weizenmalz hell", menge_kg: 4.0}],
@@ -844,8 +844,8 @@
             },
             "Classic Rauchbier": {
                 stammwuerze: 13.5, ibu: 25, ebc: 35, kochzeit: 90,
-                hauptguss: 44, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 36, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 44, hauptguss_salze: "",
+                nachguss: 36, nachguss_salze: "",
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "50 g",
                 notizen: "Fränkisches Rauchbier mit intensivem Buchenrauch-Aroma.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
@@ -855,8 +855,8 @@
             },
             "Old Ale": {
                 stammwuerze: 18.0, ibu: 45, ebc: 45, kochzeit: 90,
-                hauptguss: 48, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
-                nachguss: 32, nachguss_milchsaeure: "3 ml", nachguss_salze: "",
+                hauptguss: 48, hauptguss_salze: "",
+                nachguss: 32, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "60 g",
                 notizen: "Komplexes, gehaltvolles britisches Ale mit Reifepotenzial.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 12.0}, {name: "Caramalz Dunkel", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 0.5}],
@@ -866,8 +866,8 @@
             },
             "Barleywine": {
                 stammwuerze: 24.0, ibu: 55, ebc: 35, kochzeit: 90,
-                hauptguss: 55, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
-                nachguss: 25, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hauptguss: 55, hauptguss_salze: "",
+                nachguss: 25, nachguss_salze: "",
                 hefe: "SafAle S-04 (Obergärig)", gaer_temp: "19-21 °C", hefe_menge: "80 g",
                 notizen: "Der König der Ales. Enormer Malzkörper und hohe Alkoholstärke.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 16.0}, {name: "Münchner Malz I", menge_kg: 3.0}, {name: "Caramalz Hell", menge_kg: 1.5}],
@@ -964,14 +964,20 @@
             document.getElementById('kochzeit-gesamt').value = rezept.kochzeit;
 
             document.getElementById('hauptguss-liter').value = rezept.hauptguss;
-            document.getElementById('hauptguss-milchsaeure').value = rezept.hauptguss_milchsaeure;
             document.getElementById('hauptguss-salze').value = rezept.hauptguss_salze;
 
             document.getElementById('nachguss-liter').value = rezept.nachguss;
-            document.getElementById('nachguss-milchsaeure').value = rezept.nachguss_milchsaeure;
             document.getElementById('nachguss-salze').value = rezept.nachguss_salze;
 
-            document.getElementById('hefe-name').value = rezept.hefe;
+            const hefeSelect = document.getElementById('hefe-name');
+            if (![...hefeSelect.options].some(o => o.value === rezept.hefe)) {
+                const opt = document.createElement('option');
+                opt.value = rezept.hefe;
+                opt.textContent = rezept.hefe;
+                hefeSelect.appendChild(opt);
+            }
+            hefeSelect.value = rezept.hefe;
+            
             document.getElementById('gaer-temp').value = rezept.gaer_temp;
             document.getElementById('hefe-menge').value = rezept.hefe_menge;
             document.getElementById('rezept-notizen').value = rezept.notizen;
@@ -1006,7 +1012,30 @@
 
             schliesseModal();
             berechneBierFarbe();
+            berechneWasserUndMilchsaeure();
             alert(`Basisrezept für "${stilName}" erfolgreich geladen! 🍻`);
+        }
+
+        function berechneWasserUndMilchsaeure() {
+            const ebc = parseFloat(document.getElementById('ebc-wert').value) || 10;
+            const hauptgussLiter = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
+
+            if (hauptgussLiter <= 0) return;
+
+            // Formel basierend auf eurer Wasseranalyse (6.5 °dH Karbonathärte):
+            // Helle Biere (EBC < 15) brauchen Milchsäure zur pH-Senkung im Hauptguss (ca. 0.3 ml pro Liter Hauptguss).
+            // Dunkle Biere (EBC >= 15) bringen durch dunkles Malz eigene Säure mit -> 0 ml Milchsäure.
+            let milchsaeureMl = 0;
+            if (ebc < 15) {
+                milchsaeureMl = Math.round((hauptgussLiter * 0.28) * 10) / 10; // ca. 11 ml bei 40L für Pils
+            }
+
+            const milchsaeureInput = document.getElementById('hauptguss-milchsaeure');
+            if (milchsaeureMl > 0) {
+                milchsaeureInput.value = `${milchsaeureMl} ml`;
+            } else {
+                milchsaeureInput.value = '0 ml';
+            }
         }
 
         function aktualisiereStilHinweise() {
@@ -1080,7 +1109,18 @@
 
         function baueMalzOptionen(aktuellerWert = '') {
             let html = `<option value="" data-ebc="0">-- Malz wählen --</option>`;
-            lagerMalzListe.forEach(m => {
+            
+            let liste = [...lagerMalzListe];
+            if (aktuellerWert && !liste.some(m => (m.bezeichnung || m.name) === aktuellerWert)) {
+                let geschätztesEbc = 3.5;
+                const lower = aktuellerWert.toLowerCase();
+                if (lower.includes('münchn')) geschätztesEbc = 20;
+                else if (lower.includes('cara')) geschätztesEbc = 60;
+                else if (lower.includes('röst')) geschätztesEbc = 1000;
+                liste.push({ bezeichnung: aktuellerWert, farbe_ebc: geschätztesEbc });
+            }
+
+            liste.forEach(m => {
                 const bez = m.bezeichnung || m.name || '';
                 let ebc = parseFloat(m.farbe_ebc || m.ebc || m.ebc_wert || m.farbe) || 0;
                 
@@ -1105,7 +1145,13 @@
             if (mitIrismoos) {
                 html += `<option value="Irismoos" ${aktuellerWert === 'Irismoos' ? 'selected' : ''} style="font-weight: bold; color: #1565C0;">✨ Irismoos (Klärmittel)</option>`;
             }
-            lagerHopfenListe.forEach(h => {
+            
+            let liste = [...lagerHopfenListe];
+            if (aktuellerWert && aktuellerWert !== 'Irismoos' && !liste.some(h => (h.bezeichnung || h.name) === aktuellerWert)) {
+                liste.push({ bezeichnung: aktuellerWert });
+            }
+
+            liste.forEach(h => {
                 const bez = h.bezeichnung || h.name || '';
                 html += `<option value="${bez}" ${bez === aktuellerWert ? 'selected' : ''}>${bez}</option>`;
             });
@@ -1122,10 +1168,17 @@
 
         function aktualisiereHefeDropdown() {
             const select = document.getElementById('hefe-name');
+            const aktuellerWert = select.value;
+            
+            let liste = [...lagerHefeListe];
+            if (aktuellerWert && !liste.some(h => (h.bezeichnung || h.name) === aktuellerWert)) {
+                liste.push({ bezeichnung: aktuellerWert });
+            }
+
             let html = `<option value="">-- Hefe wählen --</option>`;
-            lagerHefeListe.forEach(h => {
+            liste.forEach(h => {
                 const bez = h.bezeichnung || h.name || '';
-                html += `<option value="${bez}">${bez}</option>`;
+                html += `<option value="${bez}" ${bez === aktuellerWert ? 'selected' : ''}>${bez}</option>`;
             });
             html += `<option value="NEU_ANLEGEN" style="color: #1976D2; font-weight: bold;">➕ Neue Hefe im Lager anlegen...</option>`;
             select.innerHTML = html;
@@ -1163,11 +1216,12 @@
                 <select class="select-style malz-select" style="margin:0;" onchange="pruefeMalzAuswahl(this)">
                     ${baueMalzOptionen(name)}
                 </select>
-                <input type="number" step="0.01" class="input-style malz-menge" placeholder="0.0" value="${menge}" style="margin:0;" oninput="berechneBierFarbe()">
-                <button class="btn-delete" onclick="this.parentElement.remove(); berechneBierFarbe();">X</button>
+                <input type="number" step="0.01" class="input-style malz-menge" placeholder="0.0" value="${menge}" style="margin:0;" oninput="berechneBierFarbe(); berechneWasserUndMilchsaeure();">
+                <button class="btn-delete" onclick="this.parentElement.remove(); berechneBierFarbe(); berechneWasserUndMilchsaeure();">X</button>
             `;
             container.appendChild(div);
             berechneBierFarbe();
+            berechneWasserUndMilchsaeure();
         }
 
         function pruefeMalzAuswahl(selectElement) {
@@ -1175,6 +1229,7 @@
                 oeffneLagerSchnellErfassung('Malz');
             } else {
                 berechneBierFarbe();
+                berechneWasserUndMilchsaeure();
             }
         }
 
@@ -1428,6 +1483,7 @@
             document.getElementById('rezept-notizen').value = r.notizen || '';
 
             berechneBierFarbe();
+            berechneWasserUndMilchsaeure();
         }
 
         function oeffneLagerSchnellErfassung(kategorie) {
@@ -1550,6 +1606,7 @@
 
             schliesseModal();
             berechneBierFarbe();
+            berechneWasserUndMilchsaeure();
             alert(`"${bezeichnung}" wurde vollständig ins Lager aufgenommen und ausgewählt! 🍻`);
         }
 
@@ -1601,7 +1658,7 @@
             document.querySelectorAll('#malz-container > div').forEach(row => {
                 const mName = row.querySelector('.malz-select').value;
                 const mMenge = parseFloat(row.querySelector('.malz-menge').value) || 0;
-                if (mName && mName !== 'NEU_ANLEGEN') schuettung.push({ name: mName, menge_kg: mMenge });
+                if (mName && mName !== 'NEU_ANLEGEN') schuettung.path({ name: mName, menge_kg: mMenge });
             });
 
             let rasten = [];
