@@ -177,7 +177,7 @@
         }
         .btn-delete {
             background-color: #FFEBEE;
-            color: #C62828;
+            color: C62828;
             border: 1px solid #FFCDD2;
             font-weight: bold;
             height: 40px;
@@ -249,6 +249,14 @@
 
         <h2 class="page-title">📋 Neues Rezept erfassen</h2>
 
+        <!-- NEU: Brauwissen-Wizard Schalter -->
+        <div class="section-box" style="background-color: #E3F2FD; border-color: #90CAF9;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; color: #1565C0; font-size: 13px;">
+                <input type="checkbox" id="brauwissen-aktiv" style="width: 18px; height: 18px; accent-color: #1565C0;">
+                🤖 Brauwissen-Unterstützung (Basisrezept bei Stilwahl laden)
+            </label>
+        </div>
+
         <!-- 1. Eckdaten & Zielwerte -->
         <div class="section-box">
             <div class="section-title">1. Eckdaten & Zielwerte</div>
@@ -257,14 +265,14 @@
             <input type="text" id="rezept-name" class="input-style" placeholder="z.B. Braustall Kellerbier">
 
             <label class="label-style">Bierstil:</label>
-            <select id="bier-stil" class="select-style" onchange="aktualisiereStilHinweise()">
+            <select id="bier-stil" class="select-style" onchange="behandleBierstilAuswahl()">
                 <option value="">-- Bitte Bierstil wählen --</option>
             </select>
 
             <div class="grid-2">
                 <div>
                     <label class="label-style">Ausschlagmenge (L):</label>
-                    <input type="number" id="ausschlag-liter" class="input-style" placeholder="Bitte eingeben" oninput="berechneBierFarbe(); berechneHefemengeEmpfehlung();">
+                    <input type="number" id="ausschlag-liter" class="input-style" value="50" placeholder="Bitte eingeben" oninput="berechneBierFarbe(); berechneHefemengeEmpfehlung();">
                 </div>
                 <div>
                     <label class="label-style">Stammwürze (°P):</label>
@@ -348,7 +356,7 @@
                         <path d="M 18 18 L 82 18 L 74 112 Q 50 120 26 112 Z" fill="none" stroke="#475569" stroke-width="6" stroke-linejoin="round" opacity="0.8"/>
                         <path d="M 26 26 L 32 26 L 30 105 L 28 105 Z" fill="#FFFFFF" opacity="0.4"/>
                     </svg>
-                    <span id="ebc-anzeige-label" style="font-size: 12px; font-weight: bold; color: #1565C0;">- EBC</span>
+                    <span id="ebc-anzeige-label" style="font-size: 12px; font-weight: bold; color: #1565C0;">EBC</span>
                 </div>
 
                 <button class="btn-small" onclick="fuegeMalzZeileHinzu()">+ Malz</button>
@@ -455,7 +463,7 @@
         <button class="btn-primary" onclick="speichereRezeptInDatenbank()">💾 Rezept in Datenbank speichern</button>
     </div>
 
-    <!-- Modal für Lager-Schnell-Erfassung -->
+    <!-- Modal für Lager-Schnell-Erfassung & Brauwissen-Abfrage -->
     <div id="modal-overlay">
         <div id="modal-inhalt">
             <h3 id="modal-titel" style="color: #1565C0; margin-top: 0;">Neuen Rohstoff anlegen</h3>
@@ -487,6 +495,89 @@
         let lagerHefeListe = [];
         let aktuellesRezeptId = null;
         let aktuellerBierEbc = 0;
+
+        // BRAUWISSEN / 50L BASISREZEPT-BIBLIOTHEK (Rein im JavaScript)
+        const BRAUWISSEN_BASISREZEPTE = {
+            "Helles / Lager": {
+                stammwuerze: 12.0, ibu: 22, ebc: 8, kochzeit: 90,
+                hauptguss: 42, hauptguss_milchsaeure: "10 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "5 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "45 g",
+                notizen: "Klassisches bayrisches Helles. Ruhige Gärung bei 11°C, 4 Wochen Kaltreifung.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 120, kochzeit_min: 90}, {name: "Hallertauer Mittelfrüh", menge_g: 50, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Pilsner": {
+                stammwuerze: 11.8, ibu: 40, ebc: 5, kochzeit: 90,
+                hauptguss: 40, hauptguss_milchsaeure: "12 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
+                nachguss: 40, nachguss_milchsaeure: "6 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "45 g",
+                notizen: "Feinherbes Pilsner Brauart. Weiches Wasser und hohe Bitterhopfung im Vorderwürze/Kochbeginn.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 10.8}],
+                rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 62, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Saazer", menge_g: 150, kochzeit_min: 90}, {name: "Saazer", menge_g: 80, kochzeit_min: 20}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Kellerbier / Zwickel": {
+                stammwuerze: 12.5, ibu: 25, ebc: 14, kochzeit: 90,
+                hauptguss: 42, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "12-14 °C", hefe_menge: "45 g",
+                notizen: "Naturtrüb, malzbetont und vollmundig. Ungespundet oder leicht im Lagertank gereift.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 15}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 100, kochzeit_min: 70}, {name: "Hallertauer Mittelfrüh", menge_g: 60, kochzeit_min: 10}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Märzen / Festbier": {
+                stammwuerze: 13.8, ibu: 24, ebc: 25, kochzeit: 90,
+                hauptguss: 44, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "",
+                nachguss: 36, nachguss_milchsaeure: "4 ml", nachguss_salze: "",
+                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: "50 g",
+                notizen: "Kräftiger Malzkörper, wunderschöne Kupferfarbe, harmonisch eingebundene Bittere.",
+                schuettung: [{name: "Pilsner Malz", menge_kg: 5.5}, {name: "Münchner Malz I", menge_kg: 5.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
+                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Hallertauer Mittelfrüh", menge_g: 40, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Weizen / Weißbier": {
+                stammwuerze: 12.2, ibu: 12, ebc: 12, kochzeit: 75,
+                hauptguss: 40, hauptguss_milchsaeure: "5 ml", hauptguss_salze: "",
+                nachguss: 40, nachguss_milchsaeure: "0 ml", nachguss_salze: "",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "19-21 °C", hefe_menge: "35 g",
+                notizen: "Klassisches obergäriges Hefeweizen mit schöner Fruchtester- und Nelkennote.",
+                schuettung: [{name: "Weizenmalz hell", menge_kg: 6.5}, {name: "Pilsner Malz", menge_kg: 4.5}, {name: "Caramalz Hell", menge_kg: 0.3}],
+                rasten: [{name: "Einmaischen", temperatur_c: 52, dauer_min: 15}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 50, kochzeit_min: 60}],
+                whirlpool: [], kalthopfung: []
+            },
+            "Pale Ale": {
+                stammwuerze: 12.5, ibu: 38, ebc: 18, kochzeit: 60,
+                hauptguss: 42, hauptguss_milchsaeure: "6 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
+                nachguss: 38, nachguss_milchsaeure: "4 ml", nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "35 g",
+                notizen: "Fruchtig-frisches Ale mit Zitrusnoten im Whirlpool und feiner Kalthopfung.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 10.0}, {name: "Caramalz Hell", menge_kg: 0.8}],
+                rasten: [{name: "Einmaischen", temperatur_c: 62, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Cascade", menge_g: 50, kochzeit_min: 60}, {name: "Cascade", menge_g: 50, kochzeit_min: 10}],
+                whirlpool: [{name: "Cascade", menge_g: 80, temperatur_c: 78}],
+                kalthopfung: [{name: "Cascade", menge_g: 100}]
+            },
+            "IPA (India Pale Ale)": {
+                stammwuerze: 15.2, ibu: 60, ebc: 22, kochzeit: 60,
+                hauptguss: 45, hauptguss_milchsaeure: "8 ml", hauptguss_salze: "Calciumchlorid (CaCl2)",
+                nachguss: 35, nachguss_milchsaeure: "4 ml", nachguss_salze: "Calciumsulfat / Gips (CaSO4)",
+                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: "45 g",
+                notizen: "Hopfenbombe mit intensiven Zitrus-, Tropenfrucht- und Harznoten.",
+                schuettung: [{name: "Pale Ale Malz", menge_kg: 11.5}, {name: "Pilsner Malz", menge_kg: 1.5}, {name: "Caramalz Hell", menge_kg: 0.8}],
+                rasten: [{name: "Einmaischen", temperatur_c: 63, dauer_min: 45}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                hopfung: [{name: "Chinook", menge_g: 60, kochzeit_min: 60}, {name: "Cascade", menge_g: 60, kochzeit_min: 15}],
+                whirlpool: [{name: "Cascade", menge_g: 120, temperatur_c: 78}, {name: "Chinook", menge_g: 80, temperatur_c: 78}],
+                kalthopfung: [{name: "Cascade", menge_g: 150}, {name: "Chinook", menge_g: 100}]
+            }
+        };
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -524,6 +615,92 @@
                 html += `<option value="${stil.name}">${stil.name} (${stil.gaerart})</option>`;
             });
             select.innerHTML = html;
+        }
+
+        // NEU: Logik beim Auswählen des Bierstils mit Wizard-Abfrage
+        function behandleBierstilAuswahl() {
+            aktualisiereStilHinweise();
+
+            const brauwissenAktiv = document.getElementById('brauwissen-aktiv').checked;
+            const ausgewählterName = document.getElementById('bier-stil').value;
+
+            if (brauwissenAktiv && ausgewählterName && BRAUWISSEN_BASISREZEPTE[ausgewählterName]) {
+                oeffneBrauwissenModal(ausgewählterName);
+            }
+        }
+
+        function oeffneBrauwissenModal(stilName) {
+            document.getElementById('modal-titel').innerText = `🤖 Basisrezept laden?`;
+            document.getElementById('modal-body').innerHTML = `
+                <p style="font-size: 14px; color: #333; line-height: 1.5; margin-bottom: 20px;">
+                    Möchtest du für den Bierstil <b>"${stilName}"</b> ein erprobtes 50-Liter-Basisrezept (Schüttung, Rasten, Hopfen, Wasser) in das Formular laden?
+                </p>
+                <button class="btn-primary" onclick="ladeBasisrezeptInFormular('${stilName}')">✅ Ja, Basisrezept importieren</button>
+                <button class="btn-primary" style="background-color: #546E7A; margin-top: 6px;" onclick="schliesseModal()">❌ Abbrechen</button>
+            `;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function ladeBasisrezeptInFormular(stilName) {
+            const rezept = BRAUWISSEN_BASISREZEPTE[stilName];
+            if (!rezept) return;
+
+            document.getElementById('rezept-name').value = `${stilName} (50L Basis)`;
+            document.getElementById('ausschlag-liter').value = 50;
+            document.getElementById('stammwuerze').value = rezept.stammwuerze;
+            document.getElementById('ibu-wert').value = rezept.ibu;
+            document.getElementById('ebc-wert').value = rezept.ebc;
+            document.getElementById('kochzeit-gesamt').value = rezept.kochzeit;
+
+            document.getElementById('hauptguss-liter').value = rezept.hauptguss;
+            document.getElementById('hauptguss-milchsaeure').value = rezept.hauptguss_milchsaeure;
+            document.getElementById('hauptguss-salze').value = rezept.hauptguss_salze;
+
+            document.getElementById('nachguss-liter').value = rezept.nachguss;
+            document.getElementById('nachguss-milchsaeure').value = rezept.nachguss_milchsaeure;
+            document.getElementById('nachguss-salze').value = rezept.nachguss_salze;
+
+            document.getElementById('hefe-name').value = rezept.hefe;
+            document.getElementById('gaer-temp').value = rezept.gaer_temp;
+            document.getElementById('hefe-menge').value = rezept.hefe_menge;
+            document.getElementById('rezept-notizen').value = rezept.notizen;
+
+            // Schüttung befüllen
+            const malzContainer = document.getElementById('malz-container');
+            malzContainer.innerHTML = '';
+            rezept.schuettung.forEach(m => fuegeMalzZeileHinzu(m.name, m.menge_kg));
+
+            // Rasten befüllen
+            const rastContainer = document.getElementById('rast-container');
+            rastContainer.innerHTML = '';
+            rezept.rasten.forEach(r => fuegeRastZeile(r.name, r.temperatur_c, r.dauer_min));
+
+            // Kochhopfen befüllen
+            const kochhopfenContainer = document.getElementById('kochhopfen-container');
+            kochhopfenContainer.innerHTML = '';
+            if (rezept.hopfung && rezept.hopfung.length > 0) {
+                rezept.hopfung.forEach(h => fuegeKochhopfenZeileHinzu(h.name, h.menge_g, h.kochzeit_min));
+            } else {
+                fuegeKochhopfenZeileHinzu();
+            }
+
+            // Whirlpool befüllen
+            const wpContainer = document.getElementById('whirlpool-container');
+            wpContainer.innerHTML = '';
+            if (rezept.whirlpool && rezept.whirlpool.length > 0) {
+                rezept.whirlpool.forEach(w => fuegeWhirlpoolHopfenZeileHinzu(w.name, w.menge_g, w.temperatur_c));
+            }
+
+            // Kalthopfung befüllen
+            const kaltContainer = document.getElementById('kalthopfen-container');
+            kaltContainer.innerHTML = '';
+            if (rezept.kalthopfung && rezept.kalthopfung.length > 0) {
+                rezept.kalthopfung.forEach(k => fuegeKalthopfenZeileHinzu(k.name, k.menge_g));
+            }
+
+            schliesseModal();
+            berechneBierFarbe();
+            alert(`Basisrezept für "${stilName}" erfolgreich geladen! 🍻`);
         }
 
         function aktualisiereStilHinweise() {
@@ -564,7 +741,6 @@
 
             if (liter <= 0) return;
 
-            // Faktor: Untergärig braucht mehr Hefe (~0.8g/L Trockenhefe), Obergärig etwas weniger (~0.5g/L)
             let faktor = 0.6; 
             if (stil && (stil.gaerart || '').toLowerCase().includes('untergärig')) {
                 faktor = 0.85;
