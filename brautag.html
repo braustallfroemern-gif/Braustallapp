@@ -292,7 +292,7 @@
                     </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.7</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.8</div>
             `;
         }
 
@@ -417,6 +417,7 @@
             schlageEinheitVor();
         }
 
+        // SCHÖNERES DESIGN DER REZEPT-AUSWAHLLISTE (flex-shrink & sauberer Abstand)
         function oeffneRezeptAuswahlModal() {
             const inhalt = document.getElementById('modal-inhalt');
 
@@ -433,12 +434,12 @@
             let listeHtml = "";
             alleRezepte.forEach(r => {
                 listeHtml += `
-                    <div style="background: #F8F9FA; border: 1px solid #D0D7DE; border-left: 5px solid #1976D2; border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: bold; color: #1565C0; font-size: 15px;">🍺 ${escapeHtml(r.name)}</div>
-                            <div style="font-size: 12px; color: #555;">Stil: ${escapeHtml(r.stil || '-')} • ${r.liter || 50} Liter • ${r.stammwuerze || '-'} °P</div>
+                    <div style="background: #F8F9FA; border: 1px solid #D0D7DE; border-left: 5px solid #1976D2; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: bold; color: #1565C0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🍺 ${escapeHtml(r.name)}</div>
+                            <div style="font-size: 12px; color: #555; margin-top: 2px;">Stil: ${escapeHtml(r.stil || '-')} • ${r.liter || 50} L • ${r.stammwuerze || '-'} °P</div>
                         </div>
-                        <button class="filter-btn aktiv" style="padding: 8px 12px; width: auto;" onclick="oeffneSkalierungsModal('${r.id}')">Auswählen ➔</button>
+                        <button class="filter-btn aktiv" style="padding: 7px 10px; width: auto; flex-shrink: 0; font-size: 12px; border-radius: 6px;" onclick="oeffneSkalierungsModal('${r.id}')">Auswählen ➔</button>
                     </div>
                 `;
             });
@@ -671,7 +672,6 @@
             erzeugeBrauAssistentInhalt();
         }
 
-        // NEUE ROTESICHERHEITSABFRAGE FÜR REZEPT-BRAUTAG
         function oeffneSicherheitsAbfrageRezept() {
             const r = aktuellesSkaliertesRezept;
             if (!r) return;
@@ -858,7 +858,6 @@
             const sudNameInput = document.getElementById('sud-name') ? document.getElementById('sud-name').value.trim() : aktuellerSudName.trim();
             const sudName = sudNameInput !== "" ? sudNameInput : `Sud ${alleSudeCount + 1}`;
 
-            // Sicherheitsabfrage auch für den freien Brauraum
             if (!confirm(`Soll der freie Sud "${sudName}" wirklich gebucht und die Zutaten aus dem Lager abgezogen werden?`)) {
                 return;
             }
