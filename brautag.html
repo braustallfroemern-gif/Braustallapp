@@ -236,9 +236,9 @@
         let sudWasserMenge = 0; 
         let aktuellerSudName = ''; 
 
-        // Brau-Assistent Zustand
+        // Brau-Assistent Zustand (7 Hauptschritte bis zum Abschluss nach Whirlpool)
         let aktuellesSkaliertesRezept = null;
-        let brauSchritteStatus = [false, false, false, false, false, false, false, false];
+        let brauSchritteStatus = [false, false, false, false, false, false, false];
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -294,7 +294,7 @@
                     </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.2</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.4</div>
             `;
         }
 
@@ -509,7 +509,6 @@
             let hauptgussLiter = Math.round(gesamtMalzKg * 3.5);
             let nachgussLiter = Math.max(10, Math.round(gewuenschteLiter * 1.3 - hauptgussLiter));
 
-            // Erkennen ob untergärig oder obergärig anhand von Hefe oder Stil
             const stilUndHefeText = ((r.stil || '') + ' ' + (r.hefe || '')).toLowerCase();
             const istUntergaerig = stilUndHefeText.includes('untergärig') || stilUndHefeText.includes('lager') || stilUndHefeText.includes('pils') || stilUndHefeText.includes('bock');
             const anstellTemperaturText = istUntergaerig ? '9–12 °C (Untergärig)' : '18–20 °C (Obergärig)';
@@ -530,7 +529,7 @@
                 anstellTemp: anstellTemperaturText
             };
 
-            brauSchritteStatus = [false, false, false, false, false, false, false, false];
+            brauSchritteStatus = [false, false, false, false, false, false, false];
             erzeugeBrauAssistentInhalt();
         }
 
@@ -541,6 +540,8 @@
             let schuettungList = r.schuettung.map(m => `<li><b>${m.menge} kg</b> ${escapeHtml(m.name)}</li>`).join('');
             let hopfungList = r.hopfung.map(h => `<li><b>${h.menge} g</b> ${escapeHtml(h.name)} (${h.kochzeit} Min kochen)</li>`).join('');
             let rastenList = r.rasten.map(rst => `<li><b>${escapeHtml(rst.name)}:</b> ${rst.temperatur_c}°C (${rst.dauer_min} Min)</li>`).join('');
+
+            const alleSchritteErledigt = brauSchritteStatus.every(Boolean);
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 2px;">🪄 Brau-Assistent</h3>
@@ -556,7 +557,7 @@
                     </ul>
                 </div>
 
-                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Hake die Schritte nacheinander ab. Vorherige Schritte müssen erledigt sein!</p>
+                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Hake die Schritte nacheinander ab. Nach dem Whirlpool schließt du den Brautag ab:</p>
 
                 <!-- SCHRITT 1 -->
                 <div class="brau-schritt-karte ${brauSchritteStatus[0] ? 'erledigt' : ''}" id="schritt-0-card">
@@ -625,21 +626,18 @@
                 <div class="brau-schritt-karte ${brauSchritteStatus[5] ? '' : 'gesperrt'} ${brauSchritteStatus[6] ? 'erledigt' : ''}" id="schritt-6-card">
                     <label class="schritt-checkbox-label">
                         <input type="checkbox" id="chk-6" ${brauSchritteStatus[6] ? 'checked' : ''} ${brauSchritteStatus[5] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(6)">
-                        <span>7. Whirlpool & Abkühlen auf 80 °C</span>
+                        <span>7. Whirlpool & Abkühlen auf 80 °C (Brautag-Ende)</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Schalte den Brenner ab, kühle auf ca. 80 °C herunter, rühre den Whirlpool an und gib eventuellen Whirlpool-Hopfen dazu.</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Schalte den Brenner ab, kühle auf ca. 80 °C herunter, rühre den Whirlpool an und gib Whirlpool-Hopfen zu. Hinweis für später: Anstellen bei <b>${r.anstellTemp}</b> mit <b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)}.</div>
                 </div>
 
-                <!-- SCHRITT 8 -->
-                <div class="brau-schritt-karte ${brauSchritteStatus[6] ? '' : 'gesperrt'} ${brauSchritteStatus[7] ? 'erledigt' : ''}" id="schritt-7-card">
-                    <label class="schritt-checkbox-label">
-                        <input type="checkbox" id="chk-7" ${brauSchritteStatus[7] ? 'checked' : ''} ${brauSchritteStatus[6] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(7)">
-                        <span>8. Kühlen auf Anstelltemperatur & Anstellen</span>
-                    </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Kühle die Würze weiter auf <b>${r.anstellTemp}</b> ab und gib exakt <b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)} zu. Gärfass in den Keller stellen!</div>
+                <!-- ZUSÄTZLICHER HINWEIS: HOPFENSTOPFEN -->
+                <div style="background: #FFF3E0; border: 1px solid #FFE0B2; border-radius: 8px; padding: 10px; margin: 15px 0; font-size: 12px; color: #E65100;">
+                    🌿 <b>Hinweis zum Hopfenstopfen (Cold Hopping):</b><br>
+                    Falls im Rezept Stopfhopfen vorgesehen ist, gib diesen nach der Hauptgärung (ca. 3–5 Tage vor dem Abfüllen) in den Jungbier-Tank oder ins Gärfass.
                 </div>
 
-                <button class="btn-primary" id="btn-final-brauen" ${brauSchritteStatus.every(Boolean) ? '' : 'disabled style="background-color: #B0BEC5; cursor: not-allowed;"'} onclick="schliesseRezeptSudAbUndBuche()" style="margin-top: 15px;">
+                <button class="btn-primary" id="btn-final-brauen" ${alleSchritteErledigt ? '' : 'disabled style="background-color: #B0BEC5; cursor: not-allowed;"'} onclick="schliesseRezeptSudAbUndBuche()" style="margin-top: 15px;">
                     🚀 Brautag abschließen & Lager abbuchen
                 </button>
                 <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 5px; width: 100%;">Abbrechen</button>
