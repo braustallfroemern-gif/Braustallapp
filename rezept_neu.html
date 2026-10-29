@@ -661,7 +661,7 @@
             letztesBasisRezeptObjekt = rezeptKopie;
 
             document.getElementById('rezept-name').value = `${stilName} (Braustall)`;
-            document.getElementById('ausschlag-liter').value = 100;
+            document.getElementById('ausschlag-liter').value = 50;
 
             schliesseModal();
             fuelleRezeptFormular(letztesBasisRezeptObjekt);
@@ -858,7 +858,6 @@
                 oeffneLagerSchnellErfassung('Hefe');
                 return;
             }
-            // Automatisch Gärart vorschlagen wenn aus Lager gewählt
             const ausgewählteHefe = lagerHefeListe.find(h => (h.bezeichnung || h.name) === selectElement.value);
             if (ausgewählteHefe) {
                 const text = ((ausgewählteHefe.bezeichnung || '') + ' ' + (ausgewählteHefe.beschreibung || '') + ' ' + (ausgewählteHefe.kategorie || '')).toLowerCase();
@@ -1024,6 +1023,17 @@
             document.getElementById('hefe-menge').value = r.hefe_menge || '';
             document.getElementById('rezept-notizen').value = r.notizen || '';
             
+            // Maischplan (Rasten) laden
+            const rastContainer = document.getElementById('rast-container');
+            rastContainer.innerHTML = '';
+            if (r.rasten && r.rasten.length > 0) {
+                r.rasten.forEach(rst => {
+                    fuegeRastZeile(rst.name, rst.temperatur_c, rst.dauer_min);
+                });
+            } else {
+                fuegeRastZeile();
+            }
+
             letztesBasisRezeptObjekt = JSON.parse(JSON.stringify(r));
             if (!letztesBasisRezeptObjekt.liter) letztesBasisRezeptObjekt.liter = 50;
 
@@ -1042,8 +1052,113 @@
         }
         function schliesseModal() { document.getElementById('modal-overlay').style.display = 'none'; }
 
+        // VOLLSTÄNDIGE SPEICHER-FUNKTION (inkl. Maischplan / rasten)
         async function speichereRezeptInDatenbank() {
-            alert("Rezept bereit zum Speichern!");
+            const name = document.getElementById('rezept-name').value.trim();
+            const stil = document.getElementById('bier-stil').value;
+            const liter = parseFloat(document.getElementById('ausschlag-liter').value) || 50;
+            const stammwuerze = parseFloat(document.getElementById('stammwuerze').value) || 0;
+            const ibu = parseFloat(document.getElementById('ibu-wert').value) || 0;
+            const ebc = parseFloat(document.getElementById('ebc-wert').value) || 0;
+            const hauptguss = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
+            const nachguss = parseFloat(document.getElementById('nachguss-liter').value) || 0;
+            const hefe = document.getElementById('hefe-name').value;
+            const gaerart = document.getElementById('hefe-gaerart').value;
+            const hefeMenge = document.getElementById('hefe-menge').value;
+            const notizen = document.getElementById('rezept-notizen').value;
+
+            if (!name) {
+                alert("Bitte gib einen Rezeptnamen ein.");
+                return;
+            }
+
+            // Schüttung einsammeln
+            let schuettung = [];
+            document.querySelectorAll('#malz-container > div').forEach(row => {
+                const select = row.querySelector('.malz-select');
+                const menge = parseFloat(row.querySelector('.malz-menge').value) || 0;
+                if (select && select.value && select.value !== 'NEU_ANLEGEN' && menge > 0) {
+                    schuettung.push({ name: select.value, menge_kg: menge });
+                }
+            });
+
+            // Maischplan (Rasten) einsammeln
+            let rasten = [];
+            document.querySelectorAll('#rast-container > div').forEach(row => {
+                const select = row.querySelector('.rast-name');
+                const temp = parseFloat(row.querySelector('.rast-temp').value) || 0;
+                const dauer = parseFloat(row.querySelector('.rast-dauer').value) || 0;
+                if (select && select.value && temp > 0) {
+                    rasten.push({ name: select.value, temperatur_c: temp, dauer_min: dauer });
+                }
+            });
+
+            // Kochhopfen einsammeln
+            let hopfung = [];
+            document.querySelectorAll('#kochhopfen-container > div').forEach(row => {
+                const select = row.querySelector('.kochhopfen-select');
+                const menge = parseFloat(row.querySelector('.kochhopfen-menge').value) || 0;
+                const zeit = parseFloat(row.querySelector('.kochhopfen-zeit').value) || 0;
+                if (select && select.value && select.value !== 'NEU_ANLEGEN' && menge > 0) {
+                    hopfung.push({ name: select.value, menge_g: menge, kochzeit_min: zeit });
+                }
+            });
+
+            // Whirlpool einsammeln
+            let whirlpool = [];
+            document.querySelectorAll('#whirlpool-container > div').forEach(row => {
+                const select = row.querySelector('.wp-select');
+                const menge = parseFloat(row.querySelector('.wp-menge').value) || 0;
+                const temp = parseFloat(row.querySelector('.wp-temp').value) || 78;
+                if (select && select.value && select.value !== 'NEU_ANLEGEN' && menge > 0) {
+                    whirlpool.push({ name: select.value, menge_g: menge, temperatur_c: temp });
+                }
+            });
+
+            // Kalthopfung einsammeln
+            let kalthopfung = [];
+            document.querySelectorAll('#kalthopfen-container > div').forEach(row => {
+                const select = row.querySelector('.kalt-select');
+                const menge = parseFloat(row.querySelector('.kalt-menge').value) || 0;
+                if (select && select.value && select.value !== 'NEU_ANLEGEN' && menge > 0) {
+                    kalthopfung.push({ name: select.value, menge_g: menge });
+                }
+            });
+
+            const rezeptDaten = {
+                name: name,
+                stil: stil,
+                liter: liter,
+                stammwuerze: stammwuerze,
+                ibu: ibu,
+                ebc: ebc,
+                hauptguss: hauptguss,
+                nachguss: nachguss,
+                hefe: hefe,
+                gaerart: gaerart,
+                hefe_menge: hefeMenge,
+                notizen: notizen,
+                schuettung: schuettung,
+                rasten: rasten,
+                hopfung: hopfung,
+                whirlpool: whirlpool,
+                kalthopfung: kalthopfung
+            };
+
+            let response;
+            if (aktuellesRezeptId) {
+                response = await _supabase.from('rezepte').update(rezeptDaten).eq('id', aktuellesRezeptId);
+            } else {
+                response = await _supabase.from('rezepte').insert([rezeptDaten]);
+            }
+
+            if (response.error) {
+                alert("Fehler beim Speichern des Rezepts: " + response.error.message);
+                return;
+            }
+
+            alert(`🍻 Rezept "${name}" mit Maischplan und allen Zutaten erfolgreich in der Datenbank gespeichert!`);
+            window.location.href = 'rezepte.html';
         }
     </script>
 </body>
