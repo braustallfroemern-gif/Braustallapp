@@ -238,7 +238,7 @@
 
         // Brau-Assistent Zustand
         let aktuellesSkaliertesRezept = null;
-        let brauSchritteStatus = [false, false, false, false, false, false, false];
+        let brauSchritteStatus = [false, false, false, false, false, false, false, false, false];
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -294,7 +294,7 @@
                     </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.0</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.1</div>
             `;
         }
 
@@ -488,7 +488,6 @@
             const rezeptLiter = r.liter || 50;
             const faktor = gewuenschteLiter / rezeptLiter;
 
-            // Skalieren der Zutaten
             let skaliertesSchuettung = (r.schuettung || []).map(m => ({
                 name: m.name,
                 menge: (parseFloat(m.menge_kg || m.menge || 0) * faktor).toFixed(2),
@@ -503,10 +502,13 @@
             }));
 
             let skaliertesRasten = r.rasten || [];
-            
-            // Hefe-Skalierung (Faustregel: ca. 0.6g pro Liter und °P oder direkt mitskalieren)
             let hefeMengeRoh = parseFloat(r.hefe_menge) || (gewuenschteLiter * 0.7); 
             let hefeMengeSkaliert = Math.round(hefeMengeRoh);
+
+            // Wassermengen berechnen (Richtwert: Hauptguss ca. 3.5 L/kg Malz, Rest Nachguss)
+            let gesamtMalzKg = skaliertesSchuettung.reduce((sum, m) => sum + parseFloat(m.menge), 0);
+            let hauptgussLiter = Math.round(gesamtMalzKg * 3.5);
+            let nachgussLiter = Math.max(10, Math.round(gewuenschteLiter * 1.3 - hauptgussLiter));
 
             aktuellesSkaliertesRezept = {
                 name: r.name,
@@ -518,10 +520,12 @@
                 hopfung: skaliertesHopfung,
                 rasten: skaliertesRasten,
                 hefe: r.hefe || 'Standard Obergärige Hefe',
-                hefeMenge: hefeMengeSkaliert
+                hefeMenge: hefeMengeSkaliert,
+                hauptguss: hauptgussLiter,
+                nachguss: nachgussLiter
             };
 
-            brauSchritteStatus = [false, false, false, false, false, false, false];
+            brauSchritteStatus = [false, false, false, false, false, false, false, false, false];
             erzeugeBrauAssistentInhalt();
         }
 
@@ -538,8 +542,9 @@
                 <div style="font-size: 13px; color: #555; margin-bottom: 12px;"><b>${escapeHtml(r.name)}</b> (${r.liter} Liter • ${r.stammwuerze} °P • ${r.ibu} IBU)</div>
 
                 <div style="background: #E3F2FD; border: 1px solid #90CAF9; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 12px;">
-                    <b>Skalierte Zutatenübersicht:</b>
+                    <b>Zusammenfassung:</b>
                     <ul style="padding-left: 16px; margin: 4px 0 0 0;">
+                        <li><b>${r.hauptguss} L</b> Hauptguss | <b>${r.nachguss} L</b> Nachguss</li>
                         ${schuettungList}
                         ${hopfungList}
                         <li><b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)}</li>
@@ -552,9 +557,9 @@
                 <div class="brau-schritt-karte ${brauSchritteStatus[0] ? 'erledigt' : ''}" id="schritt-0-card">
                     <label class="schritt-checkbox-label">
                         <input type="checkbox" id="chk-0" ${brauSchritteStatus[0] ? 'checked' : ''} onchange="aktualisiereBrauSchritt(0)">
-                        <span>1. Brauwasser & Milchsäure vorbereiten</span>
+                        <span>1. Hauptguss vorbereiten & erwärmen</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Erwärme das Hauptguss-Wasser auf Einmaischtemperatur. Eventuell Wasseraufbereitung durchführen.</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Erwärme genau <b>${r.hauptguss} Liter</b> Hauptguss auf Einmaischtemperatur (ca. 55-57 °C). Eventuell Milchsäure zugeben.</div>
                 </div>
 
                 <!-- SCHRITT 2 -->
@@ -563,17 +568,20 @@
                         <input type="checkbox" id="chk-1" ${brauSchritteStatus[1] ? 'checked' : ''} ${brauSchritteStatus[0] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(1)">
                         <span>2. Malz abwiegen & schroten</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Wiege die skalierten Malzmengen ab und schrote sie frisch für den Brautag.</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
+                        Wiege folgende Malzmengen ab und schrote sie frisch:<br>
+                        <ul style="padding-left: 14px; margin: 2px 0 0 0;">${schuettungList}</ul>
+                    </div>
                 </div>
 
                 <!-- SCHRITT 3 -->
                 <div class="brau-schritt-karte ${brauSchritteStatus[1] ? '' : 'gesperrt'} ${brauSchritteStatus[2] ? 'erledigt' : ''}" id="schritt-2-card">
                     <label class="schritt-checkbox-label">
                         <input type="checkbox" id="chk-2" ${brauSchritteStatus[2] ? 'checked' : ''} ${brauSchritteStatus[1] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(2)">
-                        <span>3. Einmaischen & Maischplan durchführen</span>
+                        <span>3. Einmaischen & Rasten durchführen</span>
                     </label>
                     <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
-                        Maische ein. Rasten aus dem Rezept:<br>
+                        Maische das Malz ein. Rasten aus dem Rezept:<br>
                         <ul style="padding-left: 14px; margin: 2px 0 0 0;">${rastenList || '<li>Standard-Kombirast</li>'}</ul>
                     </div>
                 </div>
@@ -582,30 +590,49 @@
                 <div class="brau-schritt-karte ${brauSchritteStatus[2] ? '' : 'gesperrt'} ${brauSchritteStatus[3] ? 'erledigt' : ''}" id="schritt-3-card">
                     <label class="schritt-checkbox-label">
                         <input type="checkbox" id="chk-3" ${brauSchritteStatus[3] ? 'checked' : ''} ${brauSchritteStatus[2] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(3)">
-                        <span>4. Jodprobe, Abtreibe & Läutern</span>
+                        <span>4. Nachgusswasser vorbereiten</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Führe die Jodprobe durch, läutere ab und gib die Nachgüsse.</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Erwärme jetzt <b>${r.nachguss} Liter</b> Nachgusswasser auf ca. 78 °C.</div>
                 </div>
 
                 <!-- SCHRITT 5 -->
                 <div class="brau-schritt-karte ${brauSchritteStatus[3] ? '' : 'gesperrt'} ${brauSchritteStatus[4] ? 'erledigt' : ''}" id="schritt-4-card">
                     <label class="schritt-checkbox-label">
                         <input type="checkbox" id="chk-4" ${brauSchritteStatus[4] ? 'checked' : ''} ${brauSchritteStatus[3] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(4)">
-                        <span>5. Würzekochen & Hopfen gaben</span>
+                        <span>5. Jodprobe, Läuterruhe & Abläutern</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
-                        Koche die Würze sprudelnd. Gib den Hopfen nach Kochzeit zu.<br>
-                        ⚠️ <b>Nicht vergessen:</b> 15 Min vor Kochen-Ende Irisch Moos / Whirlfloc zugeben!
-                    </div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Führe die Jodprobe durch, überführe in den Läuterbottich, gib Läuterruhe, schöpfe Vorderwürze um bis sie klar läuft und läutere ab (inkl. Nachgüsse).</div>
                 </div>
 
                 <!-- SCHRITT 6 -->
                 <div class="brau-schritt-karte ${brauSchritteStatus[4] ? '' : 'gesperrt'} ${brauSchritteStatus[5] ? 'erledigt' : ''}" id="schritt-5-card">
                     <label class="schritt-checkbox-label">
                         <input type="checkbox" id="chk-5" ${brauSchritteStatus[5] ? 'checked' : ''} ${brauSchritteStatus[4] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(5)">
-                        <span>6. Whirlpool, Kühlen & Anstellen</span>
+                        <span>6. Würzekochen & Hopfen gaben</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Kühle die Würze auf Anstellen ab und gib die Hefe (${r.hefeMenge} g) zu.</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
+                        Schalte den Brenner ein und koche die Würze. Hopfengaben:<br>
+                        <ul style="padding-left: 14px; margin: 2px 0 0 0;">${hopfungList}</ul>
+                        ⚠️ <b>Nicht vergessen:</b> 15 Min vor Kochen-Ende Irisch Moos zugeben!
+                    </div>
+                </div>
+
+                <!-- SCHRITT 7 -->
+                <div class="brau-schritt-karte ${brauSchritteStatus[5] ? '' : 'gesperrt'} ${brauSchritteStatus[6] ? 'erledigt' : ''}" id="schritt-6-card">
+                    <label class="schritt-checkbox-label">
+                        <input type="checkbox" id="chk-6" ${brauSchritteStatus[6] ? 'checked' : ''} ${brauSchritteStatus[5] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(6)">
+                        <span>7. Whirlpool & Abkühlen auf 80 °C</span>
+                    </label>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Schalte den Brenner ab, kühle auf ca. 80 °C herunter, rühre den Whirlpool an und gib eventuellen Whirlpool-Hopfen dazu.</div>
+                </div>
+
+                <!-- SCHRITT 8 -->
+                <div class="brau-schritt-karte ${brauSchritteStatus[6] ? '' : 'gesperrt'} ${brauSchritteStatus[7] ? 'erledigt' : ''}" id="schritt-7-card">
+                    <label class="schritt-checkbox-label">
+                        <input type="checkbox" id="chk-7" ${brauSchritteStatus[7] ? 'checked' : ''} ${brauSchritteStatus[6] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(7)">
+                        <span>8. Kühlen auf Anstelltemperatur & Anstellen</span>
+                    </label>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Kühle die Würze weiter auf Anstelltemperatur und gib exakt <b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)} zu. Gärfass in den Keller stellen!</div>
                 </div>
 
                 <button class="btn-primary" id="btn-final-brauen" ${brauSchritteStatus.every(Boolean) ? '' : 'disabled style="background-color: #B0BEC5; cursor: not-allowed;"'} onclick="schliesseRezeptSudAbUndBuche()" style="margin-top: 15px;">
@@ -626,7 +653,6 @@
             const r = aktuellesSkaliertesRezept;
             if (!r) return;
 
-            // Sammle alle benötigten Rohstoffe aus dem Lager anhand der Namen
             let abzubuchendeZutaten = [];
             let rohstoffKostenGesamt = 0;
 
@@ -650,7 +676,6 @@
                 }
             }
 
-            // Hefe suchen
             let hefeRohstoff = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hefe');
             if (hefeRohstoff) {
                 let menge = r.hefeMenge;
@@ -659,7 +684,7 @@
                 rohstoffKostenGesamt += menge * einzelpreis;
             }
 
-            let wasserMengeLiter = r.liter * 2.5; // Richtwert Hauptguss + Nachguss
+            let wasserMengeLiter = r.hauptguss + r.nachguss;
             let wasserKosten = wasserMengeLiter * wasserEnergiePreis;
             let gesamtkosten = rohstoffKostenGesamt + wasserKosten;
 
@@ -669,18 +694,15 @@
 
             const brauerName = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || 'Mitglied';
 
-            // 1. Lager abbuchen
             for (let z of abzubuchendeZutaten) {
                 const rohstoff = alleRohstoffe.find(item => String(item.id) === String(z.id));
                 if (rohstoff) {
                     let neuerBestand = (parseFloat(rohstoff.bestand) || 0) - z.menge;
                     if (neuerBestand < 0) neuerBestand = 0;
-
                     await _supabase.from('lager').update({ bestand: neuerBestand }).eq('id', z.id);
                 }
             }
 
-            // 2. Sud in die Historie eintragen
             const heute = new Date().toLocaleDateString('de-DE');
             const { error: sudError } = await _supabase.from('sude').insert([{
                 datum: heute,
@@ -815,7 +837,7 @@
             const brauerName = sessionStorage.getItem('userVorname') || localStorage.getItem('userVornameCache') || 'Mitglied';
 
             for (let z of rezeptZutaten) {
-                const rohstoff = alleRohstoffe.find(r => String(r.id) === String(z.id));
+                const rohstoff = alleRohstoffe.find(item => String(item.id) === String(z.id));
                 if (rohstoff) {
                     let neuerBestand = (parseFloat(rohstoff.bestand) || 0) - z.menge;
                     if (neuerBestand < 0) neuerBestand = 0;
