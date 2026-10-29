@@ -249,7 +249,6 @@
 
         <h2 class="page-title">📋 Neues Rezept erfassen</h2>
 
-        <!-- Brauwissen-Wizard Schalter -->
         <div class="section-box" style="background-color: #E3F2FD; border-color: #90CAF9;">
             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; color: #1565C0; font-size: 13px;">
                 <input type="checkbox" id="brauwissen-aktiv" style="width: 18px; height: 18px; accent-color: #1565C0;" checked>
@@ -257,7 +256,6 @@
             </label>
         </div>
 
-        <!-- 1. Eckdaten & Zielwerte -->
         <div class="section-box">
             <div class="section-title">1. Eckdaten & Zielwerte</div>
             
@@ -295,7 +293,6 @@
             </div>
         </div>
 
-        <!-- 2. Wasser & Aufbereitung -->
         <div class="section-box">
             <div class="section-title">2. Wasser & Aufbereitung (Wasserwerk: 6,5 °dH KH)</div>
             
@@ -344,7 +341,6 @@
             </div>
         </div>
 
-        <!-- 3. Schüttung (Malz mit dynamischem Bierglas) -->
         <div class="section-box">
             <div class="section-title">
                 <span>3. Schüttung (Malz)</span>
@@ -369,7 +365,6 @@
             <div id="malz-container"></div>
         </div>
 
-        <!-- 4. Maischplan (Rasten) -->
         <div class="section-box">
             <div class="section-title">
                 <span>4. Maischplan (Rasten)</span>
@@ -384,14 +379,12 @@
             <div id="rast-container"></div>
         </div>
 
-        <!-- 5. Würze kochen -->
         <div class="section-box">
             <div class="section-title">5. Würze kochen</div>
             <label class="label-style">Gesamte Kochzeit (Minuten):</label>
             <input type="number" id="kochzeit-gesamt" class="input-style" value="90">
         </div>
 
-        <!-- 6. Hopfung -->
         <div class="section-box">
             <div class="section-title">
                 <span>Kochgaben (Hopfenkochen & Klärmittel)</span>
@@ -433,13 +426,11 @@
             <div id="kalthopfen-container"></div>
         </div>
 
-        <!-- 7. Hefe, Gärtemperatur & Hefemenge -->
         <div class="section-box">
             <div class="section-title">7. Hefe & Gärung</div>
             
             <label class="label-style">Hefe:</label>
             <select id="hefe-name" class="select-style" onchange="pruefeHefeAuswahl(this)">
-                <!-- Dynamisch -->
             </select>
 
             <div class="grid-2" style="margin-top: 6px;">
@@ -454,7 +445,6 @@
             </div>
         </div>
 
-        <!-- 8. Notizen & Tipps -->
         <div class="section-box">
             <div class="section-title">8. Notizen & Tipps</div>
             <textarea id="rezept-notizen" class="input-style" rows="3" placeholder="z.B. Stopfen bei 80% Restextrakt, Besonderheiten beim Brautag..."></textarea>
@@ -463,7 +453,6 @@
         <button class="btn-primary" onclick="speichereRezeptInDatenbank()">💾 Rezept in Datenbank speichern</button>
     </div>
 
-    <!-- Modal für Lager-Schnell-Erfassung & Brauwissen-Abfrage -->
     <div id="modal-overlay">
         <div id="modal-inhalt">
             <h3 id="modal-titel" style="color: #1565C0; margin-top: 0;">Neuen Rohstoff anlegen</h3>
@@ -471,7 +460,6 @@
         </div>
     </div>
 
-    <!-- VOLLBILD BIERGLAS ZOOM OVERLAY -->
     <div id="glas-zoom-overlay" onclick="schliesseGlasZoom()">
         <svg id="bierglas-icon-gross" width="180" height="260" viewBox="0 0 100 130" style="filter: drop-shadow(0px 8px 20px rgba(0,0,0,0.5));">
             <path d="M 20 22 Q 30 12 40 22 Q 50 12 60 22 Q 70 12 80 22 L 80 30 L 20 30 Z" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2"/>
@@ -495,9 +483,8 @@
         let lagerHefeListe = [];
         let aktuellesRezeptId = null;
         let aktuellerBierEbc = 0;
-        let letztesBasisRezeptObjekt = null; // Speichert das unskalierte 50L-Basisrezept zum Umrechnen
+        let letresBasisRezeptObjekt = null;
 
-        // BASISREZEPT-BIBLIOTHEK (immer als 50L Standard hinterlegt)
         const BRAUWISSEN_BASISREZEPTE = {
             "Landbier": {
                 stammwuerze: 12.8, ibu: 24, ebc: 18, kochzeit: 90,
@@ -505,7 +492,7 @@
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "11-13 °C", hefe_menge: 45,
                 notizen: "Uriges, vollmundiges Braustall-Landbier. Schön malzbetont mit feiner karamelligen Note.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 2.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
-                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Hallertauer Mittelfrüh", menge_g: 40, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -525,7 +512,7 @@
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: 45,
                 notizen: "Klassisches bayrisches Helles. Ruhige Gärung bei 11°C.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
-                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 120, kochzeit_min: 90}, {name: "Hallertauer Mittelfrüh", menge_g: 50, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -535,7 +522,7 @@
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "12-14 °C", hefe_menge: 45,
                 notizen: "Naturtrüb, malzbetont und vollmundig.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.5}],
-                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 15}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 15}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 100, kochzeit_min: 70}, {name: "Hallertauer Mittelfrüh", menge_g: 60, kochzeit_min: 10}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -545,7 +532,7 @@
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: 50,
                 notizen: "Kräftiger Malzkörper, wunderschöne Kupferfarbe.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 5.5}, {name: "Münchner Malz I", menge_kg: 5.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
-                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Hallertauer Mittelfrüh", menge_g: 40, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -555,7 +542,7 @@
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "9-11 °C", hefe_menge: 60,
                 notizen: "Schwerer, starker Malzkörper mit edler Süße und dezenter Bittere.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 6.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}],
-                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 120, kochzeit_min: 90}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -565,7 +552,7 @@
                 hefe: "W-34/70 (Untergärig)", gaer_temp: "11-13 °C", hefe_menge: 45,
                 notizen: "Tiefschwarz, aber schlank und überraschend mild im Antrunk ohne Pelzigkeit.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 0.6}],
-                rasten: [{name: "Einmaischen", temperatur_c: 58, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -658,13 +645,12 @@
             const basis = BRAUWISSEN_BASISREZEPTE[stilName];
             if (!basis) return;
 
-            // Tiefen Kopie im Rohzustand (bezogen auf 50L) abspeichern für Skalierung
             let rezeptKopie = JSON.parse(JSON.stringify(basis));
             rezeptKopie.liter = 50;
             letresBasisRezeptObjekt = rezeptKopie;
 
             document.getElementById('rezept-name').value = `${stilName} (Braustall)`;
-            document.getElementById('ausschlag-liter').value = 100; // Direkt auf 100L als Voreinstellung wenn gewünscht oder auslesen
+            document.getElementById('ausschlag-liter').value = 100;
 
             schliesseModal();
             fuelleRezeptFormular(letresBasisRezeptObjekt);
@@ -679,11 +665,9 @@
             const basisLiter = letresBasisRezeptObjekt.liter || 50;
             const faktor = zielLiter / basisLiter;
 
-            // 1. Wasser skalieren
             document.getElementById('hauptguss-liter').value = Math.round(letresBasisRezeptObjekt.hauptguss * faktor);
             document.getElementById('nachguss-liter').value = Math.round(letresBasisRezeptObjekt.nachguss * faktor);
 
-            // 2. Schüttung skalieren
             const malzContainer = document.getElementById('malz-container');
             malzContainer.innerHTML = '';
             if (letresBasisRezeptObjekt.schuettung) {
@@ -693,7 +677,6 @@
                 });
             }
 
-            // 3. Kochhopfen skalieren
             const kochhopfenContainer = document.getElementById('kochhopfen-container');
             kochhopfenContainer.innerHTML = '';
             if (letresBasisRezeptObjekt.hopfung) {
@@ -705,7 +688,6 @@
                 fuegeKochhopfenZeileHinzu();
             }
 
-            // 4. Whirlpool skalieren
             const wpContainer = document.getElementById('whirlpool-container');
             wpContainer.innerHTML = '';
             if (letresBasisRezeptObjekt.whirlpool) {
@@ -715,7 +697,6 @@
                 });
             }
 
-            // 5. Kalthopfen skalieren
             const kaltContainer = document.getElementById('kalthopfen-container');
             kaltContainer.innerHTML = '';
             if (letresBasisRezeptObjekt.kalthopfung) {
@@ -725,7 +706,6 @@
                 });
             }
 
-            // 6. Hefe skalieren
             const skaliertHefeG = Math.round(letresBasisRezeptObjekt.hefe_menge * faktor);
             document.getElementById('hefe-menge').value = `${skaliertHefeG} g`;
 
@@ -925,6 +905,7 @@
         function oeffneGlasZoom() { document.getElementById('glas-zoom-overlay').style.display = 'flex'; }
         function schliesseGlasZoom() { document.getElementById('glas-zoom-overlay').style.display = 'none'; }
 
+        // --- AUTOMATISCHES AUSFÜLLEN BEI RAST-AUSWAHL ---
         function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
             const container = document.getElementById('rast-container');
             const div = document.createElement('div');
@@ -932,13 +913,36 @@
             const rastOptionen = ['Einmaischen', 'Gummirast', 'Eiweißrast', 'Kombirast', 'Maltoserast', 'Verzuckerungsrast', 'Abmaischen'];
             let opts = '<option value="">-- bitte wählen --</option>';
             rastOptionen.forEach(opt => opts += `<option value="${opt}" ${opt === aktiveRast ? 'selected' : ''}>${opt}</option>`);
+            
             div.innerHTML = `
-                <select class="select-style rast-name" style="margin:0;">${opts}</select>
+                <select class="select-style rast-name" style="margin:0;" onchange="schlageStandardRastWerteVor(this)">${opts}</select>
                 <input type="number" class="input-style rast-temp" value="${temp}" style="margin:0;">
                 <input type="number" class="input-style rast-dauer" value="${dauer}" style="margin:0;">
                 <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
             `;
             container.appendChild(div);
+        }
+
+        function schlageStandardRastWerteVor(selectElement) {
+            const row = selectElement.parentElement;
+            const tempInput = row.querySelector('.rast-temp');
+            const dauerInput = row.querySelector('.rast-dauer');
+            const rastArt = selectElement.value;
+
+            const standardWerte = {
+                'Einmaischen': { temp: 57, dauer: 10 },
+                'Gummirast': { temp: 45, dauer: 15 },
+                'Eiweißrast': { temp: 52, dauer: 15 },
+                'Maltoserast': { temp: 63, dauer: 35 },
+                'Kombirast': { temp: 66, dauer: 60 },
+                'Verzuckerungsrast': { temp: 72, dauer: 20 },
+                'Abmaischen': { temp: 78, dauer: 5 }
+            };
+
+            if (standardWerte[rastArt]) {
+                if (!tempInput.value) tempInput.value = standardWerte[rastArt].temp;
+                if (!dauerInput.value) dauerInput.value = standardWerte[rastArt].dauer;
+            }
         }
 
         function fuegeKochhopfenZeileHinzu(name = '', menge = '', zeit = '') {
@@ -993,7 +997,6 @@
             document.getElementById('hefe-menge').value = r.hefe_menge || '';
             document.getElementById('rezept-notizen').value = r.notizen || '';
             
-            // Als Basisobjekt für künftige Skalierungen merken
             letresBasisRezeptObjekt = JSON.parse(JSON.stringify(r));
             if (!letresBasisRezeptObjekt.liter) letresBasisRezeptObjekt.liter = 50;
 
