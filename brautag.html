@@ -238,7 +238,7 @@
 
         // Brau-Assistent Zustand
         let aktuellesSkaliertesRezept = null;
-        let brauSchritteStatus = [false, false, false, false, false, false, false, false, false];
+        let brauSchritteStatus = [false, false, false, false, false, false, false, false];
 
         window.onload = async function() {
             const angemeldet = sessionStorage.getItem('angemeldet') || localStorage.getItem('angemeldetCache');
@@ -294,7 +294,7 @@
                     </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.1</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.2</div>
             `;
         }
 
@@ -505,10 +505,14 @@
             let hefeMengeRoh = parseFloat(r.hefe_menge) || (gewuenschteLiter * 0.7); 
             let hefeMengeSkaliert = Math.round(hefeMengeRoh);
 
-            // Wassermengen berechnen (Richtwert: Hauptguss ca. 3.5 L/kg Malz, Rest Nachguss)
             let gesamtMalzKg = skaliertesSchuettung.reduce((sum, m) => sum + parseFloat(m.menge), 0);
             let hauptgussLiter = Math.round(gesamtMalzKg * 3.5);
             let nachgussLiter = Math.max(10, Math.round(gewuenschteLiter * 1.3 - hauptgussLiter));
+
+            // Erkennen ob untergärig oder obergärig anhand von Hefe oder Stil
+            const stilUndHefeText = ((r.stil || '') + ' ' + (r.hefe || '')).toLowerCase();
+            const istUntergaerig = stilUndHefeText.includes('untergärig') || stilUndHefeText.includes('lager') || stilUndHefeText.includes('pils') || stilUndHefeText.includes('bock');
+            const anstellTemperaturText = istUntergaerig ? '9–12 °C (Untergärig)' : '18–20 °C (Obergärig)';
 
             aktuellesSkaliertesRezept = {
                 name: r.name,
@@ -519,13 +523,14 @@
                 schuettung: skaliertesSchuettung,
                 hopfung: skaliertesHopfung,
                 rasten: skaliertesRasten,
-                hefe: r.hefe || 'Standard Obergärige Hefe',
+                hefe: r.hefe || 'Standard Hefe',
                 hefeMenge: hefeMengeSkaliert,
                 hauptguss: hauptgussLiter,
-                nachguss: nachgussLiter
+                nachguss: nachgussLiter,
+                anstellTemp: anstellTemperaturText
             };
 
-            brauSchritteStatus = [false, false, false, false, false, false, false, false, false];
+            brauSchritteStatus = [false, false, false, false, false, false, false, false];
             erzeugeBrauAssistentInhalt();
         }
 
@@ -611,9 +616,8 @@
                         <span>6. Würzekochen & Hopfen gaben</span>
                     </label>
                     <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
-                        Schalte den Brenner ein und koche die Würze. Hopfengaben:<br>
+                        Schalte den Brenner ein und koche die Würze. Hopfengaben laut Rezept:<br>
                         <ul style="padding-left: 14px; margin: 2px 0 0 0;">${hopfungList}</ul>
-                        ⚠️ <b>Nicht vergessen:</b> 15 Min vor Kochen-Ende Irisch Moos zugeben!
                     </div>
                 </div>
 
@@ -632,7 +636,7 @@
                         <input type="checkbox" id="chk-7" ${brauSchritteStatus[7] ? 'checked' : ''} ${brauSchritteStatus[6] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(7)">
                         <span>8. Kühlen auf Anstelltemperatur & Anstellen</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Kühle die Würze weiter auf Anstelltemperatur und gib exakt <b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)} zu. Gärfass in den Keller stellen!</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Kühle die Würze weiter auf <b>${r.anstellTemp}</b> ab und gib exakt <b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)} zu. Gärfass in den Keller stellen!</div>
                 </div>
 
                 <button class="btn-primary" id="btn-final-brauen" ${brauSchritteStatus.every(Boolean) ? '' : 'disabled style="background-color: #B0BEC5; cursor: not-allowed;"'} onclick="schliesseRezeptSudAbUndBuche()" style="margin-top: 15px;">
