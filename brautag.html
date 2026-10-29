@@ -159,7 +159,6 @@
             border-bottom: 1px solid #E0E0E0;
         }
 
-        /* BRAUTAG SCHRITT-FÜR-SCHRITT ASSISTENT */
         .brau-schritt-karte {
             background: #F8F9FA;
             border: 1px solid #D0D7DE;
@@ -236,7 +235,6 @@
         let sudWasserMenge = 0; 
         let aktuellerSudName = ''; 
 
-        // Brau-Assistent Zustand (7 Hauptschritte bis zum Abschluss nach Whirlpool)
         let aktuellesSkaliertesRezept = null;
         let brauSchritteStatus = [false, false, false, false, false, false, false];
 
@@ -294,11 +292,10 @@
                     </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.4</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.5</div>
             `;
         }
 
-        // --- 1. FREIES BRAUEN MODAL ---
         async function oeffneFreiesBrauenModal() {
             rezeptZutaten = [];
             sudWasserMenge = 0;
@@ -420,7 +417,6 @@
             schlageEinheitVor();
         }
 
-        // --- 2. REZEPT AUSWAHL & SKALIERUNG ---
         function oeffneRezeptAuswahlModal() {
             const inhalt = document.getElementById('modal-inhalt');
 
@@ -479,7 +475,6 @@
             `;
         }
 
-        // --- 3. SCHRITT-FÜR-SCHRITT BRAU-ASSISTENT ---
         function starteSchrittFuerSchrittAssistent(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
@@ -513,6 +508,19 @@
             const istUntergaerig = stilUndHefeText.includes('untergärig') || stilUndHefeText.includes('lager') || stilUndHefeText.includes('pils') || stilUndHefeText.includes('bock');
             const anstellTemperaturText = istUntergaerig ? '9–12 °C (Untergärig)' : '18–20 °C (Obergärig)';
 
+            // Vorab-Kalkulation der Kosten für den Assistenten
+            let rohstoffKostenAssistent = 0;
+            skaliertesSchuettung.forEach(m => {
+                let roh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz' && item.bezeichnung.toLowerCase().includes(m.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz');
+                if (roh) rohstoffKostenAssistent += parseFloat(m.menge) * (parseFloat(roh.preis) || 0);
+            });
+            skaliertesHopfung.forEach(h => {
+                let roh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
+                if (roh) rohstoffKostenAssistent += parseFloat(h.menge) * (parseFloat(roh.preis) || 0);
+            });
+            let wasserKostenAssistent = (hauptgussLiter + nachgussLiter) * wasserEnergiePreis;
+            let gesamtKostenAssistent = rohstoffKostenAssistent + wasserKostenAssistent;
+
             aktuellesSkaliertesRezept = {
                 name: r.name,
                 stil: r.stil || 'Landbier',
@@ -526,7 +534,8 @@
                 hefeMenge: hefeMengeSkaliert,
                 hauptguss: hauptgussLiter,
                 nachguss: nachgussLiter,
-                anstellTemp: anstellTemperaturText
+                anstellTemp: anstellTemperaturText,
+                geschätzteKosten: gesamtKostenAssistent
             };
 
             brauSchritteStatus = [false, false, false, false, false, false, false];
@@ -539,13 +548,26 @@
 
             let schuettungList = r.schuettung.map(m => `<li><b>${m.menge} kg</b> ${escapeHtml(m.name)}</li>`).join('');
             let hopfungList = r.hopfung.map(h => `<li><b>${h.menge} g</b> ${escapeHtml(h.name)} (${h.kochzeit} Min kochen)</li>`).join('');
-            let rastenList = r.rasten.map(rst => `<li><b>${escapeHtml(rst.name)}:</b> ${rst.temperatur_c}°C (${rst.dauer_min} Min)</li>`).join('');
+            
+            let ersteRastTemp = 57;
+            let rastenList = "";
+            if (r.rasten && r.rasten.length > 0) {
+                ersteRastTemp = r.rasten[0].temperatur_c || 57;
+                rastenList = r.rasten.map(rst => `<li><b>${escapeHtml(rst.name)}:</b> ${rst.temperatur_c}°C (${rst.dauer_min} Min)</li>`).join('');
+            } else {
+                rastenList = `<li><i>Kein Maischplan hinterlegt – bitte Standard-Kombirast nutzen.</i></li>`;
+            }
 
             const alleSchritteErledigt = brauSchritteStatus.every(Boolean);
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 2px;">🪄 Brau-Assistent</h3>
-                <div style="font-size: 13px; color: #555; margin-bottom: 12px;"><b>${escapeHtml(r.name)}</b> (${r.liter} Liter • ${r.stammwuerze} °P • ${r.ibu} IBU)</div>
+                <div style="font-size: 13px; color: #555; margin-bottom: 8px;"><b>${escapeHtml(r.name)}</b> (${r.liter} Liter • ${r.stammwuerze} °P • ${r.ibu} IBU)</div>
+
+                <div style="background: #E8F5E9; border: 1px solid #C8E6C9; border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; color: #2E7D32; font-weight: bold;">
+                    <span>💶 Geschätzte Sudkosten:</span>
+                    <span style="font-size: 15px;">${r.geschätzteKosten.toFixed(2)} €</span>
+                </div>
 
                 <div style="background: #E3F2FD; border: 1px solid #90CAF9; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 12px;">
                     <b>Zusammenfassung:</b>
@@ -557,7 +579,7 @@
                     </ul>
                 </div>
 
-                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Hake die Schritte nacheinander ab. Nach dem Whirlpool schließt du den Brautag ab:</p>
+                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Hake die Schritte nacheinander ab:</p>
 
                 <!-- SCHRITT 1 -->
                 <div class="brau-schritt-karte ${brauSchritteStatus[0] ? 'erledigt' : ''}" id="schritt-0-card">
@@ -565,7 +587,7 @@
                         <input type="checkbox" id="chk-0" ${brauSchritteStatus[0] ? 'checked' : ''} onchange="aktualisiereBrauSchritt(0)">
                         <span>1. Hauptguss vorbereiten & erwärmen</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Erwärme genau <b>${r.hauptguss} Liter</b> Hauptguss auf Einmaischtemperatur (ca. 55-57 °C). Eventuell Milchsäure zugeben.</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Erwärme genau <b>${r.hauptguss} Liter</b> Hauptguss auf Einmaischtemperatur (ca. ${ersteRastTemp} °C laut Rezept).</div>
                 </div>
 
                 <!-- SCHRITT 2 -->
@@ -587,8 +609,8 @@
                         <span>3. Einmaischen & Rasten durchführen</span>
                     </label>
                     <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
-                        Maische das Malz ein. Rasten aus dem Rezept:<br>
-                        <ul style="padding-left: 14px; margin: 2px 0 0 0;">${rastenList || '<li>Standard-Kombirast</li>'}</ul>
+                        Maische das Malz ein (${ersteRastTemp} °C). Rasten laut Rezept:<br>
+                        <ul style="padding-left: 14px; margin: 2px 0 0 0;">${rastenList}</ul>
                     </div>
                 </div>
 
@@ -607,7 +629,7 @@
                         <input type="checkbox" id="chk-4" ${brauSchritteStatus[4] ? 'checked' : ''} ${brauSchritteStatus[3] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(4)">
                         <span>5. Jodprobe, Läuterruhe & Abläutern</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Führe die Jodprobe durch, überführe in den Läuterbottich, gib Läuterruhe, schöpfe Vorderwürze um bis sie klar läuft und läutere ab (inkl. Nachgüsse).</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Führe die Jodprobe durch, überführe in den Läuterbottich, gib Läuterruhe, schöpfe Vorderwürze um und läutere ab.</div>
                 </div>
 
                 <!-- SCHRITT 6 -->
@@ -617,7 +639,7 @@
                         <span>6. Würzekochen & Hopfen gaben</span>
                     </label>
                     <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
-                        Schalte den Brenner ein und koche die Würze. Hopfengaben laut Rezept:<br>
+                        Koche die Würze. Hopfengaben laut Rezept:<br>
                         <ul style="padding-left: 14px; margin: 2px 0 0 0;">${hopfungList}</ul>
                     </div>
                 </div>
@@ -628,17 +650,11 @@
                         <input type="checkbox" id="chk-6" ${brauSchritteStatus[6] ? 'checked' : ''} ${brauSchritteStatus[5] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(6)">
                         <span>7. Whirlpool & Abkühlen auf 80 °C (Brautag-Ende)</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Schalte den Brenner ab, kühle auf ca. 80 °C herunter, rühre den Whirlpool an und gib Whirlpool-Hopfen zu. Hinweis für später: Anstellen bei <b>${r.anstellTemp}</b> mit <b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)}.</div>
-                </div>
-
-                <!-- ZUSÄTZLICHER HINWEIS: HOPFENSTOPFEN -->
-                <div style="background: #FFF3E0; border: 1px solid #FFE0B2; border-radius: 8px; padding: 10px; margin: 15px 0; font-size: 12px; color: #E65100;">
-                    🌿 <b>Hinweis zum Hopfenstopfen (Cold Hopping):</b><br>
-                    Falls im Rezept Stopfhopfen vorgesehen ist, gib diesen nach der Hauptgärung (ca. 3–5 Tage vor dem Abfüllen) in den Jungbier-Tank oder ins Gärfass.
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Kühle auf ca. 80 °C herunter, rühre den Whirlpool an. Anstellen später bei <b>${r.anstellTemp}</b> mit <b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)}.</div>
                 </div>
 
                 <button class="btn-primary" id="btn-final-brauen" ${alleSchritteErledigt ? '' : 'disabled style="background-color: #B0BEC5; cursor: not-allowed;"'} onclick="schliesseRezeptSudAbUndBuche()" style="margin-top: 15px;">
-                    🚀 Brautag abschließen & Lager abbuchen
+                    🚀 Brautag abschließen & an Kasse übergeben
                 </button>
                 <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 5px; width: 100%;">Abbrechen</button>
             `;
@@ -650,7 +666,6 @@
             erzeugeBrauAssistentInhalt();
         }
 
-        // --- 4. LAGER ABBUCHUNG & SUD SPEICHERN ---
         async function schliesseRezeptSudAbUndBuche() {
             const r = aktuellesSkaliertesRezept;
             if (!r) return;
@@ -720,12 +735,11 @@
                 return;
             }
 
-            alert(`🍻 ${r.name} (${r.liter}L) erfolgreich gebraut! Die Lagerbestände wurden aktualisiert und der Sud wurde in der Kasse hinterlegt.`);
+            alert(`🍻 ${r.name} (${r.liter}L) erfolgreich gebraut! Die Lagerbestände wurden aktualisiert und der Betrag (${gesamtkosten.toFixed(2)} €) wurde für den Kassenwart hinterlegt.`);
             schliesseModal();
             await ladeDatenAusDatenbank();
         }
 
-        // --- HILFSFUNKTIONEN FÜR FREIES BRAUEN ---
         function aktualisiereWasserMenge(val) {
             sudWasserMenge = parseFloat(val) || 0;
             aktualisiereKostenAnzeige();
