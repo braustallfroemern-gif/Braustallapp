@@ -429,9 +429,20 @@
         <div class="section-box">
             <div class="section-title">7. Hefe & Gärung</div>
             
-            <label class="label-style">Hefe:</label>
-            <select id="hefe-name" class="select-style" onchange="pruefeHefeAuswahl(this)">
-            </select>
+            <div class="grid-2">
+                <div>
+                    <label class="label-style">Hefe:</label>
+                    <select id="hefe-name" class="select-style" onchange="pruefeHefeAuswahl(this)">
+                    </select>
+                </div>
+                <div>
+                    <label class="label-style">Gärart:</label>
+                    <select id="hefe-gaerart" class="select-style">
+                        <option value="Untergärig">Untergärig</option>
+                        <option value="Obergärig">Obergärig</option>
+                    </select>
+                </div>
+            </div>
 
             <div class="grid-2" style="margin-top: 6px;">
                 <div>
@@ -483,13 +494,13 @@
         let lagerHefeListe = [];
         let aktuellesRezeptId = null;
         let aktuellerBierEbc = 0;
-        let letresBasisRezeptObjekt = null;
+        let letztesBasisRezeptObjekt = null;
 
         const BRAUWISSEN_BASISREZEPTE = {
             "Landbier": {
                 stammwuerze: 12.8, ibu: 24, ebc: 18, kochzeit: 90,
                 hauptguss: 42, nachguss: 38,
-                hefe: "W-34/70 (Untergärig)", gaer_temp: "11-13 °C", hefe_menge: 45,
+                hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "11-13 °C", hefe_menge: 45,
                 notizen: "Uriges, vollmundiges Braustall-Landbier. Schön malzbetont mit feiner karamelligen Note.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 2.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
@@ -499,7 +510,7 @@
             "Pilsner": {
                 stammwuerze: 11.8, ibu: 40, ebc: 5, kochzeit: 90,
                 hauptguss: 40, nachguss: 40,
-                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: 45,
+                hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "10-12 °C", hefe_menge: 45,
                 notizen: "Feinherbes Pilsner Brauart. Weiches Wasser und hohe Bitterhopfung.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 62, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
@@ -509,7 +520,7 @@
             "Helles / Lager": {
                 stammwuerze: 12.0, ibu: 22, ebc: 8, kochzeit: 90,
                 hauptguss: 42, nachguss: 38,
-                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: 45,
+                hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "10-12 °C", hefe_menge: 45,
                 notizen: "Klassisches bayrisches Helles. Ruhige Gärung bei 11°C.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
@@ -519,7 +530,7 @@
             "Kellerbier / Zwickel": {
                 stammwuerze: 12.5, ibu: 25, ebc: 14, kochzeit: 90,
                 hauptguss: 42, nachguss: 38,
-                hefe: "W-34/70 (Untergärig)", gaer_temp: "12-14 °C", hefe_menge: 45,
+                hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "12-14 °C", hefe_menge: 45,
                 notizen: "Naturtrüb, malzbetont und vollmundig.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.5}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 15}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
@@ -529,7 +540,7 @@
             "Märzen / Festbier": {
                 stammwuerze: 13.8, ibu: 24, ebc: 25, kochzeit: 90,
                 hauptguss: 44, nachguss: 36,
-                hefe: "W-34/70 (Untergärig)", gaer_temp: "10-12 °C", hefe_menge: 50,
+                hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "10-12 °C", hefe_menge: 50,
                 notizen: "Kräftiger Malzkörper, wunderschöne Kupferfarbe.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 5.5}, {name: "Münchner Malz I", menge_kg: 5.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
@@ -539,7 +550,7 @@
             "Bockbier / Doppelbock": {
                 stammwuerze: 17.5, ibu: 28, ebc: 30, kochzeit: 90,
                 hauptguss: 48, nachguss: 32,
-                hefe: "W-34/70 (Untergärig)", gaer_temp: "9-11 °C", hefe_menge: 60,
+                hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "9-11 °C", hefe_menge: 60,
                 notizen: "Schwerer, starker Malzkörper mit edler Süße und dezenter Bittere.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 6.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
@@ -549,7 +560,7 @@
             "Schwarzbier": {
                 stammwuerze: 12.0, ibu: 28, ebc: 55, kochzeit: 90,
                 hauptguss: 42, nachguss: 38,
-                hefe: "W-34/70 (Untergärig)", gaer_temp: "11-13 °C", hefe_menge: 45,
+                hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "11-13 °C", hefe_menge: 45,
                 notizen: "Tiefschwarz, aber schlank und überraschend mild im Antrunk ohne Pelzigkeit.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 0.6}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
@@ -559,7 +570,7 @@
             "Pale Ale": {
                 stammwuerze: 12.5, ibu: 38, ebc: 18, kochzeit: 60,
                 hauptguss: 42, nachguss: 38,
-                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: 35,
+                hefe: "SafAle S-04", gaerart: "Obergärig", gaer_temp: "18-20 °C", hefe_menge: 35,
                 notizen: "Fruchtig-frisches Ale mit Zitrusnoten.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 10.0}, {name: "Caramalz Hell", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 62, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
@@ -570,7 +581,7 @@
             "IPA (India Pale Ale)": {
                 stammwuerze: 15.2, ibu: 60, ebc: 22, kochzeit: 60,
                 hauptguss: 45, nachguss: 35,
-                hefe: "SafAle S-04 (Obergärig)", gaer_temp: "18-20 °C", hefe_menge: 45,
+                hefe: "SafAle S-04", gaerart: "Obergärig", gaer_temp: "18-20 °C", hefe_menge: 45,
                 notizen: "Hopfenbombe mit intensiven Zitrus- und Tropenfruchtnoten.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 11.5}, {name: "Pilsner Malz", menge_kg: 1.5}, {name: "Caramalz Hell", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 63, dauer_min: 45}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
@@ -613,7 +624,7 @@
             let html = '<option value="">-- Bitte Bierstil wählen --</option>';
             stilNamen.forEach(name => {
                 const stilObj = BRAUWISSEN_BASISREZEPTE[name];
-                let gaerart = stilObj.hefe.toLowerCase().includes('untergärig') ? 'Untergärig' : 'Obergärig';
+                let gaerart = stilObj.gaerart || (stilObj.hefe.toLowerCase().includes('untergärig') ? 'Untergärig' : 'Obergärig');
                 html += `<option value="${name}">${name} (${gaerart})</option>`;
             });
             select.innerHTML = html;
@@ -647,31 +658,31 @@
 
             let rezeptKopie = JSON.parse(JSON.stringify(basis));
             rezeptKopie.liter = 50;
-            letresBasisRezeptObjekt = rezeptKopie;
+            letztesBasisRezeptObjekt = rezeptKopie;
 
             document.getElementById('rezept-name').value = `${stilName} (Braustall)`;
             document.getElementById('ausschlag-liter').value = 100;
 
             schliesseModal();
-            fuelleRezeptFormular(letresBasisRezeptObjekt);
+            fuelleRezeptFormular(letztesBasisRezeptObjekt);
             skaliereRezeptMengen();
             alert(`Basisrezept für "${stilName}" geladen und auf die aktuelle Literzahl skaliert! 🍻`);
         }
 
         function skaliereRezeptMengen() {
-            if (!letresBasisRezeptObjekt) return;
+            if (!letztesBasisRezeptObjekt) return;
 
             const zielLiter = parseFloat(document.getElementById('ausschlag-liter').value) || 50;
-            const basisLiter = letresBasisRezeptObjekt.liter || 50;
+            const basisLiter = letztesBasisRezeptObjekt.liter || 50;
             const faktor = zielLiter / basisLiter;
 
-            document.getElementById('hauptguss-liter').value = Math.round(letresBasisRezeptObjekt.hauptguss * faktor);
-            document.getElementById('nachguss-liter').value = Math.round(letresBasisRezeptObjekt.nachguss * faktor);
+            document.getElementById('hauptguss-liter').value = Math.round(letztesBasisRezeptObjekt.hauptguss * faktor);
+            document.getElementById('nachguss-liter').value = Math.round(letztesBasisRezeptObjekt.nachguss * faktor);
 
             const malzContainer = document.getElementById('malz-container');
             malzContainer.innerHTML = '';
-            if (letresBasisRezeptObjekt.schuettung) {
-                letresBasisRezeptObjekt.schuettung.forEach(m => {
+            if (letztesBasisRezeptObjekt.schuettung) {
+                letztesBasisRezeptObjekt.schuettung.forEach(m => {
                     const skaliertesKg = Math.round((m.menge_kg * faktor) * 100) / 100;
                     fuegeMalzZeileHinzu(m.name, skaliertesKg);
                 });
@@ -679,8 +690,8 @@
 
             const kochhopfenContainer = document.getElementById('kochhopfen-container');
             kochhopfenContainer.innerHTML = '';
-            if (letresBasisRezeptObjekt.hopfung) {
-                letresBasisRezeptObjekt.hopfung.forEach(h => {
+            if (letztesBasisRezeptObjekt.hopfung) {
+                letztesBasisRezeptObjekt.hopfung.forEach(h => {
                     const skaliertesG = Math.round(h.menge_g * faktor);
                     fuegeKochhopfenZeileHinzu(h.name, skaliertesG, h.kochzeit_min);
                 });
@@ -690,8 +701,8 @@
 
             const wpContainer = document.getElementById('whirlpool-container');
             wpContainer.innerHTML = '';
-            if (letresBasisRezeptObjekt.whirlpool) {
-                letresBasisRezeptObjekt.whirlpool.forEach(w => {
+            if (letztesBasisRezeptObjekt.whirlpool) {
+                letztesBasisRezeptObjekt.whirlpool.forEach(w => {
                     const skaliertesG = Math.round(w.menge_g * faktor);
                     fuegeWhirlpoolHopfenZeileHinzu(w.name, skaliertesG, w.temperatur_c);
                 });
@@ -699,14 +710,14 @@
 
             const kaltContainer = document.getElementById('kalthopfen-container');
             kaltContainer.innerHTML = '';
-            if (letresBasisRezeptObjekt.kalthopfung) {
-                letresBasisRezeptObjekt.kalthopfung.forEach(k => {
+            if (letztesBasisRezeptObjekt.kalthopfung) {
+                letztesBasisRezeptObjekt.kalthopfung.forEach(k => {
                     const skaliertesG = Math.round(k.menge_g * faktor);
                     fuegeKalthopfenZeileHinzu(k.name, skaliertesG);
                 });
             }
 
-            const skaliertHefeG = Math.round(letresBasisRezeptObjekt.hefe_menge * faktor);
+            const skaliertHefeG = Math.round(letztesBasisRezeptObjekt.hefe_menge * faktor);
             document.getElementById('hefe-menge').value = `${skaliertHefeG} g`;
 
             berechneBierFarbe();
@@ -785,7 +796,7 @@
 
             if (lagerMalzListe.length === 0) lagerMalzListe = [{bezeichnung: 'Pilsner Malz', farbe_ebc: 3.5}, {bezeichnung: 'Münchner Malz I', farbe_ebc: 20}, {bezeichnung: 'Caramalz Dunkel', farbe_ebc: 60}, {bezeichnung: 'Röstmalz', farbe_ebc: 1000}, {bezeichnung: 'Röstgerste', farbe_ebc: 1100}];
             if (lagerHopfenListe.length === 0) lagerHopfenListe = [{bezeichnung: 'Chinook'}, {bezeichnung: 'Cascade'}, {bezeichnung: 'Hallertauer Mittelfrüh'}];
-            if (lagerHefeListe.length === 0) lagerHefeListe = [{bezeichnung: 'SafAle S-04 (Obergärig)'}, {bezeichnung: 'W-34/70 (Untergärig)'}];
+            if (lagerHefeListe.length === 0) lagerHefeListe = [{bezeichnung: 'SafAle S-04', kategorie: 'Hefe'}, {bezeichnung: 'W-34/70', kategorie: 'Hefe'}];
 
             aktualisiereHefeDropdown();
             aktualisiereKochhopfenDropdowns();
@@ -843,7 +854,21 @@
         }
 
         function pruefeHefeAuswahl(selectElement) {
-            if (selectElement.value === 'NEU_ANLEGEN') oeffneLagerSchnellErfassung('Hefe');
+            if (selectElement.value === 'NEU_ANLEGEN') {
+                oeffneLagerSchnellErfassung('Hefe');
+                return;
+            }
+            // Automatisch Gärart vorschlagen wenn aus Lager gewählt
+            const ausgewählteHefe = lagerHefeListe.find(h => (h.bezeichnung || h.name) === selectElement.value);
+            if (ausgewählteHefe) {
+                const text = ((ausgewählteHefe.bezeichnung || '') + ' ' + (ausgewählteHefe.beschreibung || '') + ' ' + (ausgewählteHefe.kategorie || '')).toLowerCase();
+                const gaerartSelect = document.getElementById('hefe-gaerart');
+                if (text.includes('obergärig')) {
+                    gaerartSelect.value = 'Obergärig';
+                } else if (text.includes('untergärig') || text.includes('lager') || text.includes('pils')) {
+                    gaerartSelect.value = 'Untergärig';
+                }
+            }
         }
 
         function fuegeMalzZeileHinzu(name = '', menge = '') {
@@ -905,7 +930,6 @@
         function oeffneGlasZoom() { document.getElementById('glas-zoom-overlay').style.display = 'flex'; }
         function schliesseGlasZoom() { document.getElementById('glas-zoom-overlay').style.display = 'none'; }
 
-        // --- AUTOMATISCHES AUSFÜLLEN BEI RAST-AUSWAHL ---
         function fuegeRastZeile(aktiveRast = '', temp = '', dauer = '') {
             const container = document.getElementById('rast-container');
             const div = document.createElement('div');
@@ -994,11 +1018,14 @@
             document.getElementById('hauptguss-liter').value = r.hauptguss || '';
             document.getElementById('nachguss-liter').value = r.nachguss || '';
             document.getElementById('hefe-name').value = r.hefe || '';
+            if (r.gaerart) {
+                document.getElementById('hefe-gaerart').value = r.gaerart;
+            }
             document.getElementById('hefe-menge').value = r.hefe_menge || '';
             document.getElementById('rezept-notizen').value = r.notizen || '';
             
-            letresBasisRezeptObjekt = JSON.parse(JSON.stringify(r));
-            if (!letresBasisRezeptObjekt.liter) letresBasisRezeptObjekt.liter = 50;
+            letztesBasisRezeptObjekt = JSON.parse(JSON.stringify(r));
+            if (!letztesBasisRezeptObjekt.liter) letztesBasisRezeptObjekt.liter = 50;
 
             skaliereRezeptMengen();
         }
