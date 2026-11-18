@@ -292,7 +292,7 @@
                     </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 3.3</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 3.4</div>
             `;
         }
 
@@ -493,11 +493,14 @@
             if (typeof schuettungRoh === 'string') {
                 try { schuettungRoh = JSON.parse(schuettungRoh); } catch(e) { schuettungRoh = []; }
             }
+            if (!Array.isArray(schuettungRoh)) schuettungRoh = [];
 
+            // ROBUSTE SCHÜTTUNGS-ERKENNUNG (unterstützt name, bezeichnung, malz, sorte & menge_kg, menge, gewicht, kg)
             let skaliertesSchuettung = schuettungRoh.map(m => {
-                let mVal = parseFloat(m.menge_kg !== undefined ? m.menge_kg : (m.menge !== undefined ? m.menge : (m.gewicht !== undefined ? m.gewicht : 0)));
+                let mVal = parseFloat(m.menge_kg !== undefined ? m.menge_kg : (m.menge !== undefined ? m.menge : (m.gewicht !== undefined ? m.gewicht : (m.kg !== undefined ? m.kg : 0))));
+                let mName = m.name || m.bezeichnung || m.malz || m.sorte || 'Malz';
                 return {
-                    name: m.name || m.bezeichnung || 'Malz',
+                    name: mName,
                     mengeNum: mVal * faktor,
                     menge: (mVal * faktor).toFixed(2),
                     einheit: 'kg'
@@ -516,10 +519,13 @@
             if (typeof vwRoh === 'string') {
                 try { vwRoh = JSON.parse(vwRoh); } catch(e) { vwRoh = []; }
             }
+            if (!Array.isArray(vwRoh)) vwRoh = [];
+
             let skaliertesVwHopfung = vwRoh.map(h => {
-                let hVal = parseFloat(h.menge_g !== undefined ? h.menge_g : (h.menge !== undefined ? h.menge : 0));
+                let hVal = parseFloat(h.menge_g !== undefined ? h.menge_g : (h.menge !== undefined ? h.menge : (h.gewicht !== undefined ? h.gewicht : 0)));
+                let hName = h.name || h.bezeichnung || h.hopfen || 'Hopfen';
                 return {
-                    name: h.name || h.bezeichnung || 'Hopfen',
+                    name: hName,
                     menge: Math.round(hVal * faktor),
                     einheit: 'g'
                 };
@@ -529,10 +535,13 @@
             if (typeof hopfRoh === 'string') {
                 try { hopfRoh = JSON.parse(hopfRoh); } catch(e) { hopfRoh = []; }
             }
+            if (!Array.isArray(hopfRoh)) hopfRoh = [];
+
             let skaliertesHopfung = hopfRoh.map(h => {
-                let hVal = parseFloat(h.menge_g !== undefined ? h.menge_g : (h.menge !== undefined ? h.menge : 0));
+                let hVal = parseFloat(h.menge_g !== undefined ? h.menge_g : (h.menge !== undefined ? h.menge : (h.gewicht !== undefined ? h.gewicht : 0)));
+                let hName = h.name || h.bezeichnung || h.hopfen || 'Hopfen';
                 return {
-                    name: h.name || h.bezeichnung || 'Hopfen',
+                    name: hName,
                     menge: Math.round(hVal * faktor),
                     kochzeit: h.kochzeit_min !== undefined ? h.kochzeit_min : (h.zeit !== undefined ? h.zeit : 60),
                     einheit: 'g'
@@ -543,10 +552,13 @@
             if (typeof wpRoh === 'string') {
                 try { wpRoh = JSON.parse(wpRoh); } catch(e) { wpRoh = []; }
             }
+            if (!Array.isArray(wpRoh)) wpRoh = [];
+
             let skaliertesWhirlpool = wpRoh.map(w => {
-                let wVal = parseFloat(w.menge_g !== undefined ? w.menge_g : (w.menge !== undefined ? w.menge : 0));
+                let wVal = parseFloat(w.menge_g !== undefined ? w.menge_g : (w.menge !== undefined ? w.menge : (w.gewicht !== undefined ? w.gewicht : 0)));
+                let wName = w.name || w.bezeichnung || w.hopfen || 'Hopfen';
                 return {
-                    name: w.name || w.bezeichnung || 'Hopfen',
+                    name: wName,
                     menge: Math.round(wVal * faktor),
                     temperatur: w.temperatur_c || w.temperatur || 78,
                     einheit: 'g'
@@ -557,10 +569,13 @@
             if (typeof kaltRoh === 'string') {
                 try { kaltRoh = JSON.parse(kaltRoh); } catch(e) { kaltRoh = []; }
             }
+            if (!Array.isArray(kaltRoh)) kaltRoh = [];
+
             let skaliertesKalthopfung = kaltRoh.map(k => {
-                let kVal = parseFloat(k.menge_g !== undefined ? k.menge_g : (k.menge !== undefined ? k.menge : 0));
+                let kVal = parseFloat(k.menge_g !== undefined ? k.menge_g : (k.menge !== undefined ? k.menge : (k.gewicht !== undefined ? k.gewicht : 0)));
+                let kName = k.name || k.bezeichnung || k.hopfen || 'Hopfen';
                 return {
-                    name: k.name || k.bezeichnung || 'Hopfen',
+                    name: kName,
                     menge: Math.round(kVal * faktor),
                     einheit: 'g'
                 };
@@ -580,7 +595,7 @@
             
             const anstellTemperaturText = istUntergaerig ? '9–12 °C (Untergärig)' : '18–20 °C (Obergärig)';
 
-            // KOSTENBERECHNUNG MIT DETAIL-ARRAY FÜR DIE NEUE KOSTEN-TABELLE
+            // KOSTENBERECHNUNG INKLUSIVE MALZ FÜR DIE KOSTEN-TABELLE
             let detailKostenPositionen = [];
             let rohstoffKostenAssistent = 0;
 
@@ -728,7 +743,6 @@
                 rastenList = `<li><i>Kein Maischplan hinterlegt – bitte Standard-Kombirast nutzen.</i></li>`;
             }
 
-            // NEUE KOSTEN-TABELLE GENERIEREN
             let kostenTabelleZeilen = "";
             r.kostenPositionen.forEach(pos => {
                 let mengeAnzeige = (pos.einheit === 'kg') ? Number(pos.menge).toFixed(2) : Math.round(pos.menge);
