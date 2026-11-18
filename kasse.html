@@ -370,6 +370,7 @@
 
         let alleSude = [];
         let alleBuchungen = [];
+        let alleRohstoffe = [];
         let kassenbuchEditModus = false;
         
         let filterArt = 'ALL'; 
@@ -407,6 +408,9 @@
 
             const { data: buchData } = await _supabase.from('kassenbuch').select('*').order('id', { ascending: false });
             if (buchData) alleBuchungen = buchData;
+
+            const { data: lagerData } = await _supabase.from('lager').select('*').order('bezeichnung', { ascending: true });
+            if (lagerData) alleRohstoffe = lagerData;
         }
 
         async function ladeEinstellungenAusDatenbank() {
@@ -457,7 +461,6 @@
             return Array.from(jahreSet).sort().reverse();
         }
 
-        // Hilfsfunktion: Konvertiert YYYY-MM-DD (HTML input) zu DD.MM.YYYY (Deutsches Format)
         function formatiereDatumFuerDb(datumIso) {
             if (!datumIso) return new Date().toLocaleDateString('de-DE');
             if (datumIso.includes('-')) {
@@ -469,7 +472,6 @@
             return datumIso;
         }
 
-        // Hilfsfunktion: Konvertiert DD.MM.YYYY zu YYYY-MM-DD für das HTML date-input
         function formatiereDatumFuerInput(datumDe) {
             if (!datumDe) return new Date().toISOString().split('T')[0];
             if (datumDe.includes('.')) {
@@ -510,7 +512,7 @@
                     ${einstellungenBtnHtml}
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 35px;">Kasse Version 2.6</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 35px;">Kasse Version 2.8</div>
             `;
         }
 
@@ -800,7 +802,6 @@
             const beschreibungWert = vorbelegung ? (vorbelegung.beschreibung || '') : '';
             const betragWert = vorbelegung ? (vorbelegung.betrag || '') : '';
             
-            // Datum vorbelegen: Entweder von Wiederholung oder heutiges Datum im Input-Format (YYYY-MM-DD)
             const rohdatum = vorbelegung ? vorbelegung.datum : new Date().toLocaleDateString('de-DE');
             const datumWertInput = formatiereDatumFuerInput(rohdatum);
 
@@ -1051,32 +1052,74 @@
         function oeffneEinstellungenModal() {
             const inhalt = document.getElementById('modal-inhalt');
 
+            let rohstoffListeHtml = "";
+            if (alleRohstoffe.length === 0) {
+                rohstoffListeHtml = `<div style="font-size: 11px; color: #666; text-align: center; padding: 6px;">Keine Rohstoffe im Lager.</div>`;
+            } else {
+                alleRohstoffe.forEach(r => {
+                    const kat = (r.kategorie || '').toLowerCase();
+                    const preis = parseFloat(r.preis);
+                    let istPauschale = false;
+                    let pauschalVergleichsWert = 0;
+
+                    if (kat === 'malz') pauschalVergleichsWert = standardPreisMalz;
+                    else if (kat === 'hopfen') pauschalVergleichsWert = standardPreisHopfen;
+                    else if (kat === 'hefe') pauschalVergleichsWert = standardPreisHefe;
+
+                    if (isNaN(preis) || preis === 0 || (pauschalVergleichsWert > 0 && Math.abs(preis - pauschalVergleichsWert) < 0.0001)) {
+                        istPauschale = true;
+                    }
+
+                    const preisAnzeige = isNaN(preis) ? '0.00' : (kat === 'malz' ? preis.toFixed(2) : preis.toFixed(3));
+                    const einheitAnzeige = r.einheit || (kat === 'malz' ? 'kg' : 'g');
+
+                    rohstoffListeHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #EEE; padding: 4px 2px; font-size: 11px;">
+                            <div>
+                                <b>${escapeHtml(r.bezeichnung)}</b> <span style="color:#666;">[${escapeHtml(r.kategorie || '-')}]</span>
+                            </div>
+                            <div>
+                                <span style="font-weight: bold; ${istPauschale ? 'color: #D32F2F;' : 'color: #2E7D32;'}">
+                                    ${preisAnzeige} € / ${einheitAnzeige}
+                                </span>
+                                ${istPauschale ? '<span style="font-size: 9px; background: #FFCDD2; color: #C62828; padding: 1px 4px; border-radius: 3px; margin-left: 4px;">Pauschpreis</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
             inhalt.innerHTML = `
-                <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 8px;">⚙️ Kassen-Einstellungen</h3>
-                <p style="font-size: 12px; color: #555; margin-bottom: 12px;">Beim Speichern werden die eingegebenen Preise automatisch auf alle Malze, Hopfen und Hefen im Lager angewendet.</p>
+                <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 6px;">⚙️ Kassen-Einstellungen</h3>
+                <p style="font-size: 11px; color: #555; margin-bottom: 10px;">Beim Speichern werden diese Standard-Pauschpreise <b>nur</b> für Rohstoffe übernommen, die noch keinen Preis haben. Individuelle Echtpreise bleiben sicher erhalten.</p>
 
-                <div style="background: #F0F4F8; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #1976D2;">
-                    <label class="label-style" style="margin-top:0;">💧 Wasser & Energie (€ / Liter):</label>
-                    <input type="number" step="0.001" id="cfg-wasser-preis" value="${wasserEnergiePreis.toFixed(3)}" placeholder="0.120" class="input-style">
+                <div style="background: #F0F4F8; padding: 6px 8px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #1976D2;">
+                    <label class="label-style" style="margin-top:0; font-size:12px;">💧 Wasser & Energie (€ / Liter):</label>
+                    <input type="number" step="0.001" id="cfg-wasser-preis" value="${wasserEnergiePreis.toFixed(3)}" class="input-style" style="margin:2px 0 0 0; padding:6px;">
                 </div>
 
-                <div style="background: #FFF3E0; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #E65100;">
-                    <label class="label-style" style="margin-top:0; color: #E65100;">🌾 Malz Pauschalpreis (€ / kg):</label>
-                    <input type="number" step="0.01" id="cfg-malz-preis" value="${standardPreisMalz.toFixed(2)}" placeholder="2.00" class="input-style">
+                <div style="background: #FFF3E0; padding: 6px 8px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #E65100;">
+                    <label class="label-style" style="margin-top:0; color: #E65100; font-size:12px;">🌾 Malz Pauschalpreis (€ / kg):</label>
+                    <input type="number" step="0.01" id="cfg-malz-preis" value="${standardPreisMalz.toFixed(2)}" class="input-style" style="margin:2px 0 0 0; padding:6px;">
                 </div>
 
-                <div style="background: #E8F5E9; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #2E7D32;">
-                    <label class="label-style" style="margin-top:0; color: #2E7D32;">🌿 Hopfen Pauschalpreis (€ / g):</label>
-                    <input type="number" step="0.001" id="cfg-hopfen-preis" value="${standardPreisHopfen.toFixed(3)}" placeholder="0.050" class="input-style">
+                <div style="background: #E8F5E9; padding: 6px 8px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #2E7D32;">
+                    <label class="label-style" style="margin-top:0; color: #2E7D32; font-size:12px;">🌿 Hopfen Pauschalpreis (€ / g):</label>
+                    <input type="number" step="0.001" id="cfg-hopfen-preis" value="${standardPreisHopfen.toFixed(3)}" class="input-style" style="margin:2px 0 0 0; padding:6px;">
                 </div>
 
-                <div style="background: #F3E5F5; padding: 8px 10px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #7B1FA2;">
-                    <label class="label-style" style="margin-top:0; color: #7B1FA2;">🧬 Hefe Pauschalpreis (€ / g):</label>
-                    <input type="number" step="0.001" id="cfg-hefe-preis" value="${standardPreisHefe.toFixed(3)}" placeholder="0.100" class="input-style">
+                <div style="background: #F3E5F5; padding: 6px 8px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #7B1FA2;">
+                    <label class="label-style" style="margin-top:0; color: #7B1FA2; font-size:12px;">🧬 Hefe Pauschalpreis (€ / g):</label>
+                    <input type="number" step="0.001" id="cfg-hefe-preis" value="${standardPreisHefe.toFixed(3)}" class="input-style" style="margin:2px 0 0 0; padding:6px;">
+                </div>
+
+                <div style="font-size: 11px; font-weight: bold; color: #1565C0; margin-bottom: 4px;">Aktuelle Rohstoff-Preise im Lager (<span style="color:#D32F2F;">Rot</span> = Pauschpreis):</div>
+                <div style="max-height: 15vh; overflow-y: auto; background: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 6px; padding: 6px; margin-bottom: 12px;">
+                    ${rohstoffListeHtml}
                 </div>
 
                 <button class="btn-blue-action" onclick="speichereEinstellungen()">Einstellungen speichern</button>
-                <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 8px; width: 100%;">Abbrechen</button>
+                <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 6px; width: 100%;">Abbrechen</button>
             `;
 
             document.getElementById('modal-overlay').style.display = 'flex';
@@ -1107,16 +1150,32 @@
                 return;
             }
 
-            await _supabase.from('lager').update({ preis: malzInput }).ilike('kategorie', 'malz');
-            await _supabase.from('lager').update({ preis: hopfenInput }).ilike('kategorie', 'hopfen');
-            await _supabase.from('lager').update({ preis: hefeInput }).ilike('kategorie', 'hefe');
+            if (alleRohstoffe) {
+                for (let item of alleRohstoffe) {
+                    const kat = (item.kategorie || '').toLowerCase();
+                    const aktuellerPreis = item.preis;
+                    const hatKeinenPreis = (aktuellerPreis === null || aktuellerPreis === undefined || aktuellerPreis === '' || parseFloat(aktuellerPreis) === 0);
+
+                    if (hatKeinenPreis) {
+                        let neuerStandardPreis = 0;
+                        if (kat === 'malz') neuerStandardPreis = malzInput;
+                        else if (kat === 'hopfen') neuerStandardPreis = hopfenInput;
+                        else if (kat === 'hefe') neuerStandardPreis = hefeInput;
+
+                        if (neuerStandardPreis > 0) {
+                            await _supabase.from('lager').update({ preis: neuerStandardPreis }).eq('id', item.id);
+                        }
+                    }
+                }
+            }
 
             wasserEnergiePreis = wasserInput;
             standardPreisMalz = malzInput;
             standardPreisHopfen = hopfenInput;
             standardPreisHefe = hefeInput;
 
-            alert("✓ Einstellungen gespeichert und alle Preise im Lager wurden aktualisiert!");
+            await ladeDatenAusDatenbank();
+            alert("✓ Einstellungen gespeichert! Individuelle Preise blieben erhalten, fehlende Preise wurden ergänzt.");
             schliesseModal();
         }
 
