@@ -471,7 +471,7 @@
             await ladeRezepteUndBewertungen();
         }
 
-        // --- 2. MODAL FÜR REZEPT DETAILS (ERWEITERT UM WASSER, WHIRLPOOL & KALTHOPFUNG) ---
+        // --- 2. MODAL FÜR REZEPT DETAILS (INKL. KOCHZEIT, GÜSSE & HOPFUNG) ---
         function oeffneRezeptDetailsModal(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
@@ -511,6 +511,12 @@
 
                 ${schuettungHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌾 Schüttung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${schuettungHtml}</ul>` : ''}
                 ${rastenHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">⏱️ Maischplan:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${rastenHtml}</ul>` : ''}
+
+                <div style="font-size: 12px; font-weight: bold; color: #1565C0;">🔥 Würze kochen:</div>
+                <ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">
+                    <li><b>Gesamte Kochzeit:</b> ${r.kochzeit || 90} Minuten</li>
+                </ul>
+
                 ${hopfenHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌿 Kochgaben (Hopfung):</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${hopfenHtml}</ul>` : ''}
                 ${whirlpoolHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌀 Whirlpool-Hopfung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${whirlpoolHtml}</ul>` : ''}
                 ${kalthopfungHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">❄️ Kalthopfung (Stopfen):</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${kalthopfungHtml}</ul>` : ''}
