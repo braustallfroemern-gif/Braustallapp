@@ -292,7 +292,7 @@
                     </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 3.4</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 3.5</div>
             `;
         }
 
@@ -411,7 +411,7 @@
                     </div>
                 </div>
 
-                <button class="btn-primary" onclick="schliesseSudAbUndBucheFrei()">🚀 Sud brauen & Lager abbuchen</button>
+                <button class="btn-primary" onclick="schliesseSudAbAndBucheFrei()">🚀 Sud brauen & Lager abbuchen</button>
                 <button class="btn-secondary-action" onclick="schliesseModal()" style="margin-top: 5px; width: 100%;">Abbrechen</button>
             `;
             schlageEinheitVor();
@@ -495,7 +495,6 @@
             }
             if (!Array.isArray(schuettungRoh)) schuettungRoh = [];
 
-            // ROBUSTE SCHÜTTUNGS-ERKENNUNG (unterstützt name, bezeichnung, malz, sorte & menge_kg, menge, gewicht, kg)
             let skaliertesSchuettung = schuettungRoh.map(m => {
                 let mVal = parseFloat(m.menge_kg !== undefined ? m.menge_kg : (m.menge !== undefined ? m.menge : (m.gewicht !== undefined ? m.gewicht : (m.kg !== undefined ? m.kg : 0))));
                 let mName = m.name || m.bezeichnung || m.malz || m.sorte || 'Malz';
@@ -583,8 +582,10 @@
 
             let skaliertesRasten = r.rasten || [];
             let kochzeitGesamt = parseInt(r.kochzeit_gesamt || r.kochzeit) || 90;
-            let hefeMengeRoh = parseFloat(r.hefe_menge) || (gewuenschteLiter * 0.7); 
-            let hefeMengeSkaliert = Math.round(hefeMengeRoh);
+            
+            // KORREKTUR: HEFE-MENGE KORREKT MIT SKALIERUNGSFAKTOR MULTIPLIZIEREN!
+            let basisHefeMenge = parseFloat(r.hefe_menge) || (rezeptLiter * 0.7);
+            let hefeMengeSkaliert = Math.round(basisHefeMenge * faktor);
 
             const gepeicherteGaerart = (r.gaerart || '').toLowerCase();
             const hefeText = (r.hefe || '').toLowerCase();
@@ -595,7 +596,6 @@
             
             const anstellTemperaturText = istUntergaerig ? '9–12 °C (Untergärig)' : '18–20 °C (Obergärig)';
 
-            // KOSTENBERECHNUNG INKLUSIVE MALZ FÜR DIE KOSTEN-TABELLE
             let detailKostenPositionen = [];
             let rohstoffKostenAssistent = 0;
 
@@ -904,7 +904,7 @@
                     <h3 style="color: #C62828; margin-top: 0; font-size: 20px;">🚨 Sicherheitsabfrage!</h3>
                     <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
                         Möchtest du den Sud <b>"${escapeHtml(r.name)}" (${r.liter}L)</b> wirklich verbindlich abschließen?<br><br>
-                        <b>Achtung:</b> Dabei werden sämtliche Zutaten (Malz, Vorderwürzehopfen, Kochhopfen, Whirlpoolhopfen, Kalthopfen, Hefe) direkt aus dem aktuellen <b>Lagerbestand abgezogen</b> und der Gesamtbetrag von <b>${r.geschätzteKosten.toFixed(2)} €</b> wird an den Kassenwart übergeben!
+                        <b>Achtung:</b> Dabei werden sämtliche Zutaten (Malz, Hopfen, Hefe) direkt aus dem aktuellen <b>Lagerbestand abgezogen</b> und der Gesamtbetrag von <b>${r.geschätzteKosten.toFixed(2)} €</b> wird an den Kassenwart übergeben!
                     </p>
                     
                     <button style="background-color: #D32F2F; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 8px;" onclick="schliesseRezeptSudAbUndBucheEcht()">
@@ -1094,7 +1094,7 @@
             erzeugeFreiesBrauenInhalt();
         }
 
-        async function schliesseSudAbUndBucheFrei() {
+        async function schliesseSudAbAndBucheFrei() {
             if (rezeptZutaten.length === 0) {
                 alert("Dein Sud enthält noch keine Zutaten.");
                 return;
