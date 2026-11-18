@@ -541,14 +541,14 @@
             inhalt.innerHTML = `
                 <div style="background-color: #FFF8E1; border: 2px solid #FFB300; border-radius: 10px; padding: 15px; text-align: center;">
                     <h3 style="color: #E65100; margin-top: 0; font-size: 18px;">⚠️ Rezept bearbeiten?</h3>
-                    <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+                    <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
                         Das ist ein fertiges Rezept <b>("${escapeHtml(r.name)}")</b>, das möglicherweise bereits mehrfach gebraut wurde.<br><br>
                         Bist du dir sicher, dass du da Änderungen vornehmen möchtest?
                     </p>
-                    <button style="background-color: #2E7D32; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 8px;" onclick="bestätigeRezeptBearbeitung('${r.id}')">
+                    <button style="background-color: #2E7D32; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 12px;" onclick="bestätigeRezeptBearbeitung('${r.id}')">
                         ✓ Ja, Rezept bearbeiten
                     </button>
-                    <button style="background-color: #546E7A; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;" onclick="schliesseModal()">
+                    <button style="background-color: #546E7A; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;" onclick="schliesseModal()">
                         ❌ Abbrechen
                     </button>
                 </div>
@@ -564,24 +564,28 @@
             location.href = 'rezept_neu.html';
         }
 
-        // --- SICHERHEITSABFRAGE BEI LÖSCHEN ---
+        // --- SICHERHEITSABFRAGE BEI LÖSCHEN (MIT GROSSEM ABSTAND) ---
         function loescheRezept(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
 
             const inhalt = document.getElementById('modal-inhalt');
             inhalt.innerHTML = `
-                <div style="background-color: #FFEBEE; border: 2px solid #D32F2F; border-radius: 10px; padding: 15px; text-align: center;">
+                <div style="background-color: #FFEBEE; border: 2px solid #D32F2F; border-radius: 10px; padding: 18px; text-align: center;">
                     <h3 style="color: #C62828; margin-top: 0; font-size: 20px;">🚨 ACHTUNG ACHTUNG!</h3>
-                    <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+                    <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 25px;">
                         Möchtest du das Rezept <b>"${escapeHtml(r.name)}"</b> wirklich unwiderruflich löschen?<br><br>
                         <b>Achtung:</b> Dieser Schritt kann nicht rückgängig gemacht werden!
                     </p>
-                    <button style="background-color: #D32F2F; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 8px;" onclick="führeRezeptLöschungAus('${r.id}')">
+                    
+                    <!-- ERSTER BUTTON: LÖSCHEN (WEIT OBEN) -->
+                    <button style="background-color: #D32F2F; color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 20px; box-shadow: 0 3px 6px rgba(0,0,0,0.15);" onclick="führeRezeptLöschungAus('${r.id}')">
                         🔥 Ja, Rezept endgültig löschen
                     </button>
-                    <button style="background-color: #546E7A; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;" onclick="schliesseModal()">
-                        ❌ Abbrechen / Zurück
+
+                    <!-- ZWEITER BUTTON: ABBRECHEN (MIT SICHEREM ABSTAND UNTEN) -->
+                    <button style="background-color: #546E7A; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;" onclick="schliesseModal()">
+                        ❌ Abbrechen / Sicher zurück
                     </button>
                 </div>
             `;
