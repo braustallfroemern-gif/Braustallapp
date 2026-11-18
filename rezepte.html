@@ -471,7 +471,7 @@
             await ladeRezepteUndBewertungen();
         }
 
-        // --- 2. MODAL FÜR REZEPT DETAILS (INKL. VORDERWÜRZEHOPFUNG) ---
+        // --- 2. MODAL FÜR REZEPT DETAILS ---
         function oeffneRezeptDetailsModal(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
@@ -516,7 +516,7 @@
 
                 <div style="font-size: 12px; font-weight: bold; color: #1565C0;">🔥 Würze kochen:</div>
                 <ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">
-                    <li><b>Gesamte Kochzeit:</b> ${r.kochzeit || 90} Minuten</li>
+                    <li><b>Gesamte Kochzeit:</b> ${r.kochzeit_gesamt || 90} Minuten</li>
                 </ul>
 
                 ${hopfenHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌿 Kochgaben (Hopfung):</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${hopfenHtml}</ul>` : ''}
