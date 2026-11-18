@@ -287,7 +287,7 @@
                 </div>
                 <div>
                     <label class="label-style">Geplante EBC (Farbe):</label>
-                    <input type="number" id="ebc-wert" class="input-style" placeholder="Empfohlen: -" oninput="berechneWasserAndMilchsaeure()">
+                    <input type="number" id="ebc-wert" class="input-style" placeholder="Empfohlen: -">
                     <div id="hinweis-ebc" class="stil-hinweis">Zulässig: -</div>
                 </div>
             </div>
@@ -301,11 +301,11 @@
                 <div class="grid-2">
                     <div>
                         <label class="label-style">Menge (L):</label>
-                        <input type="number" step="1" id="hauptguss-liter" class="input-style" placeholder="z.B. 40" oninput="berechneWasserAndMilchsaeure()">
+                        <input type="number" step="1" id="hauptguss-liter" class="input-style" placeholder="z.B. 40">
                     </div>
                     <div>
                         <label class="label-style">Milchsäure (ml) [80%]:</label>
-                        <input type="text" id="hauptguss-milchsaeure" class="input-style" placeholder="z.B. 5 ml">
+                        <input type="text" id="hauptguss-milchsaeure" class="input-style" placeholder="z.B. 25.2 ml">
                     </div>
                 </div>
                 <label class="label-style">Salz-Auswahl:</label>
@@ -512,7 +512,7 @@
         const BRAUWISSEN_BASISREZEPTE = {
             "Pilsner": {
                 stammwuerze: 11.8, ibu: 40, ebc: 5, kochzeit_gesamt: 90,
-                hauptguss: 40, nachguss: 40, hauptguss_milchsaeure: "5 ml", nachguss_milchsaeure: "0 ml", hauptguss_salze: "", nachguss_salze: "",
+                hauptguss: 40, nachguss: 40, hauptguss_milchsaeure: "", nachguss_milchsaeure: "", hauptguss_salze: "", nachguss_salze: "",
                 hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "10-12 °C", hefe_menge: 45,
                 notizen: "Feinherbes Pilsner Brauart. Weiches Wasser und hohe Bitterhopfung.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.8}],
@@ -521,7 +521,7 @@
             },
             "Helles / Lager": {
                 stammwuerze: 12.0, ibu: 22, ebc: 8, kochzeit_gesamt: 90,
-                hauptguss: 42, nachguss: 38, hauptguss_milchsaeure: "5 ml", nachguss_milchsaeure: "0 ml", hauptguss_salze: "", nachguss_salze: "",
+                hauptguss: 42, nachguss: 38, hauptguss_milchsaeure: "", nachguss_milchsaeure: "", hauptguss_salze: "", nachguss_salze: "",
                 hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "10-12 °C", hefe_menge: 45,
                 notizen: "Klassisches bayrisches Helles. Ruhige Gärung bei 11°C.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
@@ -530,7 +530,7 @@
             },
             "Landbier": {
                 stammwuerze: 12.8, ibu: 24, ebc: 18, kochzeit_gesamt: 90,
-                hauptguss: 42, nachguss: 38, hauptguss_milchsaeure: "5 ml", nachguss_milchsaeure: "0 ml", hauptguss_salze: "", nachguss_salze: "",
+                hauptguss: 42, nachguss: 38, hauptguss_milchsaeure: "", nachguss_milchsaeure: "", hauptguss_salze: "", nachguss_salze: "",
                 hefe: "W-34/70", gaerart: "Untergärig", gaer_temp: "11-13 °C", hefe_menge: 45,
                 notizen: "Uriges, vollmundiges Braustall-Landbier. Schön malzbetont mit feiner karamelligen Note.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 2.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
@@ -691,24 +691,6 @@
             document.getElementById('hefe-menge').value = `${skaliertHefeG} g`;
 
             berechneBierFarbe();
-            berechneWasserAndMilchsaeure();
-        }
-
-        function berechneWasserAndMilchsaeure() {
-            const ebc = parseFloat(document.getElementById('ebc-wert').value) || 10;
-            const hauptgussLiter = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
-
-            if (hauptgussLiter <= 0) return;
-
-            let milchsaeureMl = 0;
-            if (ebc < 15) {
-                milchsaeureMl = Math.round((hauptgussLiter * 0.28) * 10) / 10; 
-            }
-
-            const milchsaeureInput = document.getElementById('hauptguss-milchsaeure');
-            if (milchsaeureMl > 0 && !milchsaeureInput.value) {
-                milchsaeureInput.value = `${milchsaeureMl} ml`;
-            }
         }
 
         function aktualisiereStilHinweise() {
@@ -995,7 +977,7 @@
             document.getElementById('ibu-wert').value = r.ibu || '';
             document.getElementById('ebc-wert').value = r.ebc || '';
             
-            // Wasseraufbereitung korrekt befüllen
+            // Wasser & Aufbereitung exakt aus der DB übernehmen (ohne störende Automatik)
             document.getElementById('hauptguss-liter').value = r.hauptguss || '';
             document.getElementById('nachguss-liter').value = r.nachguss || '';
             document.getElementById('hauptguss-milchsaeure').value = r.hauptguss_milchsaeure || '';
@@ -1055,7 +1037,6 @@
             const ibu = parseFloat(document.getElementById('ibu-wert').value) || 0;
             const ebc = parseFloat(document.getElementById('ebc-wert').value) || 0;
             
-            // Wasseraufbereitung auslesen
             const hauptguss = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
             const nachguss = parseFloat(document.getElementById('nachguss-liter').value) || 0;
             const hauptgussMilchsaeure = document.getElementById('hauptguss-milchsaeure').value.trim();
