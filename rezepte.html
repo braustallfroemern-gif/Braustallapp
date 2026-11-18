@@ -232,7 +232,7 @@
         <div id="rezepte-liste">Lade Rezepte...</div>
     </div>
 
-    <!-- MODAL FÜR BEWERTUNGEN & DETAILS -->
+    <!-- MODAL FÜR BEWERTUNGEN & DETAILS & SICHERHEITSABFRAGEN -->
     <div id="modal-overlay">
         <div id="modal-inhalt"></div>
     </div>
@@ -532,7 +532,31 @@
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
+        // --- SICHERHEITSABFRAGE BEI BEARBEITEN ---
         function bearbeiteRezept(rezeptId) {
+            const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
+            if (!r) return;
+
+            const inhalt = document.getElementById('modal-inhalt');
+            inhalt.innerHTML = `
+                <div style="background-color: #FFF8E1; border: 2px solid #FFB300; border-radius: 10px; padding: 15px; text-align: center;">
+                    <h3 style="color: #E65100; margin-top: 0; font-size: 18px;">⚠️ Rezept bearbeiten?</h3>
+                    <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+                        Das ist ein fertiges Rezept <b>("${escapeHtml(r.name)}")</b>, das möglicherweise bereits mehrfach gebraut wurde.<br><br>
+                        Bist du dir sicher, dass du da Änderungen vornehmen möchtest?
+                    </p>
+                    <button style="background-color: #2E7D32; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 8px;" onclick="bestätigeRezeptBearbeitung('${r.id}')">
+                        ✓ Ja, Rezept bearbeiten
+                    </button>
+                    <button style="background-color: #546E7A; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;" onclick="schliesseModal()">
+                        ❌ Abbrechen
+                    </button>
+                </div>
+            `;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function bestätigeRezeptBearbeitung(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
 
@@ -540,15 +564,38 @@
             location.href = 'rezept_neu.html';
         }
 
-        async function loescheRezept(rezeptId) {
-            if (!confirm("Möchtest du dieses Rezept wirklich löschen?")) return;
+        // --- SICHERHEITSABFRAGE BEI LÖSCHEN ---
+        function loescheRezept(rezeptId) {
+            const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
+            if (!r) return;
 
+            const inhalt = document.getElementById('modal-inhalt');
+            inhalt.innerHTML = `
+                <div style="background-color: #FFEBEE; border: 2px solid #D32F2F; border-radius: 10px; padding: 15px; text-align: center;">
+                    <h3 style="color: #C62828; margin-top: 0; font-size: 20px;">🚨 ACHTUNG ACHTUNG!</h3>
+                    <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+                        Möchtest du das Rezept <b>"${escapeHtml(r.name)}"</b> wirklich unwiderruflich löschen?<br><br>
+                        <b>Achtung:</b> Dieser Schritt kann nicht rückgängig gemacht werden!
+                    </p>
+                    <button style="background-color: #D32F2F; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 8px;" onclick="führeRezeptLöschungAus('${r.id}')">
+                        🔥 Ja, Rezept endgültig löschen
+                    </button>
+                    <button style="background-color: #546E7A; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;" onclick="schliesseModal()">
+                        ❌ Abbrechen / Zurück
+                    </button>
+                </div>
+            `;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        async function führeRezeptLöschungAus(rezeptId) {
             const { error } = await _supabase.from('rezepte').delete().eq('id', rezeptId);
             if (error) {
                 alert("Fehler beim Löschen: " + error.message);
                 return;
             }
 
+            schliesseModal();
             await ladeRezepteUndBewertungen();
         }
 
