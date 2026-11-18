@@ -471,7 +471,7 @@
             await ladeRezepteUndBewertungen();
         }
 
-        // --- 2. MODAL FÜR REZEPT DETAILS (STILDATEN MIT PUNKTEN) ---
+        // --- 2. MODAL FÜR REZEPT DETAILS (ERWEITERT UM WASSER, WHIRLPOOL & KALTHOPFUNG) ---
         function oeffneRezeptDetailsModal(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
@@ -483,6 +483,8 @@
             let schuettungHtml = (r.schuettung || []).map(m => `<li><b>${m.menge_kg} kg</b> ${escapeHtml(m.name)}</li>`).join('');
             let rastenHtml = (r.rasten || []).map(rst => `<li><b>${escapeHtml(rst.name)}:</b> ${rst.temperatur_c}°C (${rst.dauer_min} Min)</li>`).join('');
             let hopfenHtml = (r.hopfung || []).map(h => `<li><b>${h.menge_g} g</b> ${escapeHtml(h.name)} (${h.kochzeit_min} Min kochen)</li>`).join('');
+            let whirlpoolHtml = (r.whirlpool || []).map(w => `<li><b>${w.menge_g} g</b> ${escapeHtml(w.name)} (${w.temperatur_c || 78}°C)</li>`).join('');
+            let kalthopfungHtml = (r.kalthopfung || []).map(k => `<li><b>${k.menge_g} g</b> ${escapeHtml(k.name)}</li>`).join('');
 
             const inhalt = document.getElementById('modal-inhalt');
             inhalt.innerHTML = `
@@ -501,11 +503,19 @@
                     </li>
                 </ul>
 
+                <div style="font-size: 12px; font-weight: bold; color: #1565C0;">💧 Wasser & Güsse:</div>
+                <ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">
+                    <li><b>Hauptguss:</b> ${r.hauptguss || '-'} Liter</li>
+                    <li><b>Nachguss:</b> ${r.nachguss || '-'} Liter</li>
+                </ul>
+
                 ${schuettungHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌾 Schüttung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${schuettungHtml}</ul>` : ''}
                 ${rastenHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">⏱️ Maischplan:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${rastenHtml}</ul>` : ''}
-                ${hopfenHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌿 Hopfung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${hopfenHtml}</ul>` : ''}
+                ${hopfenHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌿 Kochgaben (Hopfung):</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${hopfenHtml}</ul>` : ''}
+                ${whirlpoolHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌀 Whirlpool-Hopfung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${whirlpoolHtml}</ul>` : ''}
+                ${kalthopfungHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">❄️ Kalthopfung (Stopfen):</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${kalthopfungHtml}</ul>` : ''}
                 
-                <div style="font-size: 12px; color: #555; margin-top: 8px;">🧬 <b>Hefe:</b> ${escapeHtml(r.hefe || '-')} (${escapeHtml(r.gaer_temp || 'Normal')})</div>
+                <div style="font-size: 12px; color: #555; margin-top: 8px;">🧬 <b>Hefe:</b> ${escapeHtml(r.hefe || '-')} (${escapeHtml(r.gaerart || '')} • ${escapeHtml(r.gaer_temp || 'Normal')} • Menge: ${escapeHtml(r.hefe_menge || '-')})</div>
                 ${r.notizen ? `<div style="font-size: 12px; background: #FFFDE7; border: 1px solid #FFF59D; padding: 6px; border-radius: 4px; margin-top: 8px;">📝 <b>Notizen:</b> ${escapeHtml(r.notizen)}</div>` : ''}
 
                 <button class="btn-card btn-ansehen" onclick="schliesseModal()" style="width: 100%; margin-top: 15px; padding: 10px;">Schließen</button>
