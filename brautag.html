@@ -292,7 +292,7 @@
                     </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 2.8</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 3.0</div>
             `;
         }
 
@@ -417,7 +417,6 @@
             schlageEinheitVor();
         }
 
-        // SCHÖNERES DESIGN DER REZEPT-AUSWAHLLISTE (flex-shrink & sauberer Abstand)
         function oeffneRezeptAuswahlModal() {
             const inhalt = document.getElementById('modal-inhalt');
 
@@ -466,44 +465,83 @@
                 <h3 style="color: #1565C0; margin-top: 0;">⚖️ Liter skalieren</h3>
                 <div style="font-weight: bold; color: #333; margin-bottom: 10px;">🍺 ${escapeHtml(r.name)}</div>
                 
-                <p style="font-size: 12px; color: #555; margin-bottom: 10px;">Das Rezept ist ursprünglich für <b>${rezeptLiter} Liter</b> ausgelegt. Passe hier deine gewünschte Ausschlagmenge an:</p>
+                <p style="font-size: 12px; color: #555; margin-bottom: 10px;">Das Rezept ist ursprünglich für <b>${rezeptLiter} Liter</b> ausgelegt. Gib deine gewünschte Ausschlagmenge ein:</p>
 
                 <label class="label-style">Gewünschte Liter:</label>
-                <input type="number" step="1" id="skalier-liter" class="input-style" value="${rezeptLiter}">
+                <input type="number" step="1" id="skalier-liter" class="input-style" placeholder="${rezeptLiter}" value="">
 
                 <button class="btn-primary" onclick="starteSchrittFuerSchrittAssistent('${r.id}')">Weiter zum Brau-Assistenten ➔</button>
                 <button class="btn-secondary-action" onclick="oeffneRezeptAuswahlModal()" style="margin-top: 5px; width: 100%;">Zurück zur Auswahl</button>
             `;
+            
+            setTimeout(() => {
+                const input = document.getElementById('skalier-liter');
+                if (input) input.focus();
+            }, 50);
         }
 
         function starteSchrittFuerSchrittAssistent(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
 
-            const gewuenschteLiter = parseFloat(document.getElementById('skalier-liter').value) || r.liter || 50;
+            const inputFeld = document.getElementById('skalier-liter');
+            const gewuenschteLiter = (inputFeld && inputFeld.value !== "") ? parseFloat(inputFeld.value) : (r.liter || 50);
             const rezeptLiter = r.liter || 50;
             const faktor = gewuenschteLiter / rezeptLiter;
 
-            let skaliertesSchuettung = (r.schuettung || []).map(m => ({
-                name: m.name,
-                menge: (parseFloat(m.menge_kg || m.menge || 0) * faktor).toFixed(2),
-                einheit: 'kg'
-            }));
+            let schuettungRoh = r.schuettung || [];
+            if (typeof schuettungRoh === 'string') {
+                try { schuettungRoh = JSON.parse(schuettungRoh); } catch(e) { schuettungRoh = []; }
+            }
 
-            let skaliertesHopfung = (r.hopfung || []).map(h => ({
-                name: h.name,
-                menge: Math.round(parseFloat(h.menge_g || h.menge || 0) * faktor),
-                kochzeit: h.kochzeit_min || h.zeit || 60,
-                einheit: 'g'
-            }));
+            let skaliertesSchuettung = schuettungRoh.map(m => {
+                let mVal = parseFloat(m.menge_kg !== undefined ? m.menge_kg : (m.menge !== undefined ? m.menge : (m.gewicht !== undefined ? m.gewicht : 0)));
+                return {
+                    name: m.name || m.bezeichnung || 'Malz',
+                    mengeNum: mVal * faktor,
+                    menge: (mVal * faktor).toFixed(2),
+                    einheit: 'kg'
+                };
+            });
+
+            let gesamtMalzKg = skaliertesSchuettung.reduce((sum, m) => sum + m.mengeNum, 0);
+            if (gesamtMalzKg <= 0) {
+                gesamtMalzKg = gewuenschteLiter * 0.22; // Automatischer Richtwert falls Malzmenge leer
+            }
+
+            let hauptgussLiter = Math.round(gesamtMalzKg * 3.5);
+            let nachgussLiter = Math.max(10, Math.round(gewuenschteLiter * 1.35 - hauptgussLiter));
+
+            let vwRoh = r.vorderwuerzehopfung || [];
+            if (typeof vwRoh === 'string') {
+                try { vwRoh = JSON.parse(vwRoh); } catch(e) { vwRoh = []; }
+            }
+            let skaliertesVwHopfung = vwRoh.map(h => {
+                let hVal = parseFloat(h.menge_g !== undefined ? h.menge_g : (h.menge !== undefined ? h.menge : 0));
+                return {
+                    name: h.name || h.bezeichnung || 'Hopfen',
+                    menge: Math.round(hVal * faktor),
+                    einheit: 'g'
+                };
+            });
+
+            let hopfRoh = r.hopfung || [];
+            if (typeof hopfRoh === 'string') {
+                try { hopfRoh = JSON.parse(hopfRoh); } catch(e) { hopfRoh = []; }
+            }
+            let skaliertesHopfung = hopfRoh.map(h => {
+                let hVal = parseFloat(h.menge_g !== undefined ? h.menge_g : (h.menge !== undefined ? h.menge : 0));
+                return {
+                    name: h.name || h.bezeichnung || 'Hopfen',
+                    menge: Math.round(hVal * faktor),
+                    kochzeit: h.kochzeit_min !== undefined ? h.kochzeit_min : (h.zeit !== undefined ? h.zeit : 60),
+                    einheit: 'g'
+                };
+            });
 
             let skaliertesRasten = r.rasten || [];
             let hefeMengeRoh = parseFloat(r.hefe_menge) || (gewuenschteLiter * 0.7); 
             let hefeMengeSkaliert = Math.round(hefeMengeRoh);
-
-            let gesamtMalzKg = skaliertesSchuettung.reduce((sum, m) => sum + parseFloat(m.menge), 0);
-            let hauptgussLiter = Math.round(gesamtMalzKg * 3.5);
-            let nachgussLiter = Math.max(10, Math.round(gewuenschteLiter * 1.3 - hauptgussLiter));
 
             const gepeicherteGaerart = (r.gaerart || '').toLowerCase();
             const hefeText = (r.hefe || '').toLowerCase();
@@ -517,11 +555,15 @@
             let rohstoffKostenAssistent = 0;
             skaliertesSchuettung.forEach(m => {
                 let roh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz' && item.bezeichnung.toLowerCase().includes(m.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz');
-                if (roh) rohstoffKostenAssistent += parseFloat(m.menge) * (parseFloat(roh.preis) || 0);
+                if (roh) rohstoffKostenAssistent += m.mengeNum * (parseFloat(roh.preis) || 0);
+            });
+            skaliertesVwHopfung.forEach(h => {
+                let roh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
+                if (roh) rohstoffKostenAssistent += h.menge * (parseFloat(roh.preis) || 0);
             });
             skaliertesHopfung.forEach(h => {
                 let roh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
-                if (roh) rohstoffKostenAssistent += parseFloat(h.menge) * (parseFloat(roh.preis) || 0);
+                if (roh) rohstoffKostenAssistent += h.menge * (parseFloat(roh.preis) || 0);
             });
             let wasserKostenAssistent = (hauptgussLiter + nachgussLiter) * wasserEnergiePreis;
             let gesamtKostenAssistent = rohstoffKostenAssistent + wasserKostenAssistent;
@@ -533,6 +575,7 @@
                 stammwuerze: r.stammwuerze || 12,
                 ibu: r.ibu || 25,
                 schuettung: skaliertesSchuettung,
+                vorderwuerzehopfung: skaliertesVwHopfung,
                 hopfung: skaliertesHopfung,
                 rasten: skaliertesRasten,
                 hefe: r.hefe || 'Standard Hefe',
@@ -553,6 +596,13 @@
             const inhalt = document.getElementById('modal-inhalt');
 
             let schuettungList = r.schuettung.map(m => `<li><b>${m.menge} kg</b> ${escapeHtml(m.name)}</li>`).join('');
+            
+            let vorderwuerzeListHtml = "";
+            if (r.vorderwuerzehopfung && r.vorderwuerzehopfung.length > 0) {
+                let vwItems = r.vorderwuerzehopfung.map(vw => `<li><b>${vw.menge} g</b> ${escapeHtml(vw.name)} (Vorderwürze)</li>`).join('');
+                vorderwuerzeListHtml = `<li><b>Vorderwürzehopfung:</b><ul style="padding-left: 14px; margin: 2px 0 0 0;">${vwItems}</ul></li>`;
+            }
+
             let hopfungList = r.hopfung.map(h => `<li><b>${h.menge} g</b> ${escapeHtml(h.name)} (${h.kochzeit} Min kochen)</li>`).join('');
             
             let ersteRastTemp = 57;
@@ -580,6 +630,7 @@
                     <ul style="padding-left: 16px; margin: 4px 0 0 0;">
                         <li><b>${r.hauptguss} L</b> Hauptguss | <b>${r.nachguss} L</b> Nachguss</li>
                         ${schuettungList}
+                        ${vorderwuerzeListHtml}
                         ${hopfungList}
                         <li><b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)} (${escapeHtml(r.gaerart)})</li>
                     </ul>
@@ -635,14 +686,18 @@
                         <input type="checkbox" id="chk-4" ${brauSchritteStatus[4] ? 'checked' : ''} ${brauSchritteStatus[3] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(4)">
                         <span>5. Jodprobe, Läuterruhe & Abläutern</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Führe die Jodprobe durch, überführe in den Läuterbottich, gib Läuterruhe, schöpfe Vorderwürze um und läutere ab.</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
+                        Führe die Jodprobe durch, überführe in den Läuterbottich. 
+                        ${r.vorderwuerzehopfung && r.vorderwuerzehopfung.length > 0 ? '<br><b>Hinweis:</b> Lege den Vorderwürzehopfen jetzt schon direkt in die Vorlage (den Läutereimer/Pfanne) vor!' : ''}
+                        Gib Läuterruhe, schöpfe Vorderwürze um und läutere ab.
+                    </div>
                 </div>
 
                 <!-- SCHRITT 6 -->
                 <div class="brau-schritt-karte ${brauSchritteStatus[4] ? '' : 'gesperrt'} ${brauSchritteStatus[5] ? 'erledigt' : ''}" id="schritt-5-card">
                     <label class="schritt-checkbox-label">
                         <input type="checkbox" id="chk-5" ${brauSchritteStatus[5] ? 'checked' : ''} ${brauSchritteStatus[4] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(5)">
-                        <span>6. Würzekochen & Hopfen gaben</span>
+                        <span>6. Würzekochen & Kochhopfengaben</span>
                     </label>
                     <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
                         Koche die Würze. Hopfengaben laut Rezept:<br>
@@ -682,7 +737,7 @@
                     <h3 style="color: #C62828; margin-top: 0; font-size: 20px;">🚨 Sicherheitsabfrage!</h3>
                     <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
                         Möchtest du den Sud <b>"${escapeHtml(r.name)}" (${r.liter}L)</b> wirklich verbindlich abschließen?<br><br>
-                        <b>Achtung:</b> Dabei werden die berechneten Zutaten (Malz, Hopfen, Hefe) direkt aus dem aktuellen <b>Lagerbestand abgezogen</b> und der Gesamtbetrag von <b>${r.geschätzteKosten.toFixed(2)} €</b> wird an den Kassenwart übergeben!
+                        <b>Achtung:</b> Dabei werden die berechneten Zutaten (Malz, Vorderwürzehopfen, Kochhopfen, Hefe) direkt aus dem aktuellen <b>Lagerbestand abgezogen</b> und der Gesamtbetrag von <b>${r.geschätzteKosten.toFixed(2)} €</b> wird an den Kassenwart übergeben!
                     </p>
                     
                     <button style="background-color: #D32F2F; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 8px;" onclick="schliesseRezeptSudAbUndBucheEcht()">
@@ -705,9 +760,19 @@
             for (let m of r.schuettung) {
                 let rohstoff = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz' && item.bezeichnung.toLowerCase().includes(m.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz');
                 if (rohstoff) {
-                    let menge = parseFloat(m.menge) || 0;
+                    let menge = parseFloat(m.mengeNum !== undefined ? m.mengeNum : m.menge) || 0;
                     let einzelpreis = parseFloat(rohstoff.preis) || 0;
                     abzubuchendeZutaten.push({ id: rohstoff.id, bezeichnung: rohstoff.bezeichnung, menge: menge, einheit: rohstoff.einheit || 'kg', kosten: menge * einzelpreis, kategorie: 'Malz' });
+                    rohstoffKostenGesamt += menge * einzelpreis;
+                }
+            }
+
+            for (let h of (r.vorderwuerzehopfung || [])) {
+                let rohstoff = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
+                if (rohstoff) {
+                    let menge = parseFloat(h.menge) || 0;
+                    let einzelpreis = parseFloat(rohstoff.preis) || 0;
+                    abzubuchendeZutaten.push({ id: rohstoff.id, bezeichnung: rohstoff.bezeichnung, menge: menge, einheit: rohstoff.einheit || 'g', kosten: menge * einzelpreis, kategorie: 'Hopfen' });
                     rohstoffKostenGesamt += menge * einzelpreis;
                 }
             }
