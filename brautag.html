@@ -292,7 +292,7 @@
                     </small>
                 </div>
 
-                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 3.0</div>
+                <div style="text-align: center; color: #ccc; font-size: 11px; margin-top: 40px;">Brautag Version 3.3</div>
             `;
         }
 
@@ -505,12 +505,12 @@
             });
 
             let gesamtMalzKg = skaliertesSchuettung.reduce((sum, m) => sum + m.mengeNum, 0);
-            if (gesamtMalzKg <= 0) {
-                gesamtMalzKg = gewuenschteLiter * 0.22; // Automatischer Richtwert falls Malzmenge leer
-            }
 
-            let hauptgussLiter = Math.round(gesamtMalzKg * 3.5);
-            let nachgussLiter = Math.max(10, Math.round(gewuenschteLiter * 1.35 - hauptgussLiter));
+            let basisHauptguss = parseFloat(r.hauptguss);
+            let basisNachguss = parseFloat(r.nachguss);
+
+            let hauptgussLiter = (isNaN(basisHauptguss) || basisHauptguss <= 0) ? Math.round(gesamtMalzKg * 3.5) : Math.round(basisHauptguss * faktor);
+            let nachgussLiter = (isNaN(basisNachguss) || basisNachguss <= 0) ? Math.max(10, Math.round(gewuenschteLiter * 1.35 - hauptgussLiter)) : Math.round(basisNachguss * faktor);
 
             let vwRoh = r.vorderwuerzehopfung || [];
             if (typeof vwRoh === 'string') {
@@ -539,7 +539,35 @@
                 };
             });
 
+            let wpRoh = r.whirlpool || [];
+            if (typeof wpRoh === 'string') {
+                try { wpRoh = JSON.parse(wpRoh); } catch(e) { wpRoh = []; }
+            }
+            let skaliertesWhirlpool = wpRoh.map(w => {
+                let wVal = parseFloat(w.menge_g !== undefined ? w.menge_g : (w.menge !== undefined ? w.menge : 0));
+                return {
+                    name: w.name || w.bezeichnung || 'Hopfen',
+                    menge: Math.round(wVal * faktor),
+                    temperatur: w.temperatur_c || w.temperatur || 78,
+                    einheit: 'g'
+                };
+            });
+
+            let kaltRoh = r.kalthopfung || [];
+            if (typeof kaltRoh === 'string') {
+                try { kaltRoh = JSON.parse(kaltRoh); } catch(e) { kaltRoh = []; }
+            }
+            let skaliertesKalthopfung = kaltRoh.map(k => {
+                let kVal = parseFloat(k.menge_g !== undefined ? k.menge_g : (k.menge !== undefined ? k.menge : 0));
+                return {
+                    name: k.name || k.bezeichnung || 'Hopfen',
+                    menge: Math.round(kVal * faktor),
+                    einheit: 'g'
+                };
+            });
+
             let skaliertesRasten = r.rasten || [];
+            let kochzeitGesamt = parseInt(r.kochzeit_gesamt || r.kochzeit) || 90;
             let hefeMengeRoh = parseFloat(r.hefe_menge) || (gewuenschteLiter * 0.7); 
             let hefeMengeSkaliert = Math.round(hefeMengeRoh);
 
@@ -552,20 +580,90 @@
             
             const anstellTemperaturText = istUntergaerig ? '9–12 °C (Untergärig)' : '18–20 °C (Obergärig)';
 
+            // KOSTENBERECHNUNG MIT DETAIL-ARRAY FÜR DIE NEUE KOSTEN-TABELLE
+            let detailKostenPositionen = [];
             let rohstoffKostenAssistent = 0;
+
             skaliertesSchuettung.forEach(m => {
                 let roh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz' && item.bezeichnung.toLowerCase().includes(m.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz');
-                if (roh) rohstoffKostenAssistent += m.mengeNum * (parseFloat(roh.preis) || 0);
+                let kgPreis = roh ? (parseFloat(roh.preis) || 0) : 0;
+                let kosten = m.mengeNum * kgPreis;
+                rohstoffKostenAssistent += kosten;
+                detailKostenPositionen.push({
+                    kategorie: 'Malz',
+                    bezeichnung: m.name,
+                    menge: m.mengeNum,
+                    einheit: 'kg',
+                    einzelpreis: kgPreis,
+                    einzelpreisEinheit: '€/kg',
+                    kosten: kosten
+                });
             });
-            skaliertesVwHopfung.forEach(h => {
-                let roh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
-                if (roh) rohstoffKostenAssistent += h.menge * (parseFloat(roh.preis) || 0);
+
+            const berechneUndMerkeHopfen = (hopfenListe, artLabel) => {
+                if (!hopfenListe) return;
+                hopfenListe.forEach(h => {
+                    let roh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
+                    let lagerPreis = roh ? (parseFloat(roh.preis) || 0) : 0;
+                    let lagerEinheit = roh ? (roh.einheit || 'kg').toLowerCase() : 'kg';
+                    let kosten = 0;
+                    let grammPreis = 0;
+
+                    if (lagerEinheit === 'g' || lagerEinheit === 'gramm') {
+                        grammPreis = lagerPreis;
+                        kosten = h.menge * grammPreis;
+                    } else {
+                        grammPreis = lagerPreis / 1000;
+                        kosten = (h.menge / 1000) * lagerPreis;
+                    }
+
+                    rohstoffKostenAssistent += kosten;
+                    detailKostenPositionen.push({
+                        kategorie: `Hopfen (${artLabel})`,
+                        bezeichnung: h.name,
+                        menge: h.menge,
+                        einheit: 'g',
+                        einzelpreis: grammPreis,
+                        einzelpreisEinheit: '€/g',
+                        kosten: kosten
+                    });
+                });
+            };
+
+            berechneUndMerkeHopfen(skaliertesVwHopfung, 'Vorderwürze');
+            berechneUndMerkeHopfen(skaliertesHopfung, 'Kochhopfen');
+            berechneUndMerkeHopfen(skaliertesWhirlpool, 'Whirlpool');
+            berechneUndMerkeHopfen(skaliertesKalthopfung, 'Kalthopfen');
+
+            let hefeRoh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hefe');
+            let hPreis = hefeRoh ? (parseFloat(hefeRoh.preis) || 0) : 0;
+            let hEinheit = hefeRoh ? (hefeRoh.einheit || 'g').toLowerCase() : 'g';
+            let hefeGrammPreis = (hEinheit === 'kg') ? (hPreis / 1000) : hPreis;
+            let hefeKosten = hefeMengeSkaliert * hefeGrammPreis;
+            rohstoffKostenAssistent += hefeKosten;
+
+            detailKostenPositionen.push({
+                kategorie: 'Hefe',
+                bezeichnung: r.hefe || 'Hefe',
+                menge: hefeMengeSkaliert,
+                einheit: 'g',
+                einzelpreis: hefeGrammPreis,
+                einzelpreisEinheit: '€/g',
+                kosten: hefeKosten
             });
-            skaliertesHopfung.forEach(h => {
-                let roh = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
-                if (roh) rohstoffKostenAssistent += h.menge * (parseFloat(roh.preis) || 0);
+
+            let gesamtWasserMenge = hauptgussLiter + nachgussLiter;
+            let wasserKostenAssistent = gesamtWasserMenge * wasserEnergiePreis;
+            detailKostenPositionen.push({
+                kategorie: 'Wasser & Energie',
+                bezeichnung: 'Brauwasser & Energie',
+                menge: gesamtWasserMenge,
+                einheit: 'L',
+                einzelpreis: wasserEnergiePreis,
+                einzelpreisEinheit: '€/L',
+                kosten: wasserKostenAssistent
             });
-            let wasserKostenAssistent = (hauptgussLiter + nachgussLiter) * wasserEnergiePreis;
+
             let gesamtKostenAssistent = rohstoffKostenAssistent + wasserKostenAssistent;
 
             aktuellesSkaliertesRezept = {
@@ -577,13 +675,17 @@
                 schuettung: skaliertesSchuettung,
                 vorderwuerzehopfung: skaliertesVwHopfung,
                 hopfung: skaliertesHopfung,
+                whirlpool: skaliertesWhirlpool,
+                kalthopfung: skaliertesKalthopfung,
                 rasten: skaliertesRasten,
+                kochzeit: kochzeitGesamt,
                 hefe: r.hefe || 'Standard Hefe',
                 gaerart: r.gaerart || (istUntergaerig ? 'Untergärig' : 'Obergärig'),
                 hefeMenge: hefeMengeSkaliert,
                 hauptguss: hauptgussLiter,
                 nachguss: nachgussLiter,
                 anstellTemp: anstellTemperaturText,
+                kostenPositionen: detailKostenPositionen,
                 geschätzteKosten: gesamtKostenAssistent
             };
 
@@ -605,6 +707,18 @@
 
             let hopfungList = r.hopfung.map(h => `<li><b>${h.menge} g</b> ${escapeHtml(h.name)} (${h.kochzeit} Min kochen)</li>`).join('');
             
+            let whirlpoolListHtml = "";
+            if (r.whirlpool && r.whirlpool.length > 0) {
+                let wpItems = r.whirlpool.map(w => `<li><b>${w.menge} g</b> ${escapeHtml(w.name)} (${w.temperatur}°C Whirlpool)</li>`).join('');
+                whirlpoolListHtml = `<li><b>Whirlpool-Hopfung:</b><ul style="padding-left: 14px; margin: 2px 0 0 0;">${wpItems}</ul></li>`;
+            }
+
+            let kalthopfungListHtml = "";
+            if (r.kalthopfung && r.kalthopfung.length > 0) {
+                let kaltItems = r.kalthopfung.map(k => `<li><b>${k.menge} g</b> ${escapeHtml(k.name)} (Kalthopfung / Stopfen)</li>`).join('');
+                kalthopfungListHtml = `<li><b>Kalthopfung:</b><ul style="padding-left: 14px; margin: 2px 0 0 0;">${kaltItems}</ul></li>`;
+            }
+
             let ersteRastTemp = 57;
             let rastenList = "";
             if (r.rasten && r.rasten.length > 0) {
@@ -614,16 +728,26 @@
                 rastenList = `<li><i>Kein Maischplan hinterlegt – bitte Standard-Kombirast nutzen.</i></li>`;
             }
 
+            // NEUE KOSTEN-TABELLE GENERIEREN
+            let kostenTabelleZeilen = "";
+            r.kostenPositionen.forEach(pos => {
+                let mengeAnzeige = (pos.einheit === 'kg') ? Number(pos.menge).toFixed(2) : Math.round(pos.menge);
+                let einzelpreisAnzeige = (pos.einheit === 'kg') ? Number(pos.einzelpreis).toFixed(2) : Number(pos.einzelpreis).toFixed(3);
+                kostenTabelleZeilen += `
+                    <tr>
+                        <td style="padding: 5px; border-bottom: 1px solid #E0E0E0;"><b>${escapeHtml(pos.bezeichnung)}</b><br><small style="color:#666;">[${pos.kategorie}]</small></td>
+                        <td style="padding: 5px; border-bottom: 1px solid #E0E0E0; text-align: center;">${mengeAnzeige} ${pos.einheit}</td>
+                        <td style="padding: 5px; border-bottom: 1px solid #E0E0E0; text-align: right; color:#555;">${einzelpreisAnzeige} ${pos.einzelpreisEinheit}</td>
+                        <td style="padding: 5px; border-bottom: 1px solid #E0E0E0; text-align: right; font-weight: bold;">${pos.kosten.toFixed(2)} €</td>
+                    </tr>
+                `;
+            });
+
             const alleSchritteErledigt = brauSchritteStatus.every(Boolean);
 
             inhalt.innerHTML = `
                 <h3 style="color: #1565C0; margin-top: 0; margin-bottom: 2px;">🪄 Brau-Assistent</h3>
                 <div style="font-size: 13px; color: #555; margin-bottom: 8px;"><b>${escapeHtml(r.name)}</b> (${r.liter} Liter • ${r.stammwuerze} °P • ${r.ibu} IBU)</div>
-
-                <div style="background: #E8F5E9; border: 1px solid #C8E6C9; border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; color: #2E7D32; font-weight: bold;">
-                    <span>💶 Geschätzte Sudkosten:</span>
-                    <span style="font-size: 15px;">${r.geschätzteKosten.toFixed(2)} €</span>
-                </div>
 
                 <div style="background: #E3F2FD; border: 1px solid #90CAF9; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 12px;">
                     <b>Zusammenfassung:</b>
@@ -632,6 +756,8 @@
                         ${schuettungList}
                         ${vorderwuerzeListHtml}
                         ${hopfungList}
+                        ${whirlpoolListHtml}
+                        ${kalthopfungListHtml}
                         <li><b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)} (${escapeHtml(r.gaerart)})</li>
                     </ul>
                 </div>
@@ -697,10 +823,10 @@
                 <div class="brau-schritt-karte ${brauSchritteStatus[4] ? '' : 'gesperrt'} ${brauSchritteStatus[5] ? 'erledigt' : ''}" id="schritt-5-card">
                     <label class="schritt-checkbox-label">
                         <input type="checkbox" id="chk-5" ${brauSchritteStatus[5] ? 'checked' : ''} ${brauSchritteStatus[4] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(5)">
-                        <span>6. Würzekochen & Kochhopfengaben</span>
+                        <span>6. Würzekochen (${r.kochzeit} Min.) & Kochhopfengaben</span>
                     </label>
                     <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
-                        Koche die Würze. Hopfengaben laut Rezept:<br>
+                        Koche die Würze für <b>${r.kochzeit} Minuten</b>. Hopfengaben laut Rezept:<br>
                         <ul style="padding-left: 14px; margin: 2px 0 0 0;">${hopfungList}</ul>
                     </div>
                 </div>
@@ -711,7 +837,34 @@
                         <input type="checkbox" id="chk-6" ${brauSchritteStatus[6] ? 'checked' : ''} ${brauSchritteStatus[5] ? '' : 'disabled'} onchange="aktualisiereBrauSchritt(6)">
                         <span>7. Whirlpool & Abkühlen auf 80 °C (Brautag-Ende)</span>
                     </label>
-                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">Kühle auf ca. 80 °C herunter, rühre den Whirlpool an. Anstellen bei <b>${r.anstellTemp}</b> mit <b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)}.</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 4px; padding-left: 24px;">
+                        Kühle auf ca. 80 °C herunter, rühre den Whirlpool an.
+                        ${r.whirlpool && r.whirlpool.length > 0 ? '<br>Whirlpool-Hopfengaben beachten!' : ''}
+                        ${r.kalthopfung && r.kalthopfung.length > 0 ? '<br><b>Hinweis für später:</b> Kalthopfung (Stopfen) erfolgt im Gärtank.' : ''}
+                        Anstellen bei <b>${r.anstellTemp}</b> mit <b>${r.hefeMenge} g</b> ${escapeHtml(r.hefe)}.
+                    </div>
+                </div>
+
+                <!-- KOSTEN-ÜBERSICHTS-TABELLE -->
+                <div style="background: #F8F9FA; border: 1px solid #D0D7DE; border-radius: 8px; padding: 12px; margin: 15px 0;">
+                    <h4 style="color: #1565C0; margin-top: 0; margin-bottom: 8px; font-size: 14px; border-bottom: 2px solid #E3F2FD; padding-bottom: 4px;">💶 Detaillierte Kostenübersicht</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                        <thead>
+                            <tr style="color: #555;">
+                                <th style="padding-bottom: 4px;">Komponente</th>
+                                <th style="padding-bottom: 4px; text-align: center;">Menge</th>
+                                <th style="padding-bottom: 4px; text-align: right;">Einzelpreis</th>
+                                <th style="padding-bottom: 4px; text-align: right;">Gesamt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${kostenTabelleZeilen}
+                        </tbody>
+                    </table>
+                    <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; color: #1565C0; border-top: 2px solid #90CAF9; padding-top: 8px; margin-top: 8px;">
+                        <span>Gesamtkosten Sud:</span>
+                        <span>${r.geschätzteKosten.toFixed(2)} €</span>
+                    </div>
                 </div>
 
                 <button class="btn-primary" id="btn-final-brauen" ${alleSchritteErledigt ? '' : 'disabled style="background-color: #B0BEC5; cursor: not-allowed;"'} onclick="oeffneSicherheitsAbfrageRezept()" style="margin-top: 15px;">
@@ -737,7 +890,7 @@
                     <h3 style="color: #C62828; margin-top: 0; font-size: 20px;">🚨 Sicherheitsabfrage!</h3>
                     <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
                         Möchtest du den Sud <b>"${escapeHtml(r.name)}" (${r.liter}L)</b> wirklich verbindlich abschließen?<br><br>
-                        <b>Achtung:</b> Dabei werden die berechneten Zutaten (Malz, Vorderwürzehopfen, Kochhopfen, Hefe) direkt aus dem aktuellen <b>Lagerbestand abgezogen</b> und der Gesamtbetrag von <b>${r.geschätzteKosten.toFixed(2)} €</b> wird an den Kassenwart übergeben!
+                        <b>Achtung:</b> Dabei werden sämtliche Zutaten (Malz, Vorderwürzehopfen, Kochhopfen, Whirlpoolhopfen, Kalthopfen, Hefe) direkt aus dem aktuellen <b>Lagerbestand abgezogen</b> und der Gesamtbetrag von <b>${r.geschätzteKosten.toFixed(2)} €</b> wird an den Kassenwart übergeben!
                     </p>
                     
                     <button style="background-color: #D32F2F; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 8px;" onclick="schliesseRezeptSudAbUndBucheEcht()">
@@ -760,39 +913,52 @@
             for (let m of r.schuettung) {
                 let rohstoff = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz' && item.bezeichnung.toLowerCase().includes(m.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'malz');
                 if (rohstoff) {
-                    let menge = parseFloat(m.mengeNum !== undefined ? m.mengeNum : m.menge) || 0;
+                    let mengeKg = parseFloat(m.mengeNum !== undefined ? m.mengeNum : m.menge) || 0;
                     let einzelpreis = parseFloat(rohstoff.preis) || 0;
-                    abzubuchendeZutaten.push({ id: rohstoff.id, bezeichnung: rohstoff.bezeichnung, menge: menge, einheit: rohstoff.einheit || 'kg', kosten: menge * einzelpreis, kategorie: 'Malz' });
-                    rohstoffKostenGesamt += menge * einzelpreis;
+                    let kosten = mengeKg * einzelpreis;
+                    abzubuchendeZutaten.push({ id: rohstoff.id, bezeichnung: rohstoff.bezeichnung, menge: mengeKg, einheit: 'kg', kosten: kosten, kategorie: 'Malz' });
+                    rohstoffKostenGesamt += kosten;
                 }
             }
 
-            for (let h of (r.vorderwuerzehopfung || [])) {
-                let rohstoff = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
-                if (rohstoff) {
-                    let menge = parseFloat(h.menge) || 0;
-                    let einzelpreis = parseFloat(rohstoff.preis) || 0;
-                    abzubuchendeZutaten.push({ id: rohstoff.id, bezeichnung: rohstoff.bezeichnung, menge: menge, einheit: rohstoff.einheit || 'g', kosten: menge * einzelpreis, kategorie: 'Hopfen' });
-                    rohstoffKostenGesamt += menge * einzelpreis;
+            const bucheHopfenListe = (hopfenListe) => {
+                if (!hopfenListe) return;
+                for (let h of hopfenListe) {
+                    let rohstoff = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
+                    if (rohstoff) {
+                        let mengeG = parseFloat(h.menge) || 0;
+                        let einzelpreis = parseFloat(rohstoff.preis) || 0;
+                        let lagerEinheit = (rohstoff.einheit || 'kg').toLowerCase();
+                        let kosten = 0;
+                        if (lagerEinheit === 'g' || lagerEinheit === 'gramm') {
+                            kosten = mengeG * einzelpreis;
+                        } else {
+                            kosten = (mengeG / 1000) * einzelpreis;
+                        }
+                        abzubuchendeZutaten.push({ id: rohstoff.id, bezeichnung: rohstoff.bezeichnung, menge: mengeG, einheit: 'g', kosten: kosten, kategorie: 'Hopfen' });
+                        rohstoffKostenGesamt += kosten;
+                    }
                 }
-            }
+            };
 
-            for (let h of r.hopfung) {
-                let rohstoff = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen' && item.bezeichnung.toLowerCase().includes(h.name.toLowerCase())) || alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hopfen');
-                if (rohstoff) {
-                    let menge = parseFloat(h.menge) || 0;
-                    let einzelpreis = parseFloat(rohstoff.preis) || 0;
-                    abzubuchendeZutaten.push({ id: rohstoff.id, bezeichnung: rohstoff.bezeichnung, menge: menge, einheit: rohstoff.einheit || 'g', kosten: menge * einzelpreis, kategorie: 'Hopfen' });
-                    rohstoffKostenGesamt += menge * einzelpreis;
-                }
-            }
+            bucheHopfenListe(r.vorderwuerzehopfung);
+            bucheHopfenListe(r.hopfung);
+            bucheHopfenListe(r.whirlpool);
+            bucheHopfenListe(r.kalthopfung);
 
             let hefeRohstoff = alleRohstoffe.find(item => item.kategorie && item.kategorie.toLowerCase() === 'hefe');
             if (hefeRohstoff) {
-                let menge = r.hefeMenge;
+                let mengeG = r.hefeMenge;
                 let einzelpreis = parseFloat(hefeRohstoff.preis) || 0;
-                abzubuchendeZutaten.push({ id: hefeRohstoff.id, bezeichnung: hefeRohstoff.bezeichnung, menge: menge, einheit: hefeRohstoff.einheit || 'g', kosten: menge * einzelpreis, kategorie: 'Hefe' });
-                rohstoffKostenGesamt += menge * einzelpreis;
+                let lagerEinheit = (hefeRohstoff.einheit || 'g').toLowerCase();
+                let kosten = 0;
+                if (lagerEinheit === 'kg') {
+                    kosten = (mengeG / 1000) * einzelpreis;
+                } else {
+                    kosten = mengeG * einzelpreis;
+                }
+                abzubuchendeZutaten.push({ id: hefeRohstoff.id, bezeichnung: hefeRohstoff.bezeichnung, menge: mengeG, einheit: 'g', kosten: kosten, kategorie: 'Hefe' });
+                rohstoffKostenGesamt += kosten;
             }
 
             let wasserMengeLiter = r.hauptguss + r.nachguss;
