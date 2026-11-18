@@ -305,7 +305,7 @@
                     </div>
                     <div>
                         <label class="label-style">Milchsäure (ml) [80%]:</label>
-                        <input type="text" id="hauptguss-milchsaeure" class="input-style" placeholder="z.B. 25.2 ml">
+                        <input type="text" id="hauptguss-milchsaeure" class="input-style" placeholder="">
                     </div>
                 </div>
                 <label class="label-style">Salz-Auswahl:</label>
@@ -327,7 +327,7 @@
                     </div>
                     <div>
                         <label class="label-style">Milchsäure (ml) [80%]:</label>
-                        <input type="text" id="nachguss-milchsaeure" class="input-style" placeholder="z.B. 0 ml">
+                        <input type="text" id="nachguss-milchsaeure" class="input-style" placeholder="">
                     </div>
                 </div>
                 <label class="label-style">Salz-Auswahl:</label>
@@ -977,7 +977,7 @@
             document.getElementById('ibu-wert').value = r.ibu || '';
             document.getElementById('ebc-wert').value = r.ebc || '';
             
-            // Wasser & Aufbereitung exakt aus der DB übernehmen (ohne störende Automatik)
+            // Wasser & Aufbereitung exakt übernehmen (keine verfälschten Platzhalter-Beispiele mehr)
             document.getElementById('hauptguss-liter').value = r.hauptguss || '';
             document.getElementById('nachguss-liter').value = r.nachguss || '';
             document.getElementById('hauptguss-milchsaeure').value = r.hauptguss_milchsaeure || '';
