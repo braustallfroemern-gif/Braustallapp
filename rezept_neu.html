@@ -287,7 +287,7 @@
                 </div>
                 <div>
                     <label class="label-style">Geplante EBC (Farbe):</label>
-                    <input type="number" id="ebc-wert" class="input-style" placeholder="Empfohlen: -" oninput="berechneWasserUndMilchsaeure()">
+                    <input type="number" id="ebc-wert" class="input-style" placeholder="Empfohlen: -" oninput="berechneWasserAndMilchsaeure()">
                     <div id="hinweis-ebc" class="stil-hinweis">Zulässig: -</div>
                 </div>
             </div>
@@ -301,7 +301,7 @@
                 <div class="grid-2">
                     <div>
                         <label class="label-style">Menge (L):</label>
-                        <input type="number" step="1" id="hauptguss-liter" class="input-style" placeholder="z.B. 40" oninput="berechneWasserUndMilchsaeure()">
+                        <input type="number" step="1" id="hauptguss-liter" class="input-style" placeholder="z.B. 40" oninput="berechneWasserAndMilchsaeure()">
                     </div>
                     <div>
                         <label class="label-style">Milchsäure (ml) [80%]:</label>
@@ -377,6 +377,20 @@
                 <div></div>
             </div>
             <div id="rast-container"></div>
+        </div>
+
+        <!-- NEU: VORDERWÜRZEHOPFUNG (Nach Maischen, vor Kochen) -->
+        <div class="section-box">
+            <div class="section-title">
+                <span>Vorderwürzehopfung</span>
+                <button class="btn-small" onclick="fuegeVorderwuerzeHopfenZeileHinzu()">+ Hopfen</button>
+            </div>
+            <div class="grid-hopfen-3-head table-head-label">
+                <div>Hopfensorte</div>
+                <div class="shifted-right">Gramm</div>
+                <div></div>
+            </div>
+            <div id="vorderwuerze-container"></div>
         </div>
 
         <div class="section-box">
@@ -504,6 +518,7 @@
                 notizen: "Uriges, vollmundiges Braustall-Landbier. Schön malzbetont mit feiner karamelligen Note.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 2.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                vorderwuerzehopfung: [],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Hallertauer Mittelfrüh", menge_g: 40, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -514,6 +529,7 @@
                 notizen: "Feinherbes Pilsner Brauart. Weiches Wasser und hohe Bitterhopfung.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 62, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                vorderwuerzehopfung: [],
                 hopfung: [{name: "Saazer", menge_g: 150, kochzeit_min: 90}, {name: "Saazer", menge_g: 80, kochzeit_min: 20}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -524,6 +540,7 @@
                 notizen: "Klassisches bayrisches Helles. Ruhige Gärung bei 11°C.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 10.5}, {name: "Caramalz Hell", menge_kg: 0.5}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 35}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 25}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                vorderwuerzehopfung: [],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 120, kochzeit_min: 90}, {name: "Hallertauer Mittelfrüh", menge_g: 50, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -534,6 +551,7 @@
                 notizen: "Naturtrüb, malzbetont und vollmundig.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.5}, {name: "Münchner Malz I", menge_kg: 2.0}, {name: "Caramalz Dunkel", menge_kg: 0.5}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 15}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                vorderwuerzehopfung: [],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 100, kochzeit_min: 70}, {name: "Hallertauer Mittelfrüh", menge_g: 60, kochzeit_min: 10}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -544,6 +562,7 @@
                 notizen: "Kräftiger Malzkörper, wunderschöne Kupferfarbe.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 5.5}, {name: "Münchner Malz I", menge_kg: 5.5}, {name: "Caramalz Dunkel", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                vorderwuerzehopfung: [],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Hallertauer Mittelfrüh", menge_g: 40, kochzeit_min: 15}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -554,6 +573,7 @@
                 notizen: "Schwerer, starker Malzkörper mit edler Süße und dezenter Bittere.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 8.0}, {name: "Münchner Malz I", menge_kg: 6.5}, {name: "Caramalz Dunkel", menge_kg: 1.2}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Maltoserast", temperatur_c: 63, dauer_min: 40}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                vorderwuerzehopfung: [],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 120, kochzeit_min: 90}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -564,6 +584,7 @@
                 notizen: "Tiefschwarz, aber schlank und überraschend mild im Antrunk ohne Pelzigkeit.",
                 schuettung: [{name: "Pilsner Malz", menge_kg: 9.0}, {name: "Münchner Malz I", menge_kg: 1.5}, {name: "Röstmalz", menge_kg: 0.6}],
                 rasten: [{name: "Einmaischen", temperatur_c: 57, dauer_min: 10}, {name: "Kombirast", temperatur_c: 66, dauer_min: 60}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                vorderwuerzehopfung: [],
                 hopfung: [{name: "Hallertauer Mittelfrüh", menge_g: 110, kochzeit_min: 80}, {name: "Irismoos", menge_g: 5, kochzeit_min: 10}],
                 whirlpool: [], kalthopfung: []
             },
@@ -574,6 +595,7 @@
                 notizen: "Fruchtig-frisches Ale mit Zitrusnoten.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 10.0}, {name: "Caramalz Hell", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 62, dauer_min: 30}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 30}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                vorderwuerzehopfung: [],
                 hopfung: [{name: "Cascade", menge_g: 50, kochzeit_min: 60}, {name: "Cascade", menge_g: 50, kochzeit_min: 10}],
                 whirlpool: [{name: "Cascade", menge_g: 80, temperatur_c: 78}],
                 kalthopfung: [{name: "Cascade", menge_g: 100}]
@@ -585,6 +607,7 @@
                 notizen: "Hopfenbombe mit intensiven Zitrus- und Tropenfruchtnoten.",
                 schuettung: [{name: "Pale Ale Malz", menge_kg: 11.5}, {name: "Pilsner Malz", menge_kg: 1.5}, {name: "Caramalz Hell", menge_kg: 0.8}],
                 rasten: [{name: "Einmaischen", temperatur_c: 63, dauer_min: 45}, {name: "Verzuckerungsrast", temperatur_c: 72, dauer_min: 20}, {name: "Abmaischen", temperatur_c: 78, dauer_min: 5}],
+                vorderwuerzehopfung: [],
                 hopfung: [{name: "Chinook", menge_g: 60, kochzeit_min: 60}, {name: "Cascade", menge_g: 60, kochzeit_min: 15}],
                 whirlpool: [{name: "Cascade", menge_g: 120, temperatur_c: 78}, {name: "Chinook", menge_g: 80, temperatur_c: 78}],
                 kalthopfung: [{name: "Cascade", menge_g: 150}, {name: "Chinook", menge_g: 100}]
@@ -619,14 +642,21 @@
             }
 
             const select = document.getElementById('bier-stil');
-            const stilNamen = Object.keys(BRAUWISSEN_BASISREZEPTE);
-            
             let html = '<option value="">-- Bitte Bierstil wählen --</option>';
-            stilNamen.forEach(name => {
-                const stilObj = BRAUWISSEN_BASISREZEPTE[name];
-                let gaerart = stilObj.gaerart || (stilObj.hefe.toLowerCase().includes('untergärig') ? 'Untergärig' : 'Obergärig');
-                html += `<option value="${name}">${name} (${gaerart})</option>`;
-            });
+
+            if (alleBierstile.length > 0) {
+                alleBierstile.forEach(s => {
+                    const gaer = s.gaerart || 'Lager';
+                    const hatBasis = BRAUWISSEN_BASISREZEPTE[s.name] ? ' 🤖' : '';
+                    html += `<option value="${s.name}">${s.name} (${gaer})${hatBasis}</option>`;
+                });
+            } else {
+                Object.keys(BRAUWISSEN_BASISREZEPTE).forEach(name => {
+                    const stilObj = BRAUWISSEN_BASISREZEPTE[name];
+                    let gaerart = stilObj.gaerart || 'Untergärig';
+                    html += `<option value="${name}">${name} (${gaerart})</option>`;
+                });
+            }
             select.innerHTML = html;
         }
 
@@ -657,11 +687,13 @@
             if (!basis) return;
 
             let rezeptKopie = JSON.parse(JSON.stringify(basis));
+            rezeptKopie.stil = stilName; // Setzt den Bierstil korrekt für das Pulldown
             rezeptKopie.liter = 50;
             letztesBasisRezeptObjekt = rezeptKopie;
 
             document.getElementById('rezept-name').value = `${stilName} (Braustall)`;
             document.getElementById('ausschlag-liter').value = 50;
+            document.getElementById('bier-stil').value = stilName;
 
             schliesseModal();
             fuelleRezeptFormular(letztesBasisRezeptObjekt);
@@ -685,6 +717,15 @@
                 letztesBasisRezeptObjekt.schuettung.forEach(m => {
                     const skaliertesKg = Math.round((m.menge_kg * faktor) * 100) / 100;
                     fuegeMalzZeileHinzu(m.name, skaliertesKg);
+                });
+            }
+
+            const vwContainer = document.getElementById('vorderwuerze-container');
+            vwContainer.innerHTML = '';
+            if (letztesBasisRezeptObjekt.vorderwuerzehopfung) {
+                letztesBasisRezeptObjekt.vorderwuerzehopfung.forEach(vw => {
+                    const skaliertesG = Math.round(vw.menge_g * faktor);
+                    fuegeVorderwuerzeHopfenZeileHinzu(vw.name, skaliertesG);
                 });
             }
 
@@ -721,10 +762,10 @@
             document.getElementById('hefe-menge').value = `${skaliertHefeG} g`;
 
             berechneBierFarbe();
-            berechneWasserUndMilchsaeure();
+            berechneWasserAndMilchsaeure();
         }
 
-        function berechneWasserUndMilchsaeure() {
+        function berechneWasserAndMilchsaeure() {
             const ebc = parseFloat(document.getElementById('ebc-wert').value) || 10;
             const hauptgussLiter = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
 
@@ -968,6 +1009,18 @@
             }
         }
 
+        function fuegeVorderwuerzeHopfenZeileHinzu(name = '', menge = '') {
+            const container = document.getElementById('vorderwuerze-container');
+            const div = document.createElement('div');
+            div.className = 'grid-hopfen-3-row';
+            div.innerHTML = `
+                <select class="select-style vw-select" style="margin:0;">${baueHopfenOptionen(name, false)}</select>
+                <input type="number" step="1" class="input-style vw-menge" value="${menge}" style="margin:0;">
+                <button class="btn-delete" onclick="this.parentElement.remove()">X</button>
+            `;
+            container.appendChild(div);
+        }
+
         function fuegeKochhopfenZeileHinzu(name = '', menge = '', zeit = '') {
             const container = document.getElementById('kochhopfen-container');
             const div = document.createElement('div');
@@ -1016,6 +1069,7 @@
             document.getElementById('ebc-wert').value = r.ebc || '';
             document.getElementById('hauptguss-liter').value = r.hauptguss || '';
             document.getElementById('nachguss-liter').value = r.nachguss || '';
+            document.getElementById('kochzeit-gesamt').value = r.kochzeit || 90;
             document.getElementById('hefe-name').value = r.hefe || '';
             if (r.gaerart) {
                 document.getElementById('hefe-gaerart').value = r.gaerart;
@@ -1032,6 +1086,15 @@
                 });
             } else {
                 fuegeRastZeile();
+            }
+
+            // Vorderwürzehopfung laden
+            const vwContainer = document.getElementById('vorderwuerze-container');
+            vwContainer.innerHTML = '';
+            if (r.vorderwuerzehopfung && r.vorderwuerzehopfung.length > 0) {
+                r.vorderwuerzehopfung.forEach(vw => {
+                    fuegeVorderwuerzeHopfenZeileHinzu(vw.name, vw.menge_g);
+                });
             }
 
             letztesBasisRezeptObjekt = JSON.parse(JSON.stringify(r));
@@ -1052,7 +1115,7 @@
         }
         function schliesseModal() { document.getElementById('modal-overlay').style.display = 'none'; }
 
-        // VOLLSTÄNDIGE SPEICHER-FUNKTION (inkl. Whirlpool & aller Container)
+        // SPEICHER-FUNKTION (inkl. Vorderwürzehopfung)
         async function speichereRezeptInDatenbank() {
             const name = document.getElementById('rezept-name').value.trim();
             const stil = document.getElementById('bier-stil').value;
@@ -1062,6 +1125,7 @@
             const ebc = parseFloat(document.getElementById('ebc-wert').value) || 0;
             const hauptguss = parseFloat(document.getElementById('hauptguss-liter').value) || 0;
             const nachguss = parseFloat(document.getElementById('nachguss-liter').value) || 0;
+            const kochzeit = parseInt(document.getElementById('kochzeit-gesamt').value) || 90;
             const hefe = document.getElementById('hefe-name').value;
             const gaerart = document.getElementById('hefe-gaerart').value;
             const hefeMenge = document.getElementById('hefe-menge').value;
@@ -1092,6 +1156,19 @@
                     rasten.push({ name: select.value, temperatur_c: temp, dauer_min: dauer });
                 }
             });
+
+            // Vorderwürzehopfung einsammeln
+            let vorderwuerzehopfung = [];
+            const vwContainer = document.getElementById('vorderwuerze-container');
+            if (vwContainer) {
+                vwContainer.querySelectorAll('div').forEach(row => {
+                    const select = row.querySelector('.vw-select');
+                    const menge = parseFloat(row.querySelector('.vw-menge') ? row.querySelector('.vw-menge').value : 0) || 0;
+                    if (select && select.value && select.value !== 'NEU_ANLEGEN' && menge > 0) {
+                        vorderwuerzehopfung.push({ name: select.value, menge_g: menge });
+                    }
+                });
+            }
 
             // Kochhopfen einsammeln
             let hopfung = [];
@@ -1138,6 +1215,7 @@
                 stammwuerze: stammwuerze,
                 ibu: ibu,
                 ebc: ebc,
+                kochzeit: kochzeit,
                 hauptguss: hauptguss,
                 nachguss: nachguss,
                 hefe: hefe,
@@ -1146,6 +1224,7 @@
                 notizen: notizen,
                 schuettung: schuettung,
                 rasten: rasten,
+                vorderwuerzehopfung: vorderwuerzehopfung,
                 hopfung: hopfung,
                 whirlpool: whirlpool,
                 kalthopfung: kalthopfung
