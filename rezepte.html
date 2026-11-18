@@ -545,7 +545,7 @@
                         Das ist ein fertiges Rezept <b>("${escapeHtml(r.name)}")</b>, das möglicherweise bereits mehrfach gebraut wurde.<br><br>
                         Bist du dir sicher, dass du da Änderungen vornehmen möchtest?
                     </p>
-                    <button style="background-color: #2E7D32; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 12px;" onclick="bestätigeRezeptBearbeitung('${r.id}')">
+                    <button style="background-color: #2E7D32; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 16px;" onclick="bestätigeRezeptBearbeitung('${r.id}')">
                         ✓ Ja, Rezept bearbeiten
                     </button>
                     <button style="background-color: #546E7A; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;" onclick="schliesseModal()">
@@ -564,32 +564,55 @@
             location.href = 'rezept_neu.html';
         }
 
-        // --- SICHERHEITSABFRAGE BEI LÖSCHEN (MIT GROSSEM ABSTAND) ---
+        // --- ERSTE SICHERHEITSABFRAGE BEI LÖSCHEN (SCHRITT 1 VON 2) ---
         function loescheRezept(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
 
             const inhalt = document.getElementById('modal-inhalt');
             inhalt.innerHTML = `
-                <div style="background-color: #FFEBEE; border: 2px solid #D32F2F; border-radius: 10px; padding: 18px; text-align: center;">
-                    <h3 style="color: #C62828; margin-top: 0; font-size: 20px;">🚨 ACHTUNG ACHTUNG!</h3>
-                    <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 25px;">
-                        Möchtest du das Rezept <b>"${escapeHtml(r.name)}"</b> wirklich unwiderruflich löschen?<br><br>
-                        <b>Achtung:</b> Dieser Schritt kann nicht rückgängig gemacht werden!
+                <div style="background-color: #FFF3E0; border: 2px solid #FB8C00; border-radius: 10px; padding: 18px; text-align: center;">
+                    <h3 style="color: #E65100; margin-top: 0; font-size: 19px;">⚠️ Rezept löschen?</h3>
+                    <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                        Du hast auf Löschen für <b>"${escapeHtml(r.name)}"</b> geklickt.<br>
+                        Möchtest du diesen Löschvorgang wirklich starten?
                     </p>
-                    
-                    <!-- ERSTER BUTTON: LÖSCHEN (WEIT OBEN) -->
-                    <button style="background-color: #D32F2F; color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 20px; box-shadow: 0 3px 6px rgba(0,0,0,0.15);" onclick="führeRezeptLöschungAus('${r.id}')">
-                        🔥 Ja, Rezept endgültig löschen
+                    <button style="background-color: #FB8C00; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 16px;" onclick="zeigeZweiteLoeschAbfrage('${r.id}')">
+                        ➔ Ja, fortfahren (Schritt 1 von 2)
                     </button>
-
-                    <!-- ZWEITER BUTTON: ABBRECHEN (MIT SICHEREM ABSTAND UNTEN) -->
                     <button style="background-color: #546E7A; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;" onclick="schliesseModal()">
-                        ❌ Abbrechen / Sicher zurück
+                        ❌ Abbrechen / Rezept retten
                     </button>
                 </div>
             `;
             document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        // --- ZWEITE SICHERHEITSABFRAGE (SCHRITT 2 VON 2 - EXTREM GROSSER ABSTAND) ---
+        function zeigeZweiteLoeschAbfrage(rezeptId) {
+            const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
+            if (!r) return;
+
+            const inhalt = document.getElementById('modal-inhalt');
+            inhalt.innerHTML = `
+                <div style="background-color: #FFEBEE; border: 2px solid #D32F2F; border-radius: 10px; padding: 20px; text-align: center;">
+                    <h3 style="color: #C62828; margin-top: 0; font-size: 20px;">🚨 LETZTE SICHERHEITSWARNUNG!</h3>
+                    <p style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                        Das ist deine <b>zweite Chance</b>! Das Rezept <b>"${escapeHtml(r.name)}"</b> wird jetzt endgültig aus der Datenbank getilgt.<br><br>
+                        Bist du absolut sicher?
+                    </p>
+                    
+                    <!-- ERSTER BUTTON: LÖSCHEN (OBEN MIT VIEL LUFT NACH UNTEN) -->
+                    <button style="background-color: #D32F2F; color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 35px; box-shadow: 0 3px 6px rgba(0,0,0,0.15);" onclick="führeRezeptLöschungAus('${r.id}')">
+                        🔥 Ja, Rezept jetzt endgültig löschen!
+                    </button>
+
+                    <!-- ZWEITER BUTTON: ABBRECHEN (UNTEN MIT DOPPELTEM ABSTAND) -->
+                    <button style="background-color: #546E7A; color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="schliesseModal()">
+                        ❌ Abbrechen / Rezept retten!
+                    </button>
+                </div>
+            `;
         }
 
         async function führeRezeptLöschungAus(rezeptId) {
