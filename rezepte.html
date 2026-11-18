@@ -471,7 +471,7 @@
             await ladeRezepteUndBewertungen();
         }
 
-        // --- 2. MODAL FÜR REZEPT DETAILS (INKL. KOCHZEIT, GÜSSE & HOPFUNG) ---
+        // --- 2. MODAL FÜR REZEPT DETAILS (INKL. VORDERWÜRZEHOPFUNG) ---
         function oeffneRezeptDetailsModal(rezeptId) {
             const r = alleRezepte.find(item => String(item.id) === String(rezeptId));
             if (!r) return;
@@ -482,6 +482,7 @@
 
             let schuettungHtml = (r.schuettung || []).map(m => `<li><b>${m.menge_kg} kg</b> ${escapeHtml(m.name)}</li>`).join('');
             let rastenHtml = (r.rasten || []).map(rst => `<li><b>${escapeHtml(rst.name)}:</b> ${rst.temperatur_c}°C (${rst.dauer_min} Min)</li>`).join('');
+            let vorderwuerzeHtml = (r.vorderwuerzehopfung || []).map(vw => `<li><b>${vw.menge_g} g</b> ${escapeHtml(vw.name)}</li>`).join('');
             let hopfenHtml = (r.hopfung || []).map(h => `<li><b>${h.menge_g} g</b> ${escapeHtml(h.name)} (${h.kochzeit_min} Min kochen)</li>`).join('');
             let whirlpoolHtml = (r.whirlpool || []).map(w => `<li><b>${w.menge_g} g</b> ${escapeHtml(w.name)} (${w.temperatur_c || 78}°C)</li>`).join('');
             let kalthopfungHtml = (r.kalthopfung || []).map(k => `<li><b>${k.menge_g} g</b> ${escapeHtml(k.name)}</li>`).join('');
@@ -511,6 +512,7 @@
 
                 ${schuettungHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌾 Schüttung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${schuettungHtml}</ul>` : ''}
                 ${rastenHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">⏱️ Maischplan:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${rastenHtml}</ul>` : ''}
+                ${vorderwuerzeHtml ? `<div style="font-size: 12px; font-weight: bold; color: #1565C0;">🌿 Vorderwürzehopfung:</div><ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">${vorderwuerzeHtml}</ul>` : ''}
 
                 <div style="font-size: 12px; font-weight: bold; color: #1565C0;">🔥 Würze kochen:</div>
                 <ul style="font-size: 12px; padding-left: 18px; margin-top: 4px; margin-bottom: 12px;">
