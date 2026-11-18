@@ -381,7 +381,7 @@
 
         <div class="section-box">
             <div class="section-title">
-                <span>Vorderwürzehopfung</span>
+                <span>5. Vorderwürzehopfung</span>
                 <button class="btn-small" onclick="fuegeVorderwuerzeHopfenZeileHinzu()">+ Hopfen</button>
             </div>
             <div class="grid-hopfen-3-head table-head-label">
@@ -393,14 +393,14 @@
         </div>
 
         <div class="section-box">
-            <div class="section-title">5. Würze kochen</div>
+            <div class="section-title">6. Würze kochen</div>
             <label class="label-style">Gesamte Kochzeit (Minuten):</label>
             <input type="number" id="kochzeit-gesamt" class="input-style" value="90">
         </div>
 
         <div class="section-box">
             <div class="section-title">
-                <span>Kochgaben (Hopfenkochen & Klärmittel)</span>
+                <span>7. Kochgaben (Hopfenkochen & Klärmittel)</span>
                 <button class="btn-small" onclick="fuegeKochhopfenZeileHinzu()">+ Gabe</button>
             </div>
             <div class="grid-hopfen-4-head table-head-label">
@@ -414,7 +414,7 @@
 
         <div class="section-box">
             <div class="section-title">
-                <span>Whirlpool-Hopfung</span>
+                <span>8. Whirlpool-Hopfung</span>
                 <button class="btn-small" onclick="fuegeWhirlpoolHopfenZeileHinzu()">+ Hopfen</button>
             </div>
             <div class="grid-hopfen-4-head table-head-label">
@@ -428,7 +428,7 @@
 
         <div class="section-box">
             <div class="section-title">
-                <span>Kalthopfung (Stopfen)</span>
+                <span>9. Kalthopfung (Stopfen)</span>
                 <button class="btn-small" onclick="fuegeKalthopfenZeileHinzu()">+ Hopfen</button>
             </div>
             <div class="grid-hopfen-3-head table-head-label">
@@ -440,7 +440,7 @@
         </div>
 
         <div class="section-box">
-            <div class="section-title">7. Hefe & Gärung</div>
+            <div class="section-title">10. Hefe & Gärung</div>
             
             <div class="grid-2">
                 <div>
@@ -470,7 +470,7 @@
         </div>
 
         <div class="section-box">
-            <div class="section-title">8. Notizen & Tipps</div>
+            <div class="section-title">11. Notizen & Tipps</div>
             <textarea id="rezept-notizen" class="input-style" rows="3" placeholder="z.B. Stopfen bei 80% Restextrakt, Besonderheiten beim Brautag..."></textarea>
         </div>
 
@@ -977,7 +977,6 @@
             document.getElementById('ibu-wert').value = r.ibu || '';
             document.getElementById('ebc-wert').value = r.ebc || '';
             
-            // Wasser & Aufbereitung exakt übernehmen (keine verfälschten Platzhalter-Beispiele mehr)
             document.getElementById('hauptguss-liter').value = r.hauptguss || '';
             document.getElementById('nachguss-liter').value = r.nachguss || '';
             document.getElementById('hauptguss-milchsaeure').value = r.hauptguss_milchsaeure || '';
@@ -1114,9 +1113,12 @@
             if (kaltContainer) {
                 kaltContainer.querySelectorAll('div').forEach(row => {
                     const select = row.querySelector('.kalt-select');
-                    const menge = parseFloat(row.querySelector('.kalt-menge') ? row.querySelector('.kalt-menge').value : 0) || 0;
-                    if (select && select.value && select.value !== 'NEU_ANLEGEN' && menge > 0) {
-                        kalthopfung.push({ name: select.value, menge_g: menge });
+                    const menge = parseFloat(row.querySelector('.kalthopfen-menge') ? row.querySelector('.kalthopfen-menge').value : 0) || 0; // standard fallback
+                    // ... korrigierte Auswahl der Menge im Kalthopfen:
+                    const inputMenge = row.querySelector('.kalt-menge');
+                    const mVal = parseFloat(inputMenge ? inputMenge.value : 0) || 0;
+                    if (select && select.value && select.value !== 'NEU_ANLEGEN' && mVal > 0) {
+                        kalthopfung.push({ name: select.value, menge_g: mVal });
                     }
                 });
             }
